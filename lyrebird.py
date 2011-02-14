@@ -10,7 +10,7 @@ import pango
 
 HOME = os.path.realpath("./") # TODO
 HTML = os.path.join(HOME, "index.html")
-__appname__ = "LyreBird"
+__appname__ = "Lyrebird"
 __version__ = "0.1 Coccadoo"
 __author__ = "spazzpp2"
 
