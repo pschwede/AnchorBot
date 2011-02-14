@@ -15,7 +15,5 @@ Main Features
 * Magazine (RSS/Atom)
 * Pictures, Columns, Videos, Audio
 * Microblogging
-* e-mail-like facebook
-\* ~~Chatting~~ *\
-* Keep  stuff offline as long as possible
+* Keep stuff offline as long as possible
 
