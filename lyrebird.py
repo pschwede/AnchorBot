@@ -17,6 +17,7 @@ __author__ = "spazzpp2"
 
 class lyrebird(object):
     def __init__(self, nogui=False):
+        self.watched = None
         self.feeds = {}
         self.browser = browser.WebkitBrowser(HERE)
         self.browser.set_about_handler(self.__about)
@@ -39,9 +40,9 @@ class lyrebird(object):
         new_tool.connect("clicked", lambda w:self.new_feed_dialog())
         toolbar.add(new_tool)
 
-        refresh_tool = gtk.ToolButton(gtk.STOCK_REFRESH)
-        refresh_tool.connect("clicked", lambda w: self.refresh())
-        toolbar.add(refresh_tool)
+        show_tool = gtk.ToolButton(gtk.STOCK_REFRESH)
+        show_tool.connect("clicked", lambda w: self.show())
+        toolbar.add(show_tool)
 
         quit_tool = gtk.ToolButton(gtk.STOCK_QUIT)
         quit_tool.connect("clicked", self.quit)
@@ -56,31 +57,31 @@ class lyrebird(object):
         hpaned = gtk.HPaned()
         hbox.pack_start(hpaned, True, True)
 
-        # BEGIN groups
+        # BEGIN self.groups
 
-        groups = gtk.TreeView()
-        groups.connect("cursor_changed", self._cell_clicked)
+        self.groups = gtk.TreeView()
+        self.groups.connect("cursor_changed", self._cell_clicked)
 
-        self.groups = gtk.TreeStore(str,str)
-        groups.set_model(self.groups)
+        groups_model = gtk.TreeStore(str,str)
+        self.groups.set_model(groups_model)
 
         cat_cell = gtk.CellRendererText()
         cat_column = gtk.TreeViewColumn(_('Category'))
         cat_column.pack_start(cat_cell, True)
         cat_column.add_attribute(cat_cell, 'text', 0)
-        groups.append_column(cat_column)
+        self.groups.append_column(cat_column)
 
         itm_cell = gtk.CellRendererText()
         itm_column = gtk.TreeViewColumn(_('Item'))
         itm_column.pack_start(itm_cell, True)
         itm_column.add_attribute(itm_cell, 'text', 1)
-        groups.append_column(itm_column)
+        self.groups.append_column(itm_column)
 
         scroller = gtk.ScrolledWindow()
-        scroller.add_with_viewport(groups)
+        scroller.add_with_viewport(self.groups)
         hpaned.pack1(scroller)
 
-        # END groups
+        # END self.groups
 
         vbox = gtk.VBox()
         vbox.pack_start(hbox, True, True)
@@ -110,11 +111,13 @@ class lyrebird(object):
 
     def update_groups(self):
         gtk.gdk.threads_enter()
-        self.groups.clear() # TODO find a better way
-        self.groups.append(None, ["Feeds", None])
-        piter = self.groups.get_iter((0, ))
+        self.groups.get_model().clear() # TODO find a better way
+        self.groups.get_model().append(None, ["Feeds", None])
+        piter = self.groups.get_model().get_iter((0, ))
         for url,fdic in self.feeds.items():
-            self.groups.append(piter, [fdic["feed"]["title"], url])
+            self.groups.get_model().append(piter, [fdic["feed"]["title"], url])
+            if url == self.watched:
+                self.groups.expand_to_path(piter.get_path())
         gtk.gdk.threads_leave()
 
     def show_about(self, stuff=None):
@@ -157,21 +160,24 @@ class lyrebird(object):
 
         w.show_all()
 
-    def refetch(self, feedurl, cached=True):
+    def download(self, feedurl, cached=True):
         if cached:
             self.feeds[feedurl] = feedparser.parse(self.cache[feedurl])
         else:
             self.feeds[feedurl] = feedparser.parse(feedurl)
 
-    def refresh(self, url=None):
+    def show(self, url=None):
+        if not url and self.watched:
+            url = self.watched
         if url:
-            #self.refetch(url)
+            if url == self.watched:
+                self.download(url, False)
             print url
             self.browser.openfeed(self.feeds[url])
         else:
             #TODO analyze first
             for url in self.config.get_abos():
-                self.refetch(url)
+                self.download(url)
             self.browser.openfeed(self.feeds.values()[-1])
 
     def _cell_clicked(self, view):
@@ -180,10 +186,14 @@ class lyrebird(object):
         if piter:
             url = model.get_value(piter, 1)
             if url:
-                self.refresh(url)
+                self.watched = url
+                self.download(url)
+                self.show(url)
 
     def add_url(self, url):
         self.config.add_abo(url)
+        self.download(url)
+        self.show(url)
         self.update_groups()
 
     def sub_url(self, url):
@@ -193,7 +203,7 @@ class lyrebird(object):
 def main():
     gobject.threads_init()
     l = lyrebird()
-    gobject.idle_add(l.refresh)
+    gobject.idle_add(l.show)
     gobject.idle_add(l.update_groups)
     gtk.main()
 

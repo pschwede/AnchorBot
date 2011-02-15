@@ -14,7 +14,7 @@ class htmlSmallWidget():
             except KeyError:
                 log(entry)
         self.html += '<div class="small">'
-        self.html += '<a href="about:about">?</a>'
+        self.html += '<a href="'+entry["links"][0]["href"]+'">Source</a>'
         self.html += '<a href="http://twitter.com/share?url='+entry["links"][0]["href"]+'&text='+entry["title"]+'">Tweet</a>'
         self.html += '</div>'
         self.html += '</div>'
