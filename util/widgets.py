@@ -3,9 +3,11 @@ from logger import log
 
 class htmlSmallWidget():
     def __init__(self, entry):
-        self.html = str()
-        self.html += '<div class="issue1">'
-        self.html += '<h2>'+str(entry["title"])+'</h2>'
+        self.html = u'<div class="issue1">'
+        title = entry["title"]
+        if len(title) > 40:
+            title = title[:40]+"&#8230;"
+        self.html += u'<h2>'+title+u'</h2>'
         try: # TODO let crawler make it
             self.html += str(entry["summary"])
         except KeyError:
@@ -54,7 +56,7 @@ class gtkSmallWidget(gtk.Frame):
 
 if __name__ == "__main__":
     w = gtk.Window()
-    w.add(SmallWidget({
+    w.add(gtkSmallWidget({
         "title": "UFO In NY!",
         "image": None,
         "summary": "300 people swear to have seen one!"+

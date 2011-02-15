@@ -161,10 +161,9 @@ class lyrebird(object):
         w.show_all()
 
     def download(self, feedurl, cached=True):
-        if cached:
-            self.feeds[feedurl] = feedparser.parse(self.cache[feedurl])
-        else:
-            self.feeds[feedurl] = feedparser.parse(feedurl)
+        if not cached:
+            del self.cache[feedurl]
+        self.feeds[feedurl] = feedparser.parse(self.cache[feedurl])
 
     def show(self, url=None):
         if not url and self.watched:
@@ -172,13 +171,13 @@ class lyrebird(object):
         if url:
             if url == self.watched:
                 self.download(url, False)
-            print url
             self.browser.openfeed(self.feeds[url])
         else:
             #TODO analyze first
             for url in self.config.get_abos():
                 self.download(url)
             self.browser.openfeed(self.feeds.values()[-1])
+        self.watched = url
 
     def _cell_clicked(self, view):
         sel = view.get_selection()
@@ -186,8 +185,6 @@ class lyrebird(object):
         if piter:
             url = model.get_value(piter, 1)
             if url:
-                self.watched = url
-                self.download(url)
                 self.show(url)
 
     def add_url(self, url):
