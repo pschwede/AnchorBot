@@ -27,7 +27,7 @@ class Cacher(object):
         self.dic = {}
 
 class PersistentCacher(object):
-    def __init__(self, localdir="./"):
+    def __init__(self, localdir="/tmp/"):
         self.stor = {}
         self.localdir = os.path.realpath(os.path.dirname(localdir))
         self.dloader = urllib.FancyURLopener()
@@ -37,9 +37,10 @@ class PersistentCacher(object):
         try:
             return self.stor[url]
         except KeyError:
-            newurl = os.path.join(self.localdir, os.path.basename(url))
-            if os.path.isfile(newurl):
-                pass #TODO check if expired
+            newurl = os.path.join(self.localdir, str(hash(url))+".xml")
+            if os.path.exists(newurl):
+                return newurl #TODO check if expired
+            print "Caching to %s!" % newurl
             self.dloader.retrieve(url, newurl)
             self.stor[url] = (newurl, 0)
             return newurl

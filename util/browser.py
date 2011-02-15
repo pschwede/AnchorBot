@@ -71,40 +71,28 @@ class WebkitBrowser(gtk.ScrolledWindow):
     def _style(self): # TODO load from file
         return """
         body {
-            font-family: Arial, Sans;
-            background-color:#eee;
             display: none;
         }
         a[href^="about:"] {
             padding-right: 1em;
         }
-        .issue1 {
-            border-radius: 5px;
-            box-shadow: 0 0 3px #000;
-        }
-        .issue1:hover {
-            background-color:#fff;
-        }
         """
 
     def openfeed(self, feed):
-        if not self.html:
-            self.html = "<html><head>"
-            self.html += "</head><style>"+self._style()+"</style>" 
-            self.html += '<script type="text/javascript" src="file://third-party/jquery-1.5.min.js"></script>'
-            self.html += '''<script type="text/javascript">
-            $(document).ready(function() {
-                $(document.body).fadeIn("slow");
-            });
-            </script>'''
-            self.html += '<body>'
-            for entry in feed["entries"]:
-                self.html += str(widgets.htmlSmallWidget(entry))
-            self.html += "</body></html>"
-            f = open("index.html", 'w')
-            f.write(self.html)
-            f.close()
-            self.browser.load_string(self.html, "text/html", "utf-8", "file:///")
-        else:
-            pass #TODO add content with js
-
+        self.html = "<html><head>"
+        self.html += "</head><style>"+self._style()+"</style>" 
+        self.html += '<script type="text/javascript" src="file://third-party/jquery-1.5.min.js"></script>'
+        self.html += '''<script type="text/javascript">
+        $(document).ready(function() {
+            $(document.body).fadeIn("slow");
+        });
+        </script>'''
+        self.html += '<body>'
+        for entry in feed["entries"]:
+            self.html += str(widgets.htmlSmallWidget(entry))
+        self.html += "</body></html>"
+        f = open("index.html", 'w')
+        f.write(self.html)
+        f.close()
+        self.browser.load_string(self.html, "text/html", "utf-8", "file:///")
+        # TODO load stuff with js

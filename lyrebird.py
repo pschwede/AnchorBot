@@ -4,9 +4,9 @@ import feedparser, sys, os
 import gtk, gtk.gdk, gobject
 from util import browser, analyzer, storage, _
 from util.logger import log
+from util.config import Config
 import threading
 import webbrowser
-import pango
 
 HOME = os.path.join(os.path.expanduser("~"),".lyrebird")
 HTML = os.path.join(HOME, "index.html")
@@ -16,11 +16,11 @@ __author__ = "spazzpp2"
 
 class lyrebird(object):
     def __init__(self, nogui=False):
-        self.feedurls = []
         self.feeds = {}
         self.browser = browser.WebkitBrowser()
         self.browser.set_about_handler(self.__about)
         self.cache = storage.PersistentCacher()
+        self.config = Config(HOME)
 
         window = self.window = gtk.Window()
         window.set_title(__appname__+" "+__version__)
@@ -58,6 +58,7 @@ class lyrebird(object):
         # BEGIN groups
 
         groups = gtk.TreeView()
+        groups.connect("cursor_changed", self._cell_clicked)
 
         self.groups = gtk.TreeStore(str,str)
         groups.set_model(self.groups)
@@ -127,36 +128,72 @@ class lyrebird(object):
     def quit(self, stuff):
         gtk.main_quit()
 
+    def new_feed_dialog(self):
+        w = gtk.Window() #gtk.WINDOW_POPUP)
+
+        table = gtk.Table(2,2)
+        table.set_row_spacings(3)
+        table.set_col_spacings(3)
+        table.set_border_width(3)
+        w.add(table)
+        
+        url_label = gtk.Label(_("URL:"))
+        table.attach(url_label, 0, 1, 0, 1)
+
+        url_entry = gtk.Entry()
+        table.attach(url_entry, 1, 2, 0, 1)
+
+        hbox = gtk.HBox(True)
+        table.attach(hbox, 0, 2, 1, 2)
+
+        ok = gtk.Button(stock=gtk.STOCK_OK)
+        ok.connect("clicked", lambda x: (self.add_url(url_entry.get_text()), w.destroy()))
+        hbox.pack_end(ok, False, False)
+
+        cancel = gtk.Button(stock=gtk.STOCK_CANCEL)
+        cancel.connect("clicked", lambda x: w.destroy())
+        hbox.pack_end(cancel, False, False)
+
+        w.show_all()
+
     def refetch(self, feedurl, cached=True):
         if cached:
             self.feeds[feedurl] = feedparser.parse(self.cache[feedurl])
         else:
             self.feeds[feedurl] = feedparser.parse(feedurl)
 
-    def new_feed_dialog(self):
-        pass
+    def refresh(self, url=None):
+        if url:
+            #self.refetch(url)
+            print url
+            self.browser.openfeed(self.feeds[url])
+        else:
+            #TODO analyze first
+            for url in self.config.get_abos():
+                self.refetch(url)
+            self.browser.openfeed(self.feeds.values()[-1])
 
-    def refresh(self):
-        for url in self.feedurls:
-            self.refetch(url)
-        log("Writing to %s" % HTML)
-        #TODO analyze first
-        self.browser.openfeed(self.feeds.values()[0])
+    def _cell_clicked(self, view):
+        sel = view.get_selection()
+        model, piter = sel.get_selected()
+        if piter:
+            url = model.get_value(piter, 1)
+            if url:
+                self.refresh(url)
 
     def add_url(self, url):
-        self.feedurls.append(url)
+        self.config.add_abo(url)
         self.update_groups()
 
     def sub_url(self, url):
-        self.feedurls.remove(url)
+        self.config.del_abo(url)
         self.update_groups()
 
 def main():
     gobject.threads_init()
     l = lyrebird()
-    l.add_url("http://www.dnn-online.de/rss/dresden-rss.xml")
-    l.add_url("http://www.heise.de/newsticker/heise-atom.xml")
     gobject.idle_add(l.refresh)
+    gobject.idle_add(l.update_groups)
     gtk.main()
 
 def get_cmd_options():
