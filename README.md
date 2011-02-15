@@ -1,11 +1,8 @@
 Lyrebird
 ========
 
-Version 0.1 Coccadoo
+Version 0.1 Coccatoo
 (c) spazzpp2 – Licensed under MIT License
-
-This is a tribute to the [bird that retweets](http://youtu.be/7XiQDgNUEMw) the terrifying chainsaws that sew down it's rain forest.
-
 
 It's a news aggregator with the attempt of making you read the most important news first.
 
@@ -17,3 +14,4 @@ Main Features
 * Microblogging
 * Keep stuff offline as long as possible
 
+This Project is a tribute to the [bird that retweets](http://youtu.be/7XiQDgNUEMw) the terrifying chainsaws that sew down it's rain forest.

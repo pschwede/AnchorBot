@@ -12,7 +12,7 @@ HOME = os.path.join(os.path.expanduser("~"),".lyrebird")
 HERE = os.path.realpath(os.path.dirname(__file__))
 HTML = os.path.join(HOME, "index.html")
 __appname__ = "Lyrebird"
-__version__ = "0.1 Coccadoo"
+__version__ = "0.1 Coccatoo"
 __author__ = "spazzpp2"
 
 class lyrebird(object):
