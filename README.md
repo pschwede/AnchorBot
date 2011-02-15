@@ -14,4 +14,4 @@ Main Features
 * Microblogging
 * Keep stuff offline as long as possible
 
-This Project is a tribute to the [bird that retweets](http://youtu.be/7XiQDgNUEMw) the terrifying chainsaws that sew down it's rain forest.
+This project is a tribute to the [bird that retweets](http://youtu.be/7XiQDgNUEMw) the terrifying chainsaws that sew down it's rain forest.
