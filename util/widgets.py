@@ -1,6 +1,21 @@
 import gtk, pango
 
-class SmallWidget(gtk.Frame):
+class htmlSmallWidget():
+    def __init__(self, entry):
+        self.html = str()
+        self.html += '<div class="issue1">'
+        self.html += '<h2>'+str(entry["title"])+'</h2>'
+        self.html += str(entry["summary"])
+        self.html += '<div class="small">'
+        self.html += '<a href="about:about">?</a>'
+        self.html += '<a href="http://twitter.com/share?url='+entry["links"][0]["href"]+'&text='+entry["title"]+'">Tweet</a>'
+        self.html += '</div>'
+        self.html += '</div>'
+
+    def __str__(self):
+        return self.html
+
+class gtkSmallWidget(gtk.Frame):
     def __init__(self, entry):
         super(SmallWidget, self).__init__()
         l = gtk.Label('<span size="x-large">'+entry["title"]+"</span>")

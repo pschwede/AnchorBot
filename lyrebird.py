@@ -8,7 +8,7 @@ import threading
 import webbrowser
 import pango
 
-HOME = os.path.realpath("./") # TODO
+HOME = os.path.join(os.path.expanduser("~"),".lyrebird")
 HTML = os.path.join(HOME, "index.html")
 __appname__ = "Lyrebird"
 __version__ = "0.1 Coccadoo"

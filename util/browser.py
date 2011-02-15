@@ -32,7 +32,7 @@ class TextBrowser(gtk.TextView):
             gtk.gdk.threads_enter()
             # TODO News widget
             # Big and smaller ones.. think about it for a while..
-            w = SmallWidget(entry)
+            w = gtkSmallWidget(entry)
             w.show()
             self.news.add(w)
             gtk.gdk.threads_leave()
@@ -99,14 +99,7 @@ class WebkitBrowser(gtk.ScrolledWindow):
             </script>'''
             self.html += '<body>'
             for entry in feed["entries"]:
-                self.html += '<div class="issue1">'
-                self.html += '<h2>'+str(entry["title"])+'</h2>'
-                self.html += str(entry["summary"])
-                self.html += '<div class="small">'
-                self.html += '<a href="about:about">?</a>'
-                self.html += '<a href="http://twitter.com/share?url='+entry["links"][0]["href"]+'&text='+entry["title"]+'">Tweet</a>'
-                self.html += '</div>'
-                self.html += '</div>'
+                self.html += str(widgets.htmlSmallWidget(entry))
             self.html += "</body></html>"
             f = open("index.html", 'w')
             f.write(self.html)
