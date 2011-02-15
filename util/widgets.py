@@ -1,11 +1,18 @@
 import gtk, pango
+from logger import log
 
 class htmlSmallWidget():
     def __init__(self, entry):
         self.html = str()
         self.html += '<div class="issue1">'
         self.html += '<h2>'+str(entry["title"])+'</h2>'
-        self.html += str(entry["summary"])
+        try: # TODO let crawler make it
+            self.html += str(entry["summary"])
+        except KeyError:
+            try:
+                self.html += str(entry["content"][0]["value"])
+            except KeyError:
+                log(entry)
         self.html += '<div class="small">'
         self.html += '<a href="about:about">?</a>'
         self.html += '<a href="http://twitter.com/share?url='+entry["links"][0]["href"]+'&text='+entry["title"]+'">Tweet</a>'

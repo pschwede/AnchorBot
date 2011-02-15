@@ -37,7 +37,7 @@ class PersistentCacher(object):
         try:
             return self.stor[url]
         except KeyError:
-            newurl = os.path.join(self.localdir, str(hash(url))+".xml")
+            newurl = os.path.join(self.localdir, str(hash(url)).replace("-","0")+".xml")
             if os.path.exists(newurl):
                 return newurl #TODO check if expired
             print "Caching to %s!" % newurl
