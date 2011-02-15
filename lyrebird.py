@@ -9,6 +9,7 @@ import threading
 import webbrowser
 
 HOME = os.path.join(os.path.expanduser("~"),".lyrebird")
+HERE = os.path.realpath(os.path.dirname(__file__))
 HTML = os.path.join(HOME, "index.html")
 __appname__ = "Lyrebird"
 __version__ = "0.1 Coccadoo"
@@ -17,7 +18,7 @@ __author__ = "spazzpp2"
 class lyrebird(object):
     def __init__(self, nogui=False):
         self.feeds = {}
-        self.browser = browser.WebkitBrowser()
+        self.browser = browser.WebkitBrowser(HERE)
         self.browser.set_about_handler(self.__about)
         self.cache = storage.PersistentCacher()
         self.config = Config(HOME)

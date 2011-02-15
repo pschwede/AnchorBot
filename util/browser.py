@@ -38,8 +38,9 @@ class TextBrowser(gtk.TextView):
             gtk.gdk.threads_leave()
             
 class WebkitBrowser(gtk.ScrolledWindow):
-    def __init__(self):
+    def __init__(self, absolute=""):
         super(WebkitBrowser, self).__init__()
+        self.absolute = absolute
         self.set_shadow_type(gtk.SHADOW_IN)
         self.browser = webkit.WebView()
         self.browser.connect("navigation-policy-decision-requested", 
@@ -81,7 +82,7 @@ class WebkitBrowser(gtk.ScrolledWindow):
     def openfeed(self, feed):
         self.html = "<html><head>"
         self.html += "</head><style>"+self._style()+"</style>" 
-        self.html += '<script type="text/javascript" src="file://third-party/jquery-1.5.min.js"></script>'
+        self.html += '<script type="text/javascript" src="file://'+self.absolute+'/third-party/jquery-1.5.min.js"></script>'
         self.html += '''<script type="text/javascript">
         $(document).ready(function() {
             $(document.body).fadeIn("slow");
@@ -91,8 +92,5 @@ class WebkitBrowser(gtk.ScrolledWindow):
         for entry in feed["entries"]:
             self.html += str(widgets.htmlSmallWidget(entry))
         self.html += "</body></html>"
-        f = open("index.html", 'w')
-        f.write(self.html)
-        f.close()
         self.browser.load_string(self.html, "text/html", "utf-8", "file:///")
         # TODO load stuff with js
