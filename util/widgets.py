@@ -4,10 +4,10 @@ from logger import log
 class htmlSmallWidget():
     def __init__(self, entry):
         self.html = u'<div class="issue1">'
-        title = entry["title"]
-        if len(title) > 40:
-            title = title[:40]+"&#8230;"
-        self.html += u'<h2>'+title+u'</h2>'
+        shorttitle = title = entry["title"].replace('"', '&quot;')
+        if len(shorttitle) > 40:
+            shorttitle = shorttitle[:40]+"&#8230;"
+        self.html += u'<h2 title="'+title+'">'+shorttitle+u'</h2>'
         try: # TODO let crawler make it
             self.html += str(entry["summary"])
         except KeyError:
