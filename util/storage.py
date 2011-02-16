@@ -42,12 +42,12 @@ class PersistentCacher(object):
         except KeyError:
             newurl = os.path.join(self.localdir, str(hash(url)).replace("-","0")+".xml")
             self.stor[url] = newurl
-            if os.path.exists(newurl):
+            if False and os.path.exists(newurl):
                 #TODO check for expiration date ;)
                 log("Using old cached %s for %s." % (newurl, url, ))
                 return newurl
             else:
-                print self.dloader.retrieve(url, newurl)
+                self.dloader.retrieve(url, newurl)
                 log("Cached %s to %s." % (url, newurl, ))
                 return newurl
 

@@ -17,12 +17,17 @@ __author__ = "spazzpp2"
 
 class lyrebird(object):
     def __init__(self, nogui=False):
-        self.watched = None
-        self.feeds = {}
+        try:
+            self.config = Config(HOME) # Raises Exception if locked
+        except:
+            print _("It seams as if Lyrebird is already running. If not, please remove ~/.lyrebird/lock")
+            sys.exit(1)
+
         self.browser = browser.WebkitBrowser(HERE)
         self.browser.set_about_handler(self.__about)
         self.cache = storage.PersistentCacher()
-        self.config = Config(HOME)
+        self.feeds = {}
+        self.watched = None
 
         window = self.window = gtk.Window()
         window.set_title(__appname__+" "+__version__)
@@ -41,16 +46,24 @@ class lyrebird(object):
         toolbar.add(new_tool)
 
         show_tool = gtk.ToolButton(gtk.STOCK_REFRESH)
-        show_tool.connect("clicked", lambda w: self.show())
+        show_tool.connect("clicked", lambda w: self.download_all())
         toolbar.add(show_tool)
 
-        quit_tool = gtk.ToolButton(gtk.STOCK_QUIT)
-        quit_tool.connect("clicked", self.quit)
-        toolbar.add(quit_tool)
+        conf_tool = gtk.ToolButton(gtk.STOCK_PREFERENCES)
+        # connect conf_tool
+        toolbar.add(conf_tool)
 
         about_tool = gtk.ToolButton(gtk.STOCK_ABOUT)
         about_tool.connect("clicked", self.show_about)
         toolbar.add(about_tool)
+
+        sep_tool = gtk.SeparatorToolItem()
+        sep_tool.set_expand(True)
+        toolbar.add(sep_tool)
+
+        quit_tool = gtk.ToolButton(gtk.STOCK_QUIT)
+        quit_tool.connect("clicked", self.quit)
+        toolbar.add(quit_tool)
 
         # END toolbar
 
@@ -63,6 +76,7 @@ class lyrebird(object):
         self.groups.connect("cursor_changed", self._cell_clicked)
 
         groups_model = gtk.TreeStore(str,str)
+        self.feeds_iter = groups_model.append(None, [_("Feeds"), None])
         self.groups.set_model(groups_model)
 
         cat_cell = gtk.CellRendererText()
@@ -109,15 +123,17 @@ class lyrebird(object):
     def show_group(self, url):
         self.browser.openfeed(url)
 
-    def update_groups(self):
+    def update_feeds_tree(self, url):
         gtk.gdk.threads_enter()
-        self.groups.get_model().clear() # TODO find a better way
-        self.groups.get_model().append(None, ["Feeds", None])
-        piter = self.groups.get_model().get_iter((0, ))
-        for url,fdic in self.feeds.items():
-            self.groups.get_model().append(piter, [fdic["feed"]["title"], url])
-            if url == self.watched:
-                self.groups.expand_to_path(piter.get_path())
+        try:
+            feed = self.feeds[url]
+            self.groups.get_model().append(self.feeds_iter, [feed["feed"]["title"], url])
+        except KeyError:
+            self.groups.get_model().remove(self.feeds_iter)
+            self.feeds_iter = self.groups.get_model().append(None, [_("Feeds"), None])
+            for url,feed in self.feeds.items(): #TODO find a better way
+                self.groups.get_model().append(self.feeds_iter, [feed["feed"]["title"], url])
+        self.groups.expand_all()
         gtk.gdk.threads_leave()
 
     def show_about(self, stuff=None):
@@ -160,10 +176,20 @@ class lyrebird(object):
 
         w.show_all()
 
-    def download(self, feedurl, cached=True):
+    def download(self, feedurl, cached=True, callback=None):
         if not cached:
             del self.cache[feedurl]
         self.feeds[feedurl] = feedparser.parse(self.cache[feedurl])
+        if callback:
+            callback(feedurl)
+
+    def download_all(self, callback=None):
+        if callback:
+            for url in self.config.get_abos():
+                threading.Thread(target=self.download, args=(url,False,lambda x: callback(x))).start()
+        else:
+            for url in self.config.get_abos():
+                threading.Thread(target=self.download, args=(url,False,None)).start()
 
     def show(self, url=None):
         if not url and self.watched:
@@ -174,9 +200,8 @@ class lyrebird(object):
             self.browser.openfeed(self.feeds[url])
         else:
             #TODO analyze first
-            for url in self.config.get_abos():
-                self.download(url)
-            self.browser.openfeed(self.feeds.values()[-1])
+            self.download_all(self.update_feeds_tree)
+            #self.browser.openfeed(self.feeds.values()[-1])
         self.watched = url
 
     def _cell_clicked(self, view):
@@ -191,17 +216,17 @@ class lyrebird(object):
         self.config.add_abo(url)
         self.download(url)
         self.show(url)
-        self.update_groups()
+        self.update_feeds_tree(url)
 
-    def sub_url(self, url):
+    def remove_url(self, url):
         self.config.del_abo(url)
-        self.update_groups()
+        self.update_feeds_tree(url)
 
 def main():
     gobject.threads_init()
     l = lyrebird()
     gobject.idle_add(l.show)
-    gobject.idle_add(l.update_groups)
+    #gobject.idle_add(l.update_feeds_tree)
     gtk.main()
 
 def get_cmd_options():
