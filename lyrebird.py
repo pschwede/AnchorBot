@@ -146,6 +146,7 @@ class lyrebird(object):
         ad.destroy()
 
     def quit(self, stuff):
+        self.config.quit()
         gtk.main_quit()
 
     def new_feed_dialog(self):

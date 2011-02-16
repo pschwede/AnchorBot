@@ -6,7 +6,7 @@ class htmlSmallWidget():
         self.html = u'<div class="issue1">'
         shorttitle = title = entry["title"].replace('"', '&quot;')
         if len(shorttitle) > 40:
-            shorttitle = shorttitle[:40]+"&#8230;"
+            shorttitle = shorttitle[:39]+"&#8230;"
         self.html += u'<h2 title="'+title+'">'+shorttitle+u'</h2>'
         try: # TODO let crawler make it
             self.html += str(entry["summary"])

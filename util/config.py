@@ -78,7 +78,7 @@ class Config(object):
             f.write("%s\n" % abo)
         f.close()
 
-    def __del__(self):
+    def quit(self):
         if not self.locked:
             self.write_abos()
             self.write_config()
