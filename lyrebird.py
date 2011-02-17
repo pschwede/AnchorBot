@@ -38,6 +38,7 @@ class lyrebird(object):
         # BEGIN toolbar
 
         toolbar = gtk.Toolbar()
+        toolbar.set_border_width(0)
         toolbar.set_orientation(gtk.ORIENTATION_VERTICAL)
         hbox.pack_start(toolbar, False, True)
 
@@ -145,7 +146,7 @@ class lyrebird(object):
         ad.run()
         ad.destroy()
 
-    def quit(self, stuff):
+    def quit(self, stuff=None):
         self.config.quit()
         gtk.main_quit()
 
