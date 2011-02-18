@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 
-import feedparser, sys, os
+import feedparser, sys, os, urllib
 import gtk, gtk.gdk, gobject
 from util import browser, analyzer, storage, _
 from util.logger import log
 from util.config import Config
+from util.microblogging import Microblogger
 import threading
 import webbrowser
 
@@ -28,6 +29,7 @@ class lyrebird(object):
         self.cache = storage.PersistentCacher()
         self.feeds = {}
         self.watched = None
+        self.mblog = Microblogger()
 
         window = self.window = gtk.Window()
         window.set_title(__appname__+" "+__version__)
@@ -112,14 +114,20 @@ class lyrebird(object):
         self.window.show_all()
 
     def __about(self, uri):
-        if not uri.startswith("about:"):
-            return
-        else:
+        if uri.startswith("about:"):
             cmd = uri[6:]
-            if cmd == "about":
+            if cmd is "about":
                 self.show_about()
-            elif cmd.startswith("thumbs_up"):
-                pass #TODO retweet and stuff
+            elif cmd.startswith("share?"):
+                url, text = None, None
+                for arg in cmd[6:].split("&"):
+                    if arg.startswith("url="):
+                        url = urllib.unquote(arg[4:])
+                    if arg.startswith("text="):
+                        text = urllib.unquote(arg[5:])
+                if text or url:
+                    log('Tweet %s %s' % (text, url, ))
+                    self.mblog.send_text("%s %s" % (text, url, ))
 
     def show_group(self, url):
         self.browser.openfeed(url)
