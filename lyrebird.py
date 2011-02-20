@@ -137,11 +137,14 @@ class lyrebird(object):
         try:
             feed = self.feeds[url]
             self.groups.get_model().append(self.feeds_iter, [feed["feed"]["title"], url])
-        except KeyError:
+        except KeyError: #feed doesn't exist
             self.groups.get_model().remove(self.feeds_iter)
             self.feeds_iter = self.groups.get_model().append(None, [_("Feeds"), None])
             for url,feed in self.feeds.items(): #TODO find a better way
-                self.groups.get_model().append(self.feeds_iter, [feed["feed"]["title"], url])
+                try:
+                    self.groups.get_model().append(self.feeds_iter, [feed["feed"]["title"], url])
+                except KeyError:
+                    log( "couldn't find feed['feed']['title'] of %s ?" % url)
         self.groups.expand_all()
         gtk.gdk.threads_leave()
 
@@ -196,7 +199,7 @@ class lyrebird(object):
     def download_all(self, callback=None):
         if callback:
             for url in self.config.get_abos():
-                threading.Thread(target=self.download, args=(url,False,lambda x: callback(x))).start()
+                threading.Thread(target=self.download, args=(url,False,callback)).start()
         else:
             for url in self.config.get_abos():
                 threading.Thread(target=self.download, args=(url,False,None)).start()

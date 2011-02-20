@@ -11,12 +11,13 @@ Main Features
 
 * Get pictures, videos, audio, etc. out of the feeds or the page they're linking to
 * Microblogging support
+* Analyze feed entries for repeatations in microblogs or other feeds to merge and sort
 * Focus on readability
 
 Related Projects
 ----------------
-[http://flipboard.com/](Flipboard)
-[http://code.google.com/p/hotot](Hotot)
-[http://reader.google.com/](Google Reader)
+[Flipboard](http://flipboard.com/),
+[Hotot](http://code.google.com/p/hotot),
+[Google Reader](http://reader.google.com/)
 
 This project is a tribute to the [bird that retweets](http://youtu.be/7XiQDgNUEMw) the terrifying chainsaws that sew down it's rain forest.
