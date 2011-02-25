@@ -92,5 +92,8 @@ class WebkitBrowser(gtk.ScrolledWindow):
         for entry in feed["entries"]:
             self.html += str(widgets.htmlSmallWidget(entry))
         self.html += "</body></html>"
+        f = open("/tmp/browser.html", 'w')
+        f.write(self.html)
+        f.close()
         self.browser.load_string(self.html, "text/html", "utf-8", "file:///")
         # TODO load stuff with js

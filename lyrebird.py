@@ -6,6 +6,7 @@ from util import browser, analyzer, storage, _
 from util.logger import log
 from util.config import Config
 from util.microblogging import Microblogger
+from util.crawler import Crawler
 import threading
 import webbrowser
 
@@ -30,6 +31,7 @@ class lyrebird(object):
         self.feeds = {}
         self.watched = None
         self.mblog = Microblogger()
+        self.crawler = Crawler(self.cache)
 
         window = self.window = gtk.Window()
         window.set_title(__appname__+" "+__version__)
@@ -193,6 +195,8 @@ class lyrebird(object):
         if not cached:
             del self.cache[feedurl]
         self.feeds[feedurl] = feedparser.parse(self.cache[feedurl])
+        for entry in self.feeds[feedurl]["entries"]:
+            entry = self.crawler.enrich(entry)
         if callback:
             callback(feedurl)
 

@@ -33,22 +33,36 @@ class PersistentCacher(object):
         self.localdir = os.path.realpath(os.path.dirname(localdir))
         self.dloader = urllib.FancyURLopener()
         self.exp = -1
+        self.donotdl = (".swf")
 
-    def __getitem__(self, url):
+    def __getitem__(self, url, verbose=False):
+        if url[-4:] in self.donotdl:
+            if verbose:
+                log("ignoring "+ url)
+            return url
         try:
             res = self.stor[url]
-            log("Getting %s from cache." % url)
+            if verbose:
+                log("Getting %s from cache." % url)
             return res
         except KeyError:
-            newurl = os.path.join(self.localdir, str(hash(url)).replace("-","0")+".xml")
+            newurl = os.path.join(self.localdir, str(hash(url)).replace("-","0"))
+            ending = os.path.splitext(url)[-1]
+            if ending:
+                newurl += ending
+            else:
+                newurl += ".xml"
             self.stor[url] = newurl
-            if False and os.path.exists(newurl):
+            self.stor[newurl] = newurl
+            if os.path.exists(newurl):
                 #TODO check for expiration date ;)
-                log("Using old cached %s for %s." % (newurl, url, ))
+                if verbose:
+                    log("Using old cached %s for %s." % (newurl, url, ))
                 return newurl
             else:
                 self.dloader.retrieve(url, newurl)
-                log("Cached %s to %s." % (url, newurl, ))
+                if verbose:
+                    log("Cached %s to %s." % (url, newurl, ))
                 return newurl
 
     def __delitem__(self, url):

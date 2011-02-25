@@ -53,6 +53,15 @@ class htmlSmallWidget():
         if len(shorttitle) > 40:
             shorttitle = shorttitle[:39]+"&#8230;"
         self.html += u'<h2 title="'+title+'">'+shorttitle+u'</h2>'
+        if "embeded" in entry and entry["embeded"]:
+            self.html += '<div class="media">'
+            if "image" in entry and entry["image"]:
+                self.html += '<img src="'+entry["image"]+'" title="They use flash on their page!" alt="They use flash on their page!"/>'
+            else:
+                self.html += "<span>They use flash on their page!</span>"
+            self.html += '</div>'
+        elif "image" in entry and entry["image"]:
+            self.html += '<div class="image"><img src="'+entry["image"]+'" alt=""/></div>'
         try: # TODO let crawler make it
             self.html += str(entry["summary"])
         except KeyError:
