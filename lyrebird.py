@@ -239,15 +239,19 @@ class lyrebird(object):
         self.config.del_abo(url)
         self.update_feeds_tree(url)
 
-def main():
+def main(urls=[]):
     gobject.threads_init()
     l = lyrebird()
     gobject.idle_add(l.show)
-    #gobject.idle_add(l.update_feeds_tree)
+    for url in urls:
+        gobject.idle_add(l.add_url, (url,))
     gtk.main()
 
 def get_cmd_options():
     usage = "lyrebird.py"
 
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) > 1:
+        main(sys.argv[1:])
+    else:
+        main()

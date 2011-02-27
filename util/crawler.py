@@ -13,56 +13,55 @@ Follows redirections and delivers some useful functions for remote images.
 class Crawler(object):
     def __init__(self, cacher, proxies=None):
         self.opener = urllib.FancyURLopener(proxies)
-        self.re_img = re.compile('(?<=<img src=["\'])[^"\']*(?=["\'])', re.I)
+        self.re_img = re.compile('((?<=<img src=["\'])[^"\']*(?=["\'])|(?<=<img src=["\'])[^"\']*(?=["\']))', re.I)
         self.re_a = re.compile('(?<=href=").*(?=")', re.I)
         self.re_emb = re.compile('(?<=["\'])[^"\']+\.swf[^"\']*(?=["\'])', re.I)
         self.cache = cacher # for not retrieving things twice!
 
-    def absolutize(self, base_url, relative_url):
-        return urljoin(base_url, relative_url)
-
     def images(self, url, linked=False):
+        url = url.replace("\/","/")
         filetypes = ("jpg", "png","gif","jpeg")
         for typ in filetypes:
-            if url.lower().endswith(typ):
+            if url.lower().split("?")[0].endswith(typ):
                 return [url]
         images = []
         f = self.cache[url]
         f = open(f, 'r')
         m = self.re_img.findall("\n".join(f.readlines()))
         for item in m:        
-            images.append(self.cache[self.absolutize(url, item)])
+            images.append(self.cache[urljoin(url, item)])
         f.close()
         if linked:
             for item in self.links(url):
                 for typ in filetypes:
                     if item.lower().endswith(typ):
-                        images += [self.absolutize(url, item)]
+                        images += [urljoin(url, item)]
         return list(set(images))
 
-    def embededs(self, url, linked=False):
+    def embededs(self, url, linked=False, verbose=False):
+        url = url.replace("\/","/")
         filetypes = ("swf")
         #quick copy&paste from above
         for typ in filetypes:
             if url.lower().endswith(typ):
                 return [url]
-        images = []
+        embeds = []
         f = self.cache[url]
         f = open(f, 'r')
         m = self.re_emb.findall("\n".join(f.readlines()))
         for item in m:        
             if not item.startswith(url[:4]):
                item = os.path.dirname(url)+"/"+item 
-            images.append(self.cache[item])
+            embeds.append(self.cache[item])
         f.close()
         if linked:
             for item in self.links(url):
                 for typ in filetypes:
                     if item.lower().endswith(typ):
-                        images = list(set(images+[item]))
-        if images:
-            log("found embeds: "+ str(images))
-        return images
+                        embeds = list(set(embeds+[item]))
+        if embeds and verbose:
+            log("found embeds: "+ str(embeds))
+        return embeds
 
     
     def compare_image(self, im1, im2):
@@ -83,26 +82,29 @@ class Crawler(object):
         for imgurl in imagelist:
             try:
                 im = Image.open(self.cache[imgurl])
+                imgurl = self.cache[imgurl]
+                if x*y < im.size[0]*im.size[1]:
+                    x, y = im.size
+                    biggest = imgurl
             except IOError:
-                log("Couldn't open %s" % self.cache[imgurl])
-                return biggest
-            imgurl = self.cache[imgurl]
-            if x*y < im.size[0]*im.size[1]:
-                x, y = im.size
-                biggest = imgurl
+                log("PIL: Couldn't open %s" % self.cache[imgurl])
         return biggest
 
     def closest_image(self, imagelist, x, y):
         closest = None
         dx, dy = 10**10, 10**10
         for imgurl in imagelist:
-            im = Image.open(self.cache[imgurl])
-            if dx/dy > abs(im.size[0]-x) / abs(im.size[1]-y):
-                dx, dy = abs(im.size[0]-x), abs(im.size[1]-y)
-                closest = imgurl
+            try:
+                im = Image.open(self.cache[imgurl])
+                if dx/dy > abs(im.size[0]-x) / abs(im.size[1]-y):
+                    dx, dy = abs(im.size[0]-x), abs(im.size[1]-y)
+                    closest = imgurl
+            except IOError:
+                log("PIL: Couldn't open %s" % self.cache[imgurl])
         return closest
 
     def links(self, url):
+        url = url.replace("\/","/")
         links = []
         f = open(self.cache[url], 'r')
         for item in self.re_a.findall("\n".join(f.readlines())):

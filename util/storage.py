@@ -28,9 +28,12 @@ class Cacher(object):
         self.dic = {}
 
 class PersistentCacher(object):
-    def __init__(self, localdir="/tmp/"):
+    def __init__(self, localdir="/tmp/lyrebird/"):
         self.stor = {}
         self.localdir = os.path.realpath(os.path.dirname(localdir))
+        if not os.path.isdir(localdir):
+            log("%s did not exist until now." % localdir)
+            os.mkdir(localdir)
         self.dloader = urllib.FancyURLopener()
         self.exp = -1
         self.donotdl = (".swf")
@@ -60,7 +63,8 @@ class PersistentCacher(object):
                     log("Using old cached %s for %s." % (newurl, url, ))
                 return newurl
             else:
-                self.dloader.retrieve(url, newurl)
+                log("Downloading %s." % url)
+                self.dloader.retrieve(url, newurl) #TODO make it threaded
                 if verbose:
                     log("Cached %s to %s." % (url, newurl, ))
                 return newurl
