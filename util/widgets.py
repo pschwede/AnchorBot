@@ -49,10 +49,8 @@ class tweet_window(gtk.Dialog):
 class htmlSmallWidget():
     def __init__(self, entry):
         self.html = u'<div class="issue1">'
-        shorttitle = title = entry["title"].replace('"', '&quot;')
-        if len(shorttitle) > 40:
-            shorttitle = shorttitle[:39]+"&#8230;"
-        self.html += u'<h2 title="'+title+'">'+shorttitle+u'</h2>'
+        title = entry["title"].replace('"', '&quot;')
+        self.html += u'<h2 title="'+title+'">'+title+u'</h2>'
         if "embeded" in entry and entry["embeded"]:
             self.html += '<div class="media">'
             if "image" in entry and entry["image"]:
