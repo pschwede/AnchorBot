@@ -69,26 +69,15 @@ class WebkitBrowser(gtk.ScrolledWindow):
     def open(self, uri):
         self.browser.open(uri)
 
-    def _style(self): # TODO load from file
-        return """
-        body {
-            display: none;
-        }
-        a[href^="about:"] {
-            padding-right: 1em;
-        }
-        """
+    def style(self):
+        pass #TODO load from file
 
     def openfeed(self, feed):
         self.html = "<html><head>"
         self.html += "</head><style>"+self._style()+"</style>" 
         self.html += '<script type="text/javascript" src="file://'+self.absolute+'/third-party/jquery-1.5.min.js"></script>'
-        self.html += '''<script type="text/javascript">
-        $(document).ready(function() {
-            $(document.body).fadeIn("slow");
-        });
-        </script>'''
         self.html += '<body>'
+        #TODO import style themes and support templates (django api?)
         for entry in feed["entries"]:
             self.html += str(widgets.htmlSmallWidget(entry))
         self.html += "</body></html>"
