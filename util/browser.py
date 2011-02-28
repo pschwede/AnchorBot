@@ -69,8 +69,8 @@ class WebkitBrowser(gtk.ScrolledWindow):
     def open(self, uri):
         self.browser.open(uri)
 
-    def style(self):
-        pass #TODO load from file
+    def _style(self):
+        return "" #TODO load from file
 
     def openfeed(self, feed):
         self.html = "<html><head>"
