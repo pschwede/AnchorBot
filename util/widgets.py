@@ -41,7 +41,7 @@ class tweet_window(gtk.Dialog):
         resp = super(tweet_window, self).run()
         if resp == gtk.RESPONSE_OK:
             self.hide()
-            return (self.user_entry.get_text(), self.user_password.get_text())
+            return (self.user_entry.get_text(), self.user_password.get_text(), self.text_buf.get_text())
         else:
             self.hide()
             return None

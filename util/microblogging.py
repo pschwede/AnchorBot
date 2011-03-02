@@ -27,15 +27,15 @@ class Microblogger(object):
                     tw = tweet_window(adr[0], *self.__auth_keys, text=text)
                 else:
                     tw = tweet_window(adr[0], text=text)
-                keys = self.__auth_keys[host] = tw.run()
-                if keys:
-                    self.auth = tweepy.BasicAuthHandler(keys[0], keys[1])
+                npt = self.__auth_keys[host] = tw.run()
+                if npt: #tuple of name, password and text
+                    self.auth = tweepy.BasicAuthHandler(npt[0], ntp[1])
                     if len(adr)>1:
                         api_root = "/"+"/".join(adr[1:])
                         self.client = tweepy.API(self.auth, adr[0], api_root=api_root, secure=True)
                     else:
                         self.client = tweepy.API(self.auth, adr[0], secure=True)
-                    self.client.update_status(u""+text)
+                    self.client.update_status(u""+ntp[2])
 
 if __name__ == "__main__":
     mb = Microblogger()
