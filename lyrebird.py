@@ -2,16 +2,18 @@
 
 import feedparser, sys, os, urllib
 import gtk, gtk.gdk, gobject
+import threading, webrowser
+from tempfile import tempdir
+
 from util import browser, analyzer, storage, _
 from util.logger import log
 from util.config import Config
 from util.microblogging import Microblogger
 from util.crawler import Crawler
-import threading
-import webbrowser
 
 HOME = os.path.join(os.path.expanduser("~"),".lyrebird")
 HERE = os.path.realpath(os.path.dirname(__file__))
+TEMP = os.path.join(os.path.realpath(tempdir), "lyrebird/")
 HTML = os.path.join(HOME, "index.html")
 __appname__ = "Lyrebird"
 __version__ = "0.1 Coccatoo"
@@ -27,7 +29,7 @@ class lyrebird(object):
 
         self.browser = browser.WebkitBrowser(HERE)
         self.browser.set_about_handler(self.__about)
-        self.cache = storage.PersistentCacher()
+        self.cache = storage.PersistentCacher(TEMP)
         self.feeds = {}
         self.watched = None
         self.mblog = Microblogger()
