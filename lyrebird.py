@@ -2,7 +2,7 @@
 
 import feedparser, sys, os, urllib
 import gtk, gtk.gdk, gobject
-import threading, webrowser
+import threading, webbrowser
 from tempfile import tempdir
 
 from util import browser, analyzer, storage, _
