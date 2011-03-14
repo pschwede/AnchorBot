@@ -3,7 +3,7 @@
 import feedparser, sys, os, urllib
 import gtk, gtk.gdk, gobject
 import threading, webbrowser
-from tempfile import tempdir
+from tempfile import gettempdir
 
 from util import browser, analyzer, storage, _
 from util.logger import log
@@ -13,7 +13,8 @@ from util.crawler import Crawler
 
 HOME = os.path.join(os.path.expanduser("~"),".lyrebird")
 HERE = os.path.realpath(os.path.dirname(__file__))
-TEMP = os.path.join(os.path.realpath(tempdir), "lyrebird/")
+#TEMP = os.path.join(os.path.realpath(gettempdir()), "lyrebird/")
+TEMP = os.path.join(HOME, "cache/")
 HTML = os.path.join(HOME, "index.html")
 __appname__ = "Lyrebird"
 __version__ = "0.1 Coccatoo"
@@ -83,7 +84,8 @@ class lyrebird(object):
         self.groups.connect("cursor_changed", self._cell_clicked)
 
         groups_model = gtk.TreeStore(str,str)
-        self.feeds_iter = groups_model.append(None, [_("Feeds"), None])
+        self.treedic = {}
+        self.treedic["Feeds"] = groups_model.append(None, [_("Feeds"), None])
         self.groups.set_model(groups_model)
 
         cat_cell = gtk.CellRendererText()
@@ -138,17 +140,15 @@ class lyrebird(object):
 
     def update_feeds_tree(self, url):
         gtk.gdk.threads_enter()
+        feed = self.feeds[url]
+        if url in self.treedic.keys():
+            self.groups.get_model().remove(self.treedic[url])
+        title = url
         try:
-            feed = self.feeds[url]
-            self.groups.get_model().append(self.feeds_iter, [feed["feed"]["title"], url])
-        except KeyError: #feed doesn't exist
-            self.groups.get_model().remove(self.feeds_iter)
-            self.feeds_iter = self.groups.get_model().append(None, [_("Feeds"), None])
-            for url,feed in self.feeds.items(): #TODO find a better way
-                try:
-                    self.groups.get_model().append(self.feeds_iter, [feed["feed"]["title"], url])
-                except KeyError:
-                    log( "couldn't find feed['feed']['title'] of %s ?" % url)
+            title = feed["feed"]["title"]
+        except KeyError:
+            log("Couldn't find [feed][title] in "+url)
+        self.treedic[url] = self.groups.get_model().append(self.treedic["Feeds"], [title, url])
         self.groups.expand_all()
         gtk.gdk.threads_leave()
 
@@ -199,6 +199,7 @@ class lyrebird(object):
         self.feeds[feedurl] = feedparser.parse(self.cache[feedurl])
         for entry in self.feeds[feedurl]["entries"]:
             entry = self.crawler.enrich(entry)
+        log("*** " + str(self.feeds.keys().index(feedurl)) + " of " + str(len(self.feeds)))
         if callback:
             callback(feedurl)
 
@@ -220,7 +221,6 @@ class lyrebird(object):
         else:
             #TODO analyze first
             self.download_all(self.update_feeds_tree)
-            #self.browser.openfeed(self.feeds.values()[-1])
         self.watched = url
 
     def _cell_clicked(self, view):

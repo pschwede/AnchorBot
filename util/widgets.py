@@ -41,7 +41,9 @@ class tweet_window(gtk.Dialog):
         resp = super(tweet_window, self).run()
         if resp == gtk.RESPONSE_OK:
             self.hide()
-            return (self.user_entry.get_text(), self.user_password.get_text(), self.text_buf.get_text())
+            return (self.user_entry.get_text(), 
+                    self.user_password.get_text(), 
+                    self.text_buf.get_text(self.text_buf.get_start_iter(), self.text_buf.get_end_iter()),)
         else:
             self.hide()
             return None
@@ -66,10 +68,13 @@ class htmlSmallWidget():
             try:
                 self.html += str(entry["content"][0]["value"])
             except KeyError:
-                log(entry)
+                log("couldn't find [content[0][value] in "+title) #log(entry)
         self.html += '<div class="small">'
-        self.html += '<a href="'+entry["links"][0]["href"]+'">Source</a>'
-        self.html += '<a href="about:share?url='+entry["links"][0]["href"]+'&text='+entry["title"]+'">Share</a>'
+        try:
+            self.html += '<a href="'+entry["links"][0]["href"]+'">Source</a>'
+            self.html += '<a href="about:share?url='+entry["links"][0]["href"]+'&text='+entry["title"]+'">Share</a>'
+        except KeyError:
+            log("coudln't find [links][0][href] in "+title) #log(entry)
         self.html += '</div>'
         self.html += '</div>'
 

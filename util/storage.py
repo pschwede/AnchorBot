@@ -32,16 +32,25 @@ class PersistentCacher(object):
         self.stor = {}
         self.localdir = os.path.realpath(os.path.dirname(localdir))
         if not os.path.isdir(localdir):
-            log("%s did not exist until now." % localdir)
             os.mkdir(localdir)
         self.dloader = urllib.FancyURLopener()
         self.exp = -1
-        self.donotdl = (".swf")
+        self.donotdl = (".swf",)
+
+    def __newurl(self, url):
+        newurl = os.path.join(self.localdir, str(hash(url)).replace("-","0"))
+        ending = os.path.splitext(url)[-1]
+        if ending:
+            newurl += ending
+        else:
+            newurl += ".xml"
+        return newurl
+
 
     def __getitem__(self, url, verbose=False):
         if url[-4:] in self.donotdl:
             if verbose:
-                log("ignoring "+ url)
+                log("Ignoring "+ url)
             return url
         try:
             res = self.stor[url]
@@ -49,12 +58,7 @@ class PersistentCacher(object):
                 log("Getting %s from cache." % url)
             return res
         except KeyError:
-            newurl = os.path.join(self.localdir, str(hash(url)).replace("-","0"))
-            ending = os.path.splitext(url)[-1]
-            if ending:
-                newurl += ending
-            else:
-                newurl += ".xml"
+            newurl = self.__newurl(url)
             self.stor[url] = newurl
             self.stor[newurl] = newurl
             if os.path.exists(newurl):
@@ -63,15 +67,20 @@ class PersistentCacher(object):
                     log("Using old cached %s for %s." % (newurl, url, ))
                 return newurl
             else:
-                log("Downloading %s." % url)
-                self.dloader.retrieve(url, newurl) #TODO make it threaded
                 if verbose:
-                    log("Cached %s to %s." % (url, newurl, ))
+                    log("Downloading %s." % url)
+                try:
+                    self.dloader.retrieve(url, newurl)
+                    if verbose:
+                        log("Cached %s to %s." % (url, newurl, ))
+                except IOError:
+                    log("IOError: Filename too long?")
                 return newurl
 
     def __delitem__(self, url):
         try:
             os.remove(self.stor[url])
+            del self.stor[self.__newurl(url)]
             del self.stor[url]
         except:
             pass # oll korrect

@@ -14,7 +14,7 @@ class Crawler(object):
     def __init__(self, cacher, proxies=None):
         self.opener = urllib.FancyURLopener(proxies)
         self.re_img = re.compile('((?<=<img src=["\'])[^"\']*(?=["\'])|(?<=<img src=["\'])[^"\']*(?=["\']))', re.I)
-        self.re_a = re.compile('(?<=href=").*(?=")', re.I)
+        self.re_a = re.compile('(?<=href=")[^"\']*(?=")', re.I)
         self.re_emb = re.compile('(?<=["\'])[^"\']+\.swf[^"\']*(?=["\'])', re.I)
         self.cache = cacher # for not retrieving things twice!
 
@@ -79,6 +79,7 @@ class Crawler(object):
         biggest = None
         imagelist = list(set(imagelist))
         x, y = 0, 0
+        errors =  []
         for imgurl in imagelist:
             try:
                 im = Image.open(self.cache[imgurl])
@@ -87,12 +88,15 @@ class Crawler(object):
                     x, y = im.size
                     biggest = imgurl
             except IOError:
-                log("PIL: Couldn't open %s" % self.cache[imgurl])
+                errors.append(self.cache[imgurl])
+        if errors:
+            log("PIL: "+str(errors))
         return biggest
 
     def closest_image(self, imagelist, x, y):
         closest = None
         dx, dy = 10**10, 10**10
+        errors = []
         for imgurl in imagelist:
             try:
                 im = Image.open(self.cache[imgurl])
@@ -100,7 +104,9 @@ class Crawler(object):
                     dx, dy = abs(im.size[0]-x), abs(im.size[1]-y)
                     closest = imgurl
             except IOError:
-                log("PIL: Couldn't open %s" % self.cache[imgurl])
+                errors.append(self.cache[imgurl])
+        if errors:
+            log("PIL: "+str(errors))
         return closest
 
     def links(self, url):
@@ -124,7 +130,7 @@ class Crawler(object):
             else:
                 entry["embeded"] = None
         except KeyError:
-            log( entry)
+            pass # log(entry)
         return entry
         
 
