@@ -2,7 +2,7 @@
 
 import feedparser, sys, os, urllib
 import gtk, gtk.gdk, gobject
-import threading, webbrowser
+import threading, webbrowser, Queue
 from tempfile import gettempdir
 
 from util import browser, analyzer, storage, _
@@ -16,6 +16,7 @@ HERE = os.path.realpath(os.path.dirname(__file__))
 #TEMP = os.path.join(os.path.realpath(gettempdir()), "lyrebird/")
 TEMP = os.path.join(HOME, "cache/")
 HTML = os.path.join(HOME, "index.html")
+NUMT = 4 # Number of download pipes
 __appname__ = "Lyrebird"
 __version__ = "0.1 Coccatoo"
 __author__ = "spazzpp2"
@@ -27,6 +28,12 @@ class lyrebird(object):
         except:
             print _("It seams as if Lyrebird is already running. If not, please remove ~/.lyrebird/lock")
             sys.exit(1)
+
+        self.dl_queue = Queue.Queue()
+        for i in range(NUMT):
+            t = threading.Thread(target=self.__dl_worker, args=(False, self.update_feeds_tree, ))
+            t.daemon = True
+            t.start()
 
         self.browser = browser.WebkitBrowser(HERE)
         self.browser.set_about_handler(self.__about)
@@ -166,7 +173,7 @@ class lyrebird(object):
         gtk.main_quit()
 
     def new_feed_dialog(self):
-        w = gtk.Window() #gtk.WINDOW_POPUP)
+        w = gtk.Window(gtk.WINDOW_POPUP)
 
         table = gtk.Table(2,2)
         table.set_row_spacings(3)
@@ -179,6 +186,7 @@ class lyrebird(object):
 
         url_entry = gtk.Entry()
         table.attach(url_entry, 1, 2, 0, 1)
+        url_entry.set_focus(True)
 
         hbox = gtk.HBox(True)
         table.attach(hbox, 0, 2, 1, 2)
@@ -193,6 +201,12 @@ class lyrebird(object):
 
         w.show_all()
 
+    def __dl_worker(self, cached=False, callback=None):
+        while True:
+            url = self.dl_queue.get()
+            self.download(url, cached, callback)
+            self.dl_queue.task_done()
+
     def download(self, feedurl, cached=True, callback=None):
         if not cached:
             del self.cache[feedurl]
@@ -204,12 +218,8 @@ class lyrebird(object):
             callback(feedurl)
 
     def download_all(self, callback=None):
-        if callback:
-            for url in self.config.get_abos():
-                threading.Thread(target=self.download, args=(url,False,callback)).start()
-        else:
-            for url in self.config.get_abos():
-                threading.Thread(target=self.download, args=(url,False,None)).start()
+        for url in self.config.get_abos():
+            self.dl_queue.put_nowait(url)
 
     def show(self, url=None):
         if not url and self.watched:
