@@ -50,7 +50,7 @@ class Crawler(object):
         f = open(f, 'r')
         m = self.re_emb.findall("\n".join(f.readlines()))
         for item in m:        
-            if not item.startswith(url[:4]):
+            if len( item ) >= 4 and not item.startswith(str(url)[:4]):
                item = os.path.dirname(url)+"/"+item 
             embeds.append(self.cache[item])
         f.close()
@@ -114,7 +114,7 @@ class Crawler(object):
         links = []
         f = open(self.cache[url], 'r')
         for item in self.re_a.findall("\n".join(f.readlines())):
-            if not item.startswith(url[:4]):
+            if len( item ) >= 4 and not str(item).startswith(str(url)[:4]):
                 item = os.path.dirname(url)+"/"+item
             links.append(item)
         f.close()
