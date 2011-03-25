@@ -18,7 +18,7 @@ class Crawler(object):
         self.re_emb = re.compile('(?<=["\'])[^"\']+\.swf[^"\']*(?=["\'])', re.I)
         self.cache = cacher # for not retrieving things twice!
 
-    def images(self, url, linked=False):
+    def images_on_webpage(self, url, linked=False):
         url = url.replace("\/","/")
         filetypes = ("jpg", "png","gif","jpeg")
         for typ in filetypes:
@@ -28,15 +28,22 @@ class Crawler(object):
         f = self.cache[url]
         f = open(f, 'r')
         m = self.re_img.findall("\n".join(f.readlines()))
+        f.close()
         for item in m:        
             images.append(self.cache[urljoin(url, item)])
-        f.close()
         if linked:
             for item in self.links(url):
                 for typ in filetypes:
                     if item.lower().endswith(typ):
                         images += [urljoin(url, item)]
         return list(set(images))
+
+    def images_in_htmltext(self, htmltext):
+        images = []
+        m = self.re_img.findall(htmltext) # images must be absolutely adressed!
+        for item in m:
+            images.append(self.cache[item])
+        return images
 
     def embededs(self, url, linked=False, verbose=False):
         url = url.replace("\/","/")
@@ -120,9 +127,22 @@ class Crawler(object):
         f.close()
         return links
 
+    def clean(self, htmltext):
+        return re.sub("<img[^>]+>", "", re.sub("<[|/]a>", "", htmltext).replace("<div></div>",""))
+
     def enrich(self, entry):
+        # make sure there is a entry[summary]
         try:
-            entry["images"] = self.images(entry["links"][0]["href"], True)
+            entry["summary"]
+        except KeyError:
+            try:
+                entry["summary"] = entry["summary_detail"]["value"]
+            except KeyError:
+                print "No summary could be found: ", entry["title"]
+                return entry
+        # get images in feed
+        try:
+            entry["images"] = self.images_on_webpage(entry["links"][0]["href"], True)
             entry["image"] = self.biggest_image(entry["images"])
             entry["embededs"] = self.embededs(entry["links"][0]["href"])
             if entry["embededs"]:
@@ -130,7 +150,12 @@ class Crawler(object):
             else:
                 entry["embeded"] = None
         except KeyError:
-            pass # log(entry)
+            print "No image and/or embed in ", entry["title"]
+        entry["images"].append(self.images_in_htmltext(entry["summary"]))
+        # TODO Get more text from webpage
+        # clean up the text
+        entry["summary"] = self.clean(entry["summary"])
+        entry["summary_detail"]["value"] = self.clean(entry["summary_detail"]["value"])
         return entry
         
 
