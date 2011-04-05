@@ -157,14 +157,15 @@ class main_window( gtk.Window ):
 
         url_entry = gtk.Entry()
         table.attach( url_entry, 1, 2, 0, 1 )
-        url_entry.set_focus( True )
+        url_entry.set_property("has-focus", True)
 
         hbox = gtk.HBox( True )
         table.attach( hbox, 0, 2, 1, 2 )
 
         ok = gtk.Button( stock=gtk.STOCK_OK )
-        ok.connect( "clicked", lambda x: ( self.add_url( url_entry.get_text() ), w.destroy() ) )
+        ok.connect( "clicked", lambda x: ( self.ctrl.add_url( url_entry.get_text() ), w.destroy() ) )
         hbox.pack_end( ok, False, False )
+        ok.set_property("has-default", True)
 
         cancel = gtk.Button( stock=gtk.STOCK_CANCEL )
         cancel.connect( "clicked", lambda x: w.destroy() )
