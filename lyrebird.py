@@ -69,16 +69,19 @@ class lyrebird( object ):
         self.browser.openfeed( url )
 
     def update_feeds_tree( self, url ):
+        # removes old entry with url and appends a new one
         gtk.gdk.threads_enter()
         feed = self.feeds[url]
-        if url in self.window.treedic.keys():
-            self.window.groups.get_model().remove( self.window.treedic[url] )
+        # find title or set title to url
         title = url
         try:
             title = feed["feed"]["title"]
         except KeyError:
-            log( "Couldn't find [feed][title] in "+url )
-        self.window.treedic[url] = self.window.groups.get_model().append( self.window.treedic["Feeds"], [title, url] )
+            log( "Couldn't find feed[feed][title] in "+url )
+        if url in self.window.treedic.keys():
+            self.window.groups.get_model().set( self.window.treedic[url], 0, title, 1, url )
+        else:
+            self.window.treedic[url] = self.window.groups.get_model().append( self.window.treedic["Feeds"], [title, url] )
         self.window.groups.expand_all()
         gtk.gdk.threads_leave()
 
