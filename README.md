@@ -21,8 +21,8 @@ Requirements
 
 Related Projects
 ----------------
-* [Flipboard](http://flipboard.com/),
-* [Hotot](http://code.google.com/p/hotot),
+* [Flipboard](http://flipboard.com/)
+* [Hotot](http://code.google.com/p/hotot)
 * [Google Reader](http://reader.google.com/)
 
 This project is a tribute to the [bird that retweets](http://youtu.be/7XiQDgNUEMw) the terrifying chainsaws that sew down it's rain forest.
