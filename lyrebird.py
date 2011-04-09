@@ -114,7 +114,7 @@ class lyrebird( object ):
             url = self.watched
         if url:
             if url == self.watched:
-                self.download( url, False )
+                self.dl_queue.put_nowait( url )
             self.browser.openfeed( self.feeds[url] )
         else:
             #TODO analyze first

@@ -56,14 +56,15 @@ class main_window( gtk.Window ):
         self.set_title( self.info["__appname__"] + " " + self.info["__version__"] )
         self.connect( "destroy", self.ctrl.quit )
 
-        hbox = self.hbox = gtk.HBox( False, 0 )
+        #vbox = self.vbox = gtk.VBox( False, 0 )
+        vbox = gtk.VBox()
+        #vbox.pack_start( hbox, True, True )
 
         # BEGIN toolbar
 
         toolbar = gtk.Toolbar()
         toolbar.set_border_width( 0 )
-        toolbar.set_orientation( gtk.ORIENTATION_VERTICAL )
-        hbox.pack_start( toolbar, False, True )
+        vbox.pack_start( toolbar, False, True )
 
         new_tool = gtk.ToolButton( gtk.STOCK_ADD )
         new_tool.connect( "clicked", lambda w: self.new_feed_dialog() )
@@ -92,7 +93,7 @@ class main_window( gtk.Window ):
         # END toolbar
 
         hpaned = gtk.HPaned()
-        hbox.pack_start( hpaned, True, True )
+        vbox.pack_start( hpaned, True, True )
 
         # BEGIN self.groups
 
@@ -122,8 +123,6 @@ class main_window( gtk.Window ):
 
         # END self.groups
 
-        vbox = gtk.VBox()
-        vbox.pack_start( hbox, True, True )
         
         hpaned.pack2( self.ctrl.browser )
         hpaned.set_position( 0 )

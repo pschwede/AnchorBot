@@ -91,7 +91,7 @@ class Crawler(object):
             try:
                 im = Image.open(self.cache[imgurl])
                 imgurl = self.cache[imgurl]
-                if x*y < im.size[0]*im.size[1]:
+                if x * y < im.size[0] * im.size[1]:
                     x, y = im.size
                     biggest = imgurl
             except IOError:
@@ -128,7 +128,7 @@ class Crawler(object):
         return links
 
     def clean(self, htmltext):
-        return re.sub("<img[^>]+>", "", re.sub("<[|/]a>", "", htmltext).replace("<div></div>",""))
+        return re.sub("<img[^>]+>", "", re.sub("</*a>", "", htmltext).replace("<div></div>",""))
 
     def enrich(self, entry):
         # make sure there is a entry[summary]
@@ -141,9 +141,13 @@ class Crawler(object):
                 print "No summary could be found: ", entry["title"]
                 return entry
         # get images in feed
+        entry["images"] = self.images_in_htmltext(entry["summary"])
         try:
-            entry["images"] = self.images_on_webpage(entry["links"][0]["href"], True)
-            entry["image"] = self.biggest_image(entry["images"])
+            if entry["images"] is not []:
+                entry["images"] += self.images_on_webpage(entry["links"][0]["href"], True)
+                entry["image"] = self.biggest_image(entry["images"])
+            else:
+                entry["images"] += self.images_on_webpage(entry["links"][0]["href"], True)
             entry["embededs"] = self.embededs(entry["links"][0]["href"])
             if entry["embededs"]:
                 entry["embeded"] = entry["embededs"][0]
@@ -151,7 +155,6 @@ class Crawler(object):
                 entry["embeded"] = None
         except KeyError:
             print "No image and/or embed in ", entry["title"]
-        entry["images"].append(self.images_in_htmltext(entry["summary"]))
         # TODO Get more text from webpage
         # clean up the text
         entry["summary"] = self.clean(entry["summary"])

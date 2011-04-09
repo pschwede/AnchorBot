@@ -14,10 +14,15 @@ Main Features
 * Analyze feed entries for repeatations in microblogs or other feeds to merge and sort
 * Focus on readability
 
+Requirements
+------------
+* [pyWebkitGTK](http://code.google.com/p/pywebkitgtk/) python-webkit
+* [feedparser](http://feedparser.org/) python-feedparser
+
 Related Projects
 ----------------
-[Flipboard](http://flipboard.com/),
-[Hotot](http://code.google.com/p/hotot),
-[Google Reader](http://reader.google.com/)
+* [Flipboard](http://flipboard.com/),
+* [Hotot](http://code.google.com/p/hotot),
+* [Google Reader](http://reader.google.com/)
 
 This project is a tribute to the [bird that retweets](http://youtu.be/7XiQDgNUEMw) the terrifying chainsaws that sew down it's rain forest.
