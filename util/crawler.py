@@ -128,7 +128,7 @@ class Crawler(object):
         return links
 
     def clean(self, htmltext):
-        return re.sub("<img[^>]+>", "", re.sub("</*a>", "", htmltext).replace("<div></div>",""))
+        return re.sub("<img[^>]+>", "", htmltext.replace("<div></div>",""))
 
     def enrich(self, entry):
         # make sure there is a entry[summary]

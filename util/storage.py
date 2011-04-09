@@ -38,14 +38,7 @@ class PersistentCacher(object):
         self.donotdl = (".swf",)
 
     def __newurl(self, url):
-        newurl = os.path.join(self.localdir, str(hash(url)).replace("-","0"))
-        ending = os.path.splitext(url)[-1]
-        if ending:
-            newurl += ending
-        else:
-            newurl += ".xml"
-        return newurl
-
+        return os.path.join(self.localdir, str(hash(url)).replace("-","0"))
 
     def __getitem__(self, url, verbose=False):
         if url[-4:] in self.donotdl:
@@ -53,29 +46,25 @@ class PersistentCacher(object):
                 log("Ignoring "+ url)
             return url
         try:
-            res = self.stor[url]
+            result = self.stor[url]
             if verbose:
                 log("Getting %s from cache." % url)
-            return res
+            return result
         except KeyError:
             newurl = self.__newurl(url)
-            self.stor[url] = newurl
-            self.stor[newurl] = newurl
-            if os.path.exists(newurl):
-                #TODO check for expiration date ;)
-                if verbose:
-                    log("Using old cached %s for %s." % (newurl, url, ))
-                return newurl
-            else:
-                if verbose:
-                    log("Downloading %s." % url)
-                try:
+            if verbose:
+                log("Downloading %s." % url)
+            try:
+                if not os.path.exists(newurl):
                     self.dloader.retrieve(url, newurl)
-                    if verbose:
-                        log("Cached %s to %s." % (url, newurl, ))
-                except IOError:
+                if verbose:
+                    log("Cached %s to %s." % (url, newurl, ))
+                self.stor[url] = newurl
+                self.stor[newurl] = newurl
+            except IOError:
+                if verbose:
                     log("IOError: Filename too long?")
-                return newurl
+            return newurl
 
     def __delitem__(self, url):
         try:
