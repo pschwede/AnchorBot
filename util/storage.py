@@ -1,4 +1,8 @@
-import urllib, os
+import urllib, os, time
+try:
+    import cpickle as pickle
+except ImportError:
+    import pickle
 from logger import log
 
 class Cacher(object):
@@ -28,25 +32,39 @@ class Cacher(object):
         self.dic = {}
 
 class PersistentCacher(object):
-    def __init__(self, localdir="/tmp/lyrebird/"):
-        self.stor = {}
+    def __init__(self, localdir="/tmp/lyrebird/", max_age_in_days=-1):
         self.localdir = os.path.realpath(os.path.dirname(localdir))
         if not os.path.isdir(localdir):
             os.mkdir(localdir)
         self.dloader = urllib.FancyURLopener()
         self.exp = -1
-        self.donotdl = (".swf",)
+        self.dont_dl = (".swf",)
+        self.storpath = storpath = os.path.join( localdir, "agedic.pkl" )
+        self.stor = {}
+        if os.path.exists( storpath ):
+            try:
+                self.stor = pickle.load( open(storpath, 'r') )
+            except EOFError:
+                print "Cache corrupted.."
+                for f in os.listdir( localdir ):
+                    os.remove(os.path.join(localdir, f))
+            self.check_for_old_files(max_age_in_days)
+
+    def check_for_old_files(self, max_age_in_days):
+        then = time.time() - max_age_in_days*24*60*60
+        for url, (newurl,creation) in filter(lambda x: x[1][1]<then, self.stor.items()):
+            del self[url]
 
     def __newurl(self, url):
         return os.path.join(self.localdir, str(hash(url)).replace("-","0"))
 
     def __getitem__(self, url, verbose=False):
-        if url[-4:] in self.donotdl:
+        if url[-4:] in self.dont_dl:
             if verbose:
                 log("Ignoring "+ url)
             return url
         try:
-            result = self.stor[url]
+            result, tt = self.stor[url]
             if verbose:
                 log("Getting %s from cache." % url)
             return result
@@ -59,8 +77,7 @@ class PersistentCacher(object):
                     self.dloader.retrieve(url, newurl)
                 if verbose:
                     log("Cached %s to %s." % (url, newurl, ))
-                self.stor[url] = newurl
-                self.stor[newurl] = newurl
+                self.stor[url] = self.stor[newurl] = (newurl, time.time())
             except IOError:
                 if verbose:
                     log("IOError: Filename too long?")
@@ -73,6 +90,10 @@ class PersistentCacher(object):
             del self.stor[url]
         except:
             pass # oll korrect
+        pickle.dump(self.stor, open(self.storpath, 'w'))
+
+    def __del__(self):
+        pickle.dump(self.stor, open(self.storpath, 'w'))
 
     def clear():
         for url in self.stor.values():

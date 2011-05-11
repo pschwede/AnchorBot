@@ -131,7 +131,6 @@ class main_window( gtk.Window ):
         vbox.pack_start( self.status, False, True )
 
         self.add( vbox )
-        self.set_size_request( 640, 480 )
         self.show_all()
 
     def _cell_clicked( self, view ):

@@ -27,7 +27,7 @@ class lyrebird( object ):
         try:
             self.config = Config( HOME ) # Raises Exception if locked
         except:
-            print _( "It seams as if Lyrebird is already running. If not, please remove ~/.lyrebird/lock" )
+            print _( "It seems as if Lyrebird is already running. If not, please remove ~/.lyrebird/lock" )
             sys.exit( 1 )
 
         self.dl_queue = Queue.Queue()
@@ -38,7 +38,7 @@ class lyrebird( object ):
 
         self.browser = browser.WebkitBrowser( HERE )
         self.browser.set_about_handler( self.__about )
-        self.cache = storage.PersistentCacher( TEMP )
+        self.cache = storage.PersistentCacher( TEMP, 3 ) # keeps files for 3 days
         self.feeds = {}
         self.watched = None
         self.mblog = Microblogger()

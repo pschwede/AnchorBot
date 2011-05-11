@@ -16,6 +16,7 @@ class Crawler(object):
         self.re_img = re.compile('((?<=<img src=["\'])[^"\']*(?=["\'])|(?<=<img src=["\'])[^"\']*(?=["\']))', re.I)
         self.re_a = re.compile('(?<=href=")[^"\']*(?=")', re.I)
         self.re_emb = re.compile('(?<=["\'])[^"\']+\.swf[^"\']*(?=["\'])', re.I)
+        self.re_cln = re.compile('((<img[^>]+>)|(<div>\s*</div>))', re.I)
         self.cache = cacher # for not retrieving things twice!
 
     def images_on_webpage(self, url, linked=False):
@@ -128,7 +129,7 @@ class Crawler(object):
         return links
 
     def clean(self, htmltext):
-        return re.sub("<img[^>]+>", "", htmltext.replace("<div></div>",""))
+        return self.re_cln.sub("", htmltext)
 
     def enrich(self, entry):
         # make sure there is a entry[summary]

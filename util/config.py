@@ -1,8 +1,40 @@
-import os
+import os, threading, time
 try:
     import cpickle as pickle
 except:
     import pickle
+
+class SelfRenewingLock(threading.Thread):
+
+    def __init__(self, lockfile, dtime=13):
+        super(SelfRenewingLock, self).__init__()
+        self.lockfile = lockfile
+        self.__locked = False
+        self.DTIME = dtime
+        self.daemon = True
+
+    def run(self):
+        while(True):
+            self.__renew()
+            time.sleep(self.DTIME)
+
+    def __renew(self):
+        f = open(self.lockfile, 'w')
+        pickle.dump(list(time.localtime())[:5], f, -1)
+
+    def locked(self):
+        if self.__locked:
+            return self.__locked
+        elif os.path.exists(self.lockfile):
+            old = pickle.load(open(self.lockfile, 'r'))
+            old[-1] += self.DTIME
+            self.__locked = old >= list(time.localtime())[:5]
+        else:
+            self.__locked = False
+        return self.__locked
+
+    def __del__(self):
+        os.remove(self.lockfile)
 
 class Config(object):
 
@@ -11,16 +43,13 @@ class Config(object):
     def __init__(self, path, defaults=dict(), defaultabos=set()):
         self.path = os.path.realpath(path)
         self.lockfile = os.path.join(self.path, "lock")
-        self.locked = self.__locked()
+        self.lock = SelfRenewingLock(self.lockfile)
+        self.locked = self.lock.locked()
         if self.locked:
-            self.locked = True
             raise Exception
-        else:
-            f = open(self.lockfile, 'w')
-            f.write("LOCK")
-            f.close()
         if not os.path.isdir(self.path):
             os.mkdir(self.path)
+        self.lock.start()
         self.configfile = os.path.join(self.path, "config")
         self.abofile = os.path.join(self.path, "abos")
         if os.path.exists(self.abofile):
@@ -35,9 +64,6 @@ class Config(object):
         else:
             self.config = defaults
             self.write_config()
-
-    def __locked(self):
-        return self.locked or os.path.exists(self.lockfile)
 
     def read_config(self):
         f = open(self.configfile, 'r')
@@ -82,4 +108,10 @@ class Config(object):
         if not self.locked:
             self.write_abos()
             self.write_config()
-            os.remove(self.lockfile)
+            del self.lock
+
+if __name__ == "__main__":
+    s = SelfRenewingLock("/tmp/testlock", 1)
+    print s.locked()
+    s.start()
+    print s.locked()
