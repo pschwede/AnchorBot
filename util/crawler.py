@@ -131,37 +131,38 @@ class Crawler(object):
     def clean(self, htmltext):
         return self.re_cln.sub("", htmltext)
 
-    def enrich(self, entry):
-        # make sure there is a entry[summary]
-        try:
-            entry["summary"]
-        except KeyError:
+    def enrich(self, feed):
+        is_tweet = True
+        for entry in feed["entries"]:
+            # make sure there is a entry[summary]
             try:
-                entry["summary"] = entry["summary_detail"]["value"]
+                entry["summary"]
             except KeyError:
-                print "No summary could be found: ", entry["title"]
-                return entry
-        # get images in feed
-        entry["images"] = self.images_in_htmltext(entry["summary"])
-        try:
-            if entry["images"] is not []:
-                entry["images"] += self.images_on_webpage(entry["links"][0]["href"], True)
-                entry["image"] = self.biggest_image(entry["images"])
-            else:
-                entry["images"] += self.images_on_webpage(entry["links"][0]["href"], True)
-            entry["embededs"] = self.embededs(entry["links"][0]["href"])
-            if entry["embededs"]:
-                entry["embeded"] = entry["embededs"][0]
-            else:
-                entry["embeded"] = None
-        except KeyError:
-            print "No image and/or embed in ", entry["title"]
-        # TODO Get more text from webpage
-        # clean up the text
-        entry["summary"] = self.clean(entry["summary"])
-        entry["summary_detail"]["value"] = self.clean(entry["summary_detail"]["value"])
-        return entry
-        
+                try:
+                    entry["summary"] = entry["summary_detail"]["value"]
+                except KeyError:
+                    print "No summary could be found: ", entry["title"]
+                    return entry
+            is_tweet &= len(entry["summary"]) == 140
+            # get images in feed
+            entry["images"] = self.images_in_htmltext(entry["summary"])
+            try:
+                if entry["images"] is not []:
+                    entry["images"] += self.images_on_webpage(entry["links"][0]["href"], True)
+                    entry["image"] = self.biggest_image(entry["images"])
+                else:
+                    entry["images"] += self.images_on_webpage(entry["links"][0]["href"], True)
+                entry["embededs"] = self.embededs(entry["links"][0]["href"])
+                if entry["embededs"]:
+                    entry["embeded"] = entry["embededs"][0]
+                else:
+                    entry["embeded"] = None
+            except KeyError:
+                print "No image and/or embed in ", entry["title"]
+            # TODO Get more text from webpage
+            # clean up the text
+            entry["summary"] = self.clean(entry["summary"])
+            entry["summary_detail"]["value"] = self.clean(entry["summary_detail"]["value"])
 
 if __name__ == "__main__":
     c = Crawler(PersistentCacher())

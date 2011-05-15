@@ -77,7 +77,7 @@ class lyrebird( object ):
         try:
             title = feed["feed"]["title"]
         except KeyError:
-            log( "Couldn't find feed[feed][title] in "+url )
+            log( "Couldn't find feed[feed][title] in %s" % url )
         if url in self.window.treedic.keys():
             self.window.groups.get_model().set( self.window.treedic[url], 0, title, 1, url )
         else:
@@ -97,10 +97,10 @@ class lyrebird( object ):
 
     def download( self, feedurl, cached=True, callback=None ):
         if not cached:
-            del self.cache[feedurl]
-        self.feeds[feedurl] = feedparser.parse( self.cache[feedurl] )
-        for entry in self.feeds[feedurl]["entries"]:
-            entry = self.crawler.enrich( entry )
+            self.feeds[feedurl] = feedparser.parse( feedurl )
+        else:
+            self.feeds[feedurl] = feedparser.parse( self.cache[feedurl] )
+        self.crawler.enrich(self.feeds[feedurl])
         log( "*** " + str( self.feeds.keys().index( feedurl ) ) + " of " + str( len( self.feeds ) ) )
         if callback:
             callback( feedurl )

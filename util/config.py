@@ -20,20 +20,19 @@ class SelfRenewingLock(threading.Thread):
 
     def __renew(self):
         f = open(self.lockfile, 'w')
-        pickle.dump(list(time.localtime())[:5], f, -1)
+        pickle.dump(time.time(), f)
 
     def locked(self):
         if self.__locked:
             return self.__locked
         elif os.path.exists(self.lockfile):
             old = pickle.load(open(self.lockfile, 'r'))
-            old[-1] += self.DTIME
-            self.__locked = old >= list(time.localtime())[:5]
+            self.__locked = old - time.time() < self.DTIME
         else:
             self.__locked = False
         return self.__locked
 
-    def __del__(self):
+    def quit(self):
         os.remove(self.lockfile)
 
 class Config(object):
@@ -108,7 +107,7 @@ class Config(object):
         if not self.locked:
             self.write_abos()
             self.write_config()
-            del self.lock
+            self.lock.quit()
 
 if __name__ == "__main__":
     s = SelfRenewingLock("/tmp/testlock", 1)
