@@ -17,7 +17,7 @@ HERE = os.path.realpath( os.path.dirname( __file__ ) )
 #TEMP = os.path.join( os.path.realpath( gettempdir() ), "lyrebird/" )
 TEMP = os.path.join( HOME, "cache/" )
 HTML = os.path.join( HOME, "index.html" )
-NUMT = 4
+NUMT = 8
 __appname__ = "Lyrebird"
 __version__ = "0.1 Coccatoo"
 __author__ = "spazzpp2"
@@ -31,8 +31,16 @@ class lyrebird( object ):
 
         # echo cache
         if cache_only:
+            # kill all threads
+            #self.dl_queue = Queue.Queue()
+            self.dl_running = False
+            self.dl_queue.join()
+            # print
             self.cache.pprint()
-            sys.exit( 0 )
+            # quit
+            self.cache.quit()
+            self.config.quit()
+            sys.exit(0)
 
     def __prepare( self ):
         # load config
@@ -45,7 +53,7 @@ class lyrebird( object ):
         # prepare cached browser
         self.browser = browser.WebkitBrowser( HERE )
         self.browser.set_about_handler( self.__about )
-        self.cache = storage.PersistentCacher( TEMP, 3 ) # keeps files for 3 days
+        self.cache = storage.PersistentCacher( TEMP, 3 , self.verbose) # keeps files for 3 days
 
         # prepare variables and lists,...
         self.feeds = {}
@@ -62,6 +70,7 @@ class lyrebird( object ):
     def __setup_dl_pipes( self ):
         # setup download pipes
         self.dl_queue = Queue.Queue()
+        self.dl_running = True
         for i in range( NUMT ):
             t = threading.Thread( target=self.__dl_worker, args=( False, self.update_feeds_tree,  ) )
             t.daemon = True
@@ -106,11 +115,17 @@ class lyrebird( object ):
         gtk.gdk.threads_leave()
 
     def quit( self, stuff=None ):
+        # stop downloading
+        #self.dl_queue = Queue.Queue()
+        self.dl_running = False
+        self.dl_queue.join()
+        # quit
+        self.cache.quit()
         self.config.quit()
         gtk.main_quit()
 
     def __dl_worker( self, cached=False, callback=None ):
-        while True:
+        while self.dl_running:
             url = self.dl_queue.get()
             self.download( url, cached, callback )
             self.dl_queue.task_done()

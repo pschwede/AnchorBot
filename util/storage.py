@@ -32,60 +32,63 @@ class Cacher(object):
         self.dic = {}
 
 class PersistentCacher(object):
-    def __init__(self, localdir="/tmp/lyrebird/", max_age_in_days=-1):
+    def __init__(self, localdir="/tmp/lyrebird/", max_age_in_days=-1, verbose=False):
+        self.verbose = verbose
+        self.max_age_in_days = max_age_in_days
         self.localdir = os.path.realpath(os.path.dirname(localdir))
         if not os.path.isdir(localdir):
             os.mkdir(localdir)
         self.dloader = urllib.FancyURLopener()
         self.exp = -1
         self.dont_dl = (".swf",)
-        self.storpath = storpath = os.path.join( localdir, "agedic.pkl" )
+        self.storpath = storpath = os.path.join( self.localdir, "agedic.pkl" )
         self.stor = {}
         successful = False
         if os.path.exists( storpath ):
             try:
                 self.stor = pickle.load( open(storpath, 'r') )
-                self.check_for_old_files(max_age_in_days)
                 successful = True
-            except EOFError:
-                print "Cache corrupted.."
-        elif not successful:
-            print "Deleting cache.."
-            for f in os.listdir( localdir ):
-                os.remove(os.path.join(localdir, f))
-
+            except:
+                log("Cache corrupted.. will try to rebuild it.")
 
     def check_for_old_files(self, max_age_in_days):
+        # first search for really existing && unrotten files,
+        # then burn the rest.
+        existing = set([self.storpath])
         then = time.time() - max_age_in_days*24*60*60
-        for url, (newurl,creation) in filter(lambda x: x[1][1]<then, self.stor.items()):
-            self.__remove_item(url)
+        for url, (newurl,creation) in self.stor.items():
+            if creation < then:
+                self.__remove_item(url)
+            else:
+                existing.add(newurl)
+        files = [os.path.join(self.localdir, f) for f in os.listdir(self.localdir)]
+        for f in set(files).difference(existing):
+            os.remove(os.path.join( self.localdir, f))
 
     def __newurl(self, url):
-        return os.path.join(self.localdir, str(hash(url)).replace("-","0"))
+        return os.path.join(self.localdir, str(hex(hash(url))).replace("-","0"))
 
-    def __getitem__(self, url, verbose=False):
+    def __getitem__(self, url):
         if url[-4:] in self.dont_dl:
-            if verbose:
-                log("Ignoring "+ url)
+            self.verbose and log("Ignoring "+ url)
             return url
         try:
             result, tt = self.stor[url]
-            if verbose:
-                log("Getting %s from cache." % url)
+            if not os.path.exists(result):
+                raise KeyError()
+            self.stor[url] = self.stor[self.stor[url]] = (self.stor[url][0], time.time())
+            self.verbose and log("Getting %s from cache." % url)
             return result
         except KeyError:
             newurl = self.__newurl(url)
-            if verbose:
-                log("Downloading %s." % url)
+            self.verbose and log("Downloading %s." % url)
             try:
                 if not os.path.exists(newurl):
                     self.dloader.retrieve(url, newurl)
-                if verbose:
-                    log("Cached %s to %s." % (url, newurl, ))
+                self.verbose and log("Cached %s to %s." % (url, newurl, ))
                 self.stor[url] = self.stor[newurl] = (newurl, time.time())
             except IOError:
-                if verbose:
-                    log("IOError: Filename too long?")
+                self.verbose and log("IOError: Filename too long?") 
             return newurl
 
     def __remove_item(self, url):
@@ -95,7 +98,6 @@ class PersistentCacher(object):
             del self.stor[url]
         except:
             pass # oll korrect
-        pickle.dump(self.stor, open(self.storpath, 'w'))
 
     def __delitem__(self, url):
         self.__remove_item(url)
@@ -103,18 +105,24 @@ class PersistentCacher(object):
     def pprint(self):
         try:
             import pprint as p
-            p.pprint(self.stor, indent=2, width=78)
+            p.pprint(self.stor, indent=2, width=50)
         except ImportError:
             print(self.stor)
 
     def quit(self):
-        pickle.dump(self.stor, open(self.storpath, 'w'))
+        done = False
+        while not done:
+            try:
+                pickle.dump(self.stor, open(self.storpath, 'w'))
+                done = True
+            except RuntimeError:
+                pass
+        self.check_for_old_files(self.max_age_in_days)
 
     def clear():
         for url in self.stor.values():
             os.remove(url) # uh oh
         self.stor = {}
-        pickle.dump(self.stor, open(self.storpath, 'w'))
 
 if __name__ == "__main__":
     c = Cacher()
