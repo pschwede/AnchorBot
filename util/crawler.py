@@ -11,13 +11,14 @@ Follows redirections and delivers some useful functions for remote images.
 """
 
 class Crawler(object):
-    def __init__(self, cacher, proxies=None):
+    def __init__(self, cacher, proxies=None, verbose=False):
         self.opener = urllib.FancyURLopener(proxies)
         self.re_img = re.compile('((?<=<img src=["\'])[^"\']*(?=["\'])|(?<=<img src=["\'])[^"\']*(?=["\']))', re.I)
         self.re_a = re.compile('(?<=href=")[^"\']*(?=")', re.I)
         self.re_emb = re.compile('(?<=["\'])[^"\']+\.swf[^"\']*(?=["\'])', re.I)
         self.re_cln = re.compile('((<img[^>]+>)|(<div>\s*</div>))', re.I)
         self.cache = cacher # for not retrieving things twice!
+        self.verbose = verbose
 
     def images_on_webpage(self, url, linked=False):
         url = url.replace("\/","/")
@@ -97,7 +98,7 @@ class Crawler(object):
                     biggest = imgurl
             except IOError:
                 errors.append(self.cache[imgurl])
-        if errors:
+        if errors and self.verbose:
             log("PIL: "+str(errors))
         return biggest
 
@@ -113,7 +114,7 @@ class Crawler(object):
                     closest = imgurl
             except IOError:
                 errors.append(self.cache[imgurl])
-        if errors:
+        if errors and self.verbose:
             log("PIL: "+str(errors))
         return closest
 
@@ -141,7 +142,8 @@ class Crawler(object):
                 try:
                     entry["summary"] = entry["summary_detail"]["value"]
                 except KeyError:
-                    print "No summary could be found: ", entry["title"]
+                    if self.verbose:
+                        log("No summary could be found: %s" % entry["title"])
                     return entry
             is_tweet &= len(entry["summary"]) == 140
             # get images in feed
@@ -158,7 +160,8 @@ class Crawler(object):
                 else:
                     entry["embeded"] = None
             except KeyError:
-                print "No image and/or embed in ", entry["title"]
+                if self.verbose:
+                    log("No image and/or embed in %s" % entry["title"])
             # TODO Get more text from webpage
             # clean up the text
             entry["summary"] = self.clean(entry["summary"])

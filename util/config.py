@@ -24,12 +24,10 @@ class SelfRenewingLock(threading.Thread):
 
     def locked(self):
         if self.__locked:
-            return self.__locked
+            return True
         elif os.path.exists(self.lockfile):
             old = pickle.load(open(self.lockfile, 'r'))
-            self.__locked = old - time.time() < self.DTIME
-        else:
-            self.__locked = False
+            self.__locked = time.time() - old <= self.DTIME
         return self.__locked
 
     def quit(self):
@@ -39,7 +37,8 @@ class Config(object):
 
     locked = False
 
-    def __init__(self, path, defaults=dict(), defaultabos=set()):
+    def __init__(self, path, defaults=dict(), defaultabos=set(), verbose=False):
+        self.verbose = verbose
         self.path = os.path.realpath(path)
         self.lockfile = os.path.join(self.path, "lock")
         self.lock = SelfRenewingLock(self.lockfile)
@@ -54,7 +53,8 @@ class Config(object):
         if os.path.exists(self.abofile):
             f = open(self.abofile, 'r')
             self.abos = set(filter(lambda x: len(x)>0, f.read().split("\n")))
-            print self.abos
+            if self.verbose:
+                print "Abos: %s" % self.abos
             f.close()
         else:
             self.abos = defaultabos

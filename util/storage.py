@@ -41,19 +41,24 @@ class PersistentCacher(object):
         self.dont_dl = (".swf",)
         self.storpath = storpath = os.path.join( localdir, "agedic.pkl" )
         self.stor = {}
+        successful = False
         if os.path.exists( storpath ):
             try:
                 self.stor = pickle.load( open(storpath, 'r') )
+                self.check_for_old_files(max_age_in_days)
+                successful = True
             except EOFError:
                 print "Cache corrupted.."
-                for f in os.listdir( localdir ):
-                    os.remove(os.path.join(localdir, f))
-            self.check_for_old_files(max_age_in_days)
+        elif not successful:
+            print "Deleting cache.."
+            for f in os.listdir( localdir ):
+                os.remove(os.path.join(localdir, f))
+
 
     def check_for_old_files(self, max_age_in_days):
         then = time.time() - max_age_in_days*24*60*60
         for url, (newurl,creation) in filter(lambda x: x[1][1]<then, self.stor.items()):
-            del self[url]
+            self.__remove_item(url)
 
     def __newurl(self, url):
         return os.path.join(self.localdir, str(hash(url)).replace("-","0"))
@@ -83,7 +88,7 @@ class PersistentCacher(object):
                     log("IOError: Filename too long?")
             return newurl
 
-    def __delitem__(self, url):
+    def __remove_item(self, url):
         try:
             os.remove(self.stor[url])
             del self.stor[self.__newurl(url)]
@@ -92,13 +97,24 @@ class PersistentCacher(object):
             pass # oll korrect
         pickle.dump(self.stor, open(self.storpath, 'w'))
 
-    def __del__(self):
+    def __delitem__(self, url):
+        self.__remove_item(url)
+
+    def pprint(self):
+        try:
+            import pprint as p
+            p.pprint(self.stor, indent=2, width=78)
+        except ImportError:
+            print(self.stor)
+
+    def quit(self):
         pickle.dump(self.stor, open(self.storpath, 'w'))
 
     def clear():
         for url in self.stor.values():
             os.remove(url) # uh oh
         self.stor = {}
+        pickle.dump(self.stor, open(self.storpath, 'w'))
 
 if __name__ == "__main__":
     c = Cacher()

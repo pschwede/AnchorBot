@@ -201,13 +201,14 @@ class htmlSmallWidget():
             try:
                 self.html += str( entry["content"][0]["value"] )
             except KeyError:
-                log( "couldn't find [content[0][value] in " + title ) #log( entry )
+                pass
+                # log( "couldn't find [content[0][value] in " + title ) #log( entry )
         self.html += '<div class="small">'
         try:
             self.html += '<a href="' + entry["links"][0]["href"] + '">Source</a>'
             self.html += '<a href="about:share?url=' + entry["links"][0]["href"] + '&text=' + entry["title"] + '">Share</a>'
         except KeyError:
-            log( "coudln't find [links][0][href] in " + title ) #log( entry )
+            # log( "coudln't find [links][0][href] in " + title ) #log( entry )
         self.html += '</div>'
         self.html += '</div>'
 

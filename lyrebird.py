@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import feedparser, sys, os, urllib
+import feedparser, sys, os, urllib, argparse
 import gtk, gtk.gdk, gobject
 import threading, webbrowser, Queue
 from tempfile import gettempdir
@@ -17,37 +17,55 @@ HERE = os.path.realpath( os.path.dirname( __file__ ) )
 #TEMP = os.path.join( os.path.realpath( gettempdir() ), "lyrebird/" )
 TEMP = os.path.join( HOME, "cache/" )
 HTML = os.path.join( HOME, "index.html" )
-NUMT = 4 # Number of download pipes
+NUMT = 4
 __appname__ = "Lyrebird"
 __version__ = "0.1 Coccatoo"
 __author__ = "spazzpp2"
 
 class lyrebird( object ):
-    def __init__( self, nogui=False ):
+    def __init__( self, nogui=False, verbose=False, cache_only=False ):
+        self.verbose = verbose
+
+        self.__prepare() # calls exit(1) if instance creation is locked
+        self.__setup_dl_pipes()
+
+        # echo cache
+        if cache_only:
+            self.cache.pprint()
+            sys.exit( 0 )
+
+    def __prepare( self ):
+        # load config
         try:
-            self.config = Config( HOME ) # Raises Exception if locked
+            self.config = Config( HOME, verbose=self.verbose ) # Raises Exception if locked
         except:
-            print _( "It seems as if Lyrebird is already running. If not, please remove ~/.lyrebird/lock" )
+            log(_( "It seems as if Lyrebird is already running. If not, please remove ~/.lyrebird/lock" ))
             sys.exit( 1 )
 
-        self.dl_queue = Queue.Queue()
-        for i in range( NUMT ):
-            t = threading.Thread( target=self.__dl_worker, args=( False, self.update_feeds_tree,  ) )
-            t.daemon = True
-            t.start()
-
+        # prepare cached browser
         self.browser = browser.WebkitBrowser( HERE )
         self.browser.set_about_handler( self.__about )
         self.cache = storage.PersistentCacher( TEMP, 3 ) # keeps files for 3 days
+
+        # prepare variables and lists,...
         self.feeds = {}
         self.watched = None
         self.mblog = Microblogger()
         self.crawler = Crawler( self.cache )
+        self.crawler.verbose = self.verbose
         self.window = main_window( {
                 "__appname__": __appname__,
                 "__version__": __version__,
                 "__author__":  __author__,
             }, self )
+
+    def __setup_dl_pipes( self ):
+        # setup download pipes
+        self.dl_queue = Queue.Queue()
+        for i in range( NUMT ):
+            t = threading.Thread( target=self.__dl_worker, args=( False, self.update_feeds_tree,  ) )
+            t.daemon = True
+            t.start()
 
     def __about( self, uri ):
         if uri.startswith( "about:" ):
@@ -62,7 +80,8 @@ class lyrebird( object ):
                     if arg.startswith( "text=" ):
                         text = urllib.unquote( arg[5:] )
                 if text or url:
-                    log( 'Tweet %s %s' % ( text, url,  ) )
+                    if self.verbose:
+                        log( 'Tweet %s %s' % ( text, url,  ) )
                     self.mblog.send_text( "%s %s" % ( text, url,  ) )
 
     def show_group( self, url ):
@@ -77,7 +96,8 @@ class lyrebird( object ):
         try:
             title = feed["feed"]["title"]
         except KeyError:
-            log( "Couldn't find feed[feed][title] in %s" % url )
+            if self.verbose:
+                log( "Couldn't find feed[feed][title] in %s" % url )
         if url in self.window.treedic.keys():
             self.window.groups.get_model().set( self.window.treedic[url], 0, title, 1, url )
         else:
@@ -101,7 +121,8 @@ class lyrebird( object ):
         else:
             self.feeds[feedurl] = feedparser.parse( self.cache[feedurl] )
         self.crawler.enrich(self.feeds[feedurl])
-        log( "*** " + str( self.feeds.keys().index( feedurl ) ) + " of " + str( len( self.feeds ) ) )
+        if self.verbose:
+            log( "*** " + str( self.feeds.keys().index( feedurl ) ) + " of " + str( len( self.feeds ) ) )
         if callback:
             callback( feedurl )
 
@@ -131,9 +152,9 @@ class lyrebird( object ):
         self.config.del_abo( url )
         self.update_feeds_tree( url )
 
-def main( urls=[] ):
+def main( urls=[], nogui=False, cache_only=False, verbose=False ):
     gobject.threads_init()
-    l = lyrebird()
+    l = lyrebird(nogui, verbose, cache_only)
     gobject.idle_add( l.show )
     for url in urls:
         gobject.idle_add( l.add_url, ( url, ) )
@@ -144,6 +165,7 @@ def get_cmd_options():
 
 if __name__ == "__main__":
     if len( sys.argv ) > 1:
-        main( sys.argv[1:] )
+        if len(sys.argv) > 1:
+            main( sys.argv[1:] if ("-a" in sys.argv) else [], "-n" in sys.argv, "-c" in sys.argv, "-v" in sys.argv )
     else:
         main()
