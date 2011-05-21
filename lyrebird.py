@@ -32,9 +32,7 @@ class lyrebird( object ):
         # echo cache
         if cache_only:
             # kill all threads
-            #self.dl_queue = Queue.Queue()
             self.dl_running = False
-            self.dl_queue.join()
             # print
             self.cache.pprint()
             # quit
@@ -116,9 +114,7 @@ class lyrebird( object ):
 
     def quit( self, stuff=None ):
         # stop downloading
-        #self.dl_queue = Queue.Queue()
         self.dl_running = False
-        self.dl_queue.join()
         # quit
         self.cache.quit()
         self.config.quit()

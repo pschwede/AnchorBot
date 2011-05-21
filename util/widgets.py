@@ -1,9 +1,10 @@
+# -*- coding: iso-8859-15 -*-
 import gtk, pango
 from logger import log
 from util import _
 
 class tweet_window( gtk.Dialog ):
-    def __init__( self, service=None, user=None, password=None, text=None ):
+    def __init__( self, service=None, user="", password="", text="" ):
         super( tweet_window, self ).__init__()
         self.user, self.__password = user, password
         self.service = service
@@ -17,11 +18,13 @@ class tweet_window( gtk.Dialog ):
         self.user_label = gtk.Label( "Name:" )
         table.attach( self.user_label, 0,1,1,2 )
         self.user_entry = gtk.Entry()
+        self.user_entry.set_text(self.user)
         table.attach( self.user_entry, 1,2,1,2 )
 
         self.user_label = gtk.Label( "Password:" )
         table.attach( self.user_label, 0,1,2,3 )
         self.user_password = gtk.Entry()
+        self.user_password.set_text(self.__password)
         self.user_password.set_visibility( False )
         table.attach( self.user_password, 1,2,2,3 )
 
@@ -186,15 +189,21 @@ class htmlSmallWidget():
         self.html = u'<div class="issue1">'
         title = entry["title"].replace( '"', '&quot;' )
         self.html += u'<h2 title="' + title + '">' + title + u'</h2>'
-        if "embeded" in entry and entry["embeded"]:
-            self.html += '<div class="media">'
-            if "image" in entry and entry["image"]:
-                self.html += '<img src="' + entry["image"] + '" title="They use flash on their page!" alt="They use flash on their page!"/>'
-            else:
-                self.html += "<span>They use flash on their page!</span>"
-            self.html += '</div>'
-        elif "image" in entry and entry["image"]:
+        if "image" in entry and entry["image"]:
             self.html += '<div class="image"><img src="' + entry["image"] + '" alt=""/></div>'
+        elif "embeded" in entry and entry["embeded"]:
+            self.html += '<div class="media">'
+            self.html += """
+            <object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000"
+            codebase="http://download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=6,0,29,0″ width="400″
+            height="322">
+            <param name="movie" value="%s">
+            <param name="quality" value="high">
+            <embed src="%s" quality="high"
+            pluginspage="http://www.macromedia.com/go/getflashplayer" type="application/x-shockwave-flash" width="700"
+            height="322″></embed>
+            </object>""" % (entry["embeded"], entry["embeded"],)
+            self.html += '</div>'
         try: # TODO let crawler make it
             self.html += str( entry["summary"] )
         except KeyError:

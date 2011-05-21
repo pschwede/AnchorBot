@@ -55,7 +55,7 @@ class WebkitBrowser(gtk.ScrolledWindow):
         if url.startswith("about:"):
             if self.about_handler:
                 self.about_handler(url)
-        elif url.startswith("file:"):
+        elif url.startswith("file:") or ".swf" in url:
             pol.use()
         else:
             print "Opening %s in standard browser." % url
