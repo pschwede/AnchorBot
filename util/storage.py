@@ -1,6 +1,6 @@
 import urllib, os, time
 try:
-    import cpickle as pickle
+    import cPickle as pickle
 except ImportError:
     import pickle
 from logger import log
@@ -46,7 +46,7 @@ class PersistentCacher(object):
         successful = False
         if os.path.exists( storpath ):
             try:
-                self.stor = pickle.load( open(storpath, 'r') )
+                self.stor = pickle.load( open(storpath, 'r'), -1 )
                 successful = True
             except:
                 log("Cache corrupted.. will try to rebuild it.")
@@ -113,7 +113,7 @@ class PersistentCacher(object):
         done = False
         while not done:
             try:
-                pickle.dump(self.stor, open(self.storpath, 'w'))
+                pickle.dump(self.stor, open(self.storpath, 'w'), -1)
                 done = True
             except RuntimeError:
                 pass
