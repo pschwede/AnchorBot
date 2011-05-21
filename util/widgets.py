@@ -208,6 +208,7 @@ class htmlSmallWidget():
             self.html += '<a href="' + entry["links"][0]["href"] + '">Source</a>'
             self.html += '<a href="about:share?url=' + entry["links"][0]["href"] + '&text=' + entry["title"] + '">Share</a>'
         except KeyError:
+            pass
             # log( "coudln't find [links][0][href] in " + title ) #log( entry )
         self.html += '</div>'
         self.html += '</div>'
