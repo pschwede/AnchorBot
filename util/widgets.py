@@ -191,7 +191,7 @@ class htmlSmallWidget():
     def __init__( self, entry ):
         self.html = u'<div class="issue1">'
         title = entry["title"].replace( '"', '&quot;' )
-        self.html += u'<h2 class="about_head" title="' + title + '">' + title + u'</h2>'
+        self.html += u'<h2 class="issue_head" title="' + title + '">' + title + u'</h2>'
         if "image" in entry and entry["image"]:
             self.html += '<div class="image"><img src="' + entry["image"] + '" alt=""/></div>'
         elif "embeded" in entry and entry["embeded"]:
@@ -212,10 +212,10 @@ class htmlSmallWidget():
             self.html += "<audio src=\"%s\" controls=\"controls\"></audio>" % entry["audio"]
             self.html += '</div>'
         try:
-            self.html += str( entry["summary"] )
+            self.html += "<div class=\"issue_content\">%s</div>"  % str( entry["summary"] )
         except KeyError:
             try:
-                self.html += "<div class=\"about_content\">" + str( entry["content"][0]["value"] ) + "</div>"
+                self.html += "<div class=\"issue_content\">%s<div>" % str( entry["content"][0]["value"] )
             except KeyError:
                 pass
         self.html += '<div class="small">'

@@ -133,7 +133,7 @@ class Crawler(object):
                     elif im.size[0] <= maximum[0] and im.size[1] <= maximum[1]:
                         result.append(self.cache[imgurl])
             except IOError:
-                result.append(self.cache[imgurl])
+                pass #result.append(self.cache[imgurl])
         return result
 
     def links(self, url):
