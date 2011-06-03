@@ -16,6 +16,7 @@ Main Features
 
 Requirements
 ------------
+* [PyGTK](http://pygtk.org/) python-gtk2
 * [pyWebkitGTK](http://code.google.com/p/pywebkitgtk/) python-webkit
 * [feedparser](http://feedparser.org/) python-feedparser
 
