@@ -15,8 +15,8 @@ class Crawler(object):
     re_img = re.compile('((?<=<img src=["\'])[^"\']*(?=["\'])|(?<=<img src=["\'])[^"\']*(?=["\']))', re.I)
     re_a = re.compile('((?<=href=["\'])[^"\']+(?=["\'])|(?<=<link>)[^<]+(?=</link>))', re.I)
     re_embed = re.compile('(?<=["\'])[^"\']+\.swf[^"\']*(?=["\'])', re.I)
-    re_audio = re.compile('((?<=enclosure url=["\'])[^"\']+(?=")|(?<=<audio src=["\'])[^"\']+(?=["\']))', re.I)
-    re_video = re.compile('(?<=<video src=["\'])[^<]+[^"\'](?=["\'])', re.I)
+    re_audio = re.compile('((?<=enclosure url=["\'])[^"\']+(mp3|flac|ogg|m3u)(?=")|(?<=<audio src=["\'])[^"\']+(?=["\']))', re.I)
+    re_video = re.compile('(?<=<video src=["\'])[^<]+(mpg|avi|fla)[^"\'](?=["\'])', re.I)
 
     def __init__(self, cacher, proxies=None, verbose=False):
         self.opener = urllib.FancyURLopener(proxies)
@@ -43,8 +43,7 @@ class Crawler(object):
             print "Crawling %s %i-recursively" % (url, recursive)
 
         # recursively call this function with each contained link if recursive>0
-        f = self.cache[url]
-        f = open(f, 'r')
+        f = open(self.cache[url], 'r')
         text = self.unescape("\n".join(f.readlines()))
         f.close()
         return self.find(text, url, regex, filetypes, ignore, recursive, verbose, callback)
@@ -165,31 +164,34 @@ class Crawler(object):
                         log("No summary could be found: %s" % entry["title"])
                     return entry
             is_tweet &= len(entry["summary"]) == 140
-            # get images in feed
-            entry["images"] = self.find(entry["summary"]) # searches for images in string by default
-            # get audio from podcasts
+            entry["images"] = []
+            # get media from feed
             try:
-                entry["audio"] = entry["enclosures"][0]["href"]
+                for encl in entry["enclosures"]:
+                    if encl["type"].startswith("image"):
+                        entry["images"] += [self.cache[encl["href"]]]
+                    elif encl["type"].startswith("audio"):
+                        entry["audio"] = encl["href"] # won't download
+                    elif encl["type"].startswith("video"):
+                        entry["video"] = encl["href"] # won't download
             except KeyError:
-                audio = self.find_on_webpage(feed["url"], regex=[self.re_audio], filetypes=("mp3","ogg","flac"))
-                if audio:
-                    entry["audio"] = audio
+                pass
+            entry["images"] += self.find(entry["summary"]) # searches for images in string by default
             try:
-                if entry["images"] is not []:
-                    entry["images"] += self.find_on_webpage(entry["links"][0]["href"], recursive=0)
-                    entry["image"] = self.biggest_image(entry["images"])
-                else:
-                    entry["images"] += self.find_on_webpage(entry["links"][0]["href"], recursive=0)
-                entry["embededs"] = self.find_on_webpage(entry["links"][0]["href"], regex=[self.re_embed], filetypes=("fla","swf"), recursive=0)
+                for link in entry["links"]:
+                    entry["images"] += self.find_on_webpage(link["href"], recursive=0)
+                entry["image"] = self.biggest_image(entry["images"])
+                """entry["embededs"] = self.find_on_webpage(entry["links"][0]["href"], regex=[self.re_embed], filetypes=("fla","swf"), recursive=0)
                 if entry["embededs"]:
                     entry["embeded"] = entry["embededs"][0]
                 else:
-                    entry["embeded"] = None
+                    entry["embeded"] = None""" # ignore for now.. (may crash webkit)
             except KeyError:
                 if self.verbose:
                     log("No image and/or embed in %s" % entry["title"])
             # TODO Get more text from webpage
             # clean up the text
+            entry["images"] = self.filter_images(set(entry["images"]), minimum=(16,16))
             entry["summary"] = self.clean(entry["summary"])
             entry["summary_detail"]["value"] = self.clean(entry["summary_detail"]["value"])
 
