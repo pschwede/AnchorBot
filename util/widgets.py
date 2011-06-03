@@ -188,7 +188,7 @@ class htmlSmallWidget():
     def __init__( self, entry ):
         self.html = u'<div class="issue1">'
         title = entry["title"].replace( '"', '&quot;' )
-        self.html += u'<h2 title="' + title + '">' + title + u'</h2>'
+        self.html += u'<h2 class="about_head" title="' + title + '">' + title + u'</h2>'
         if "image" in entry and entry["image"]:
             self.html += '<div class="image"><img src="' + entry["image"] + '" alt=""/></div>'
         elif "embeded" in entry and entry["embeded"]:
@@ -208,17 +208,17 @@ class htmlSmallWidget():
             self.html += str( entry["summary"] )
         except KeyError:
             try:
-                self.html += str( entry["content"][0]["value"] )
+                self.html += "<div class=\"about_content\">" + str( entry["content"][0]["value"] ) + "</div>"
             except KeyError:
                 pass
                 # log( "couldn't find [content[0][value] in " + title ) #log( entry )
         self.html += '<div class="small">'
         try:
-            self.html += '<a href="' + entry["links"][0]["href"] + '">Source</a>'
-            self.html += '<a href="about:share?url=' + entry["links"][0]["href"] + '&text=' + entry["title"] + '">Share</a>'
+            self.html += '<a class="about_source" href="' + entry["links"][0]["href"] + '">Source</a>'
+            self.html += '<a class="about_share" href="about:share?url=' + entry["links"][0]["href"] + '&text=' + entry["title"] + '">Share</a>'
         except KeyError:
+            log( "coudln't find [links][0][href] in " + title ) #log( entry )
             pass
-            # log( "coudln't find [links][0][href] in " + title ) #log( entry )
         self.html += '</div>'
         self.html += '</div>'
 

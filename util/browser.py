@@ -55,7 +55,7 @@ class WebkitBrowser(gtk.ScrolledWindow):
         if url.startswith("about:"):
             if self.about_handler:
                 self.about_handler(url)
-        elif url.startswith("file:") or ".swf" in url:
+        elif url.startswith("file:") or url.startswith("embed"):
             pol.use()
         else:
             print "Opening %s in standard browser." % url
@@ -69,15 +69,16 @@ class WebkitBrowser(gtk.ScrolledWindow):
     def open(self, uri):
         self.browser.open(uri)
 
-    def _style(self):
-        return "" #TODO load from file
+    def _style(self, style="default.css"):
+        f = open(os.path.join(self.absolute, "style/%s" % style))
+        return "\n".join(f.readlines())
 
     def openfeed(self, feed):
         self.html = "<html><head>"
         self.html += "</head><style>"+self._style()+"</style>" 
         self.html += '<script type="text/javascript" src="file://'+self.absolute+'/third-party/jquery-1.5.min.js"></script>'
         self.html += '<body>'
-        #TODO import style themes and support templates (django api?)
+        #TODO support templates (django api?)
         for entry in feed["entries"]:
             self.html += str(widgets.htmlSmallWidget(entry))
         self.html += "</body></html>"

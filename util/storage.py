@@ -51,7 +51,7 @@ class PersistentCacher(object):
             except:
                 log("Cache corrupted.. will try to rebuild it.")
 
-    def check_for_old_files(self, max_age_in_days):
+    def vacuum(self, max_age_in_days):
         # first search for really existing && unrotten files,
         # then burn the rest.
         existing = set([self.storpath])
@@ -117,7 +117,7 @@ class PersistentCacher(object):
                 done = True
             except RuntimeError:
                 pass
-        self.check_for_old_files(self.max_age_in_days)
+        self.vacuum(self.max_age_in_days)
 
     def clear():
         for url in self.stor.values():

@@ -177,6 +177,9 @@ def get_cmd_options():
 if __name__ == "__main__":
     if len( sys.argv ) > 1:
         if len(sys.argv) > 1:
-            main( sys.argv[1:] if ("-a" in sys.argv) else [], "-n" in sys.argv, "-c" in sys.argv, "-v" in sys.argv )
+            main(   sys.argv[1:] if "-a" in sys.argv else [],
+                    "-n" in sys.argv,
+                    "-c" in sys.argv,
+                    "-v" in sys.argv )
     else:
         main()

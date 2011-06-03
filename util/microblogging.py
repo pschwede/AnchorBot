@@ -24,7 +24,7 @@ class Microblogger(object):
             for host in self.hosts:
                 adr = host.split("/")
                 if host in self.__auth_keys:
-                    tw = tweet_window(adr[0], *self.__auth_keys, text=text)
+                    tw = tweet_window(adr[0], self.hosts[0], *self.__auth_keys, text=text)
                 else:
                     tw = tweet_window(adr[0], text=text)
                 npt = self.__auth_keys[host] = tw.run()

@@ -1,0 +1,79 @@
+* {
+    border:0 hidden;
+    margin: 0;
+    padding: 0;
+    text-decoration: none;
+}
+
+html, body {
+    font-family: "minion-pro-1","minion-pro-2",Palatino,Georgia,"Times New Roman",serif;
+    line-height: 166%;
+    font-size: 10pt;
+    color: #000;
+    background-color: #fff;
+}
+
+body {
+    margin-left:20px;
+    margin-right:20px;
+    margin-bottom: 50px;
+}
+
+.issue1 {
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+    /*border-top: 3px solid #000;
+    border-bottom: 3px solid #000;*/
+}
+
+.issue2 {
+    width: 50%;
+}
+
+.issue1, .issue2 {
+    clear: both;
+    margin-top: 50px;
+    padding-top: 5px;
+}
+
+.small {
+    clear: both;
+    width: 100%;
+    text-align: right;
+}
+
+.about_source {
+    padding-left: 16px;
+}
+
+.about_share {
+    padding-left: 16px;
+    margin-left: 5px;
+}
+
+.image:nth-child(even) {
+    float: left;
+    margin-right: 5px;
+}
+.image:nth-child(odd) {
+    float: right;
+    margin-left: 5px;
+}
+
+img {
+    max-width: 100%;
+    max-height: 600px;
+}
+
+h2.about_head {
+    background-color: #000;
+    color: #fff;
+    padding: 5px;
+    text-align: center;
+    margin-bottom: 5px;
+}
+
+h1 {
+    font-size: 18pt;
+}
