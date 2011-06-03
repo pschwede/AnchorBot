@@ -11,11 +11,12 @@ Follows redirections and delivers some useful functions for remote images.
 """
 
 class Crawler(object):
-    re_img = re.compile('((?<=<img src=["\'])[^"\']*(?=["\'])|(?<=<img src=["\'])[^"\']*(?=["\']))', re.I)
-    re_a = re.compile('((?<=href=")[^"\']+(?=")|(?<=<link>)[^<]+(?=</link>))', re.I)
-    re_embed = re.compile('(?<=["\'])[^"\']+\.swf[^"\']*(?=["\'])', re.I)
     re_cln = re.compile('((<img[^>]+>)|(<div>\s*</div>))', re.I)
-    re_audio = re.compile('(?<=url=")[^"\']*(?=")', re.I)
+    re_img = re.compile('((?<=<img src=["\'])[^"\']*(?=["\'])|(?<=<img src=["\'])[^"\']*(?=["\']))', re.I)
+    re_a = re.compile('((?<=href=["\'])[^"\']+(?=["\'])|(?<=<link>)[^<]+(?=</link>))', re.I)
+    re_embed = re.compile('(?<=["\'])[^"\']+\.swf[^"\']*(?=["\'])', re.I)
+    re_audio = re.compile('((?<=enclosure url=["\'])[^"\']+(?=")|(?<=<audio src=["\'])[^"\']+(?=["\']))', re.I)
+    re_video = re.compile('(?<=<video src=["\'])[^<]+[^"\'](?=["\'])', re.I)
 
     def __init__(self, cacher, proxies=None, verbose=False):
         self.opener = urllib.FancyURLopener(proxies)
@@ -59,10 +60,10 @@ class Crawler(object):
                 for i in range(len(matches)):        
                     item = matches[i]
                     callback((float(i+1)/len(matches), item))
-                    findings.append(self.cache[urljoin(url, item)])
+                    findings.append(urljoin(url, item))
             else:
                 for item in matches:
-                    findings.append(self.cache[urljoin(url, item)])
+                    findings.append(urljoin(url, item))
             links = self.links(url)
             if links and recursive > 0:
                 for item in links:
@@ -166,6 +167,13 @@ class Crawler(object):
             is_tweet &= len(entry["summary"]) == 140
             # get images in feed
             entry["images"] = self.find(entry["summary"]) # searches for images in string by default
+            # get audio from podcasts
+            try:
+                entry["audio"] = entry["enclosures"][0]["href"]
+            except KeyError:
+                audio = self.find_on_webpage(feed["url"], regex=[self.re_audio], filetypes=("mp3","ogg","flac"))
+                if audio:
+                    entry["audio"] = audio
             try:
                 if entry["images"] is not []:
                     entry["images"] += self.find_on_webpage(entry["links"][0]["href"], recursive=0)
@@ -195,3 +203,8 @@ if __name__ == "__main__":
     imgs = c.filter_images(imgs, minimum=(100,100))
     if imgs:
         os.execv("/usr/bin/ristretto", imgs)
+
+    """ audio = c.find_on_webpage("http://ws.audioscrobbler.com/2.0/user/spazzpp2/podcast.rss", regex=[c.re_audio], filetypes=("mp3","ogg","flac"), callback=cb)
+    if audio:
+        print "vlc", " ".join(audio)
+        os.execv("/usr/bin/vlc", audio) """

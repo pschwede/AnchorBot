@@ -183,6 +183,9 @@ class main_window( gtk.Window ):
         ad.run()
         ad.destroy()
 
+    def context_menu( self, url):
+        pass #TODO delete, open in browser, reload
+
 
 class htmlSmallWidget():
     def __init__( self, entry ):
@@ -203,6 +206,10 @@ class htmlSmallWidget():
             pluginspage="http://www.macromedia.com/go/getflashplayer" type="application/x-shockwave-flash" width="700"
             height="322″></embed>
             </object>""" % (entry["embeded"], entry["embeded"],)
+            self.html += '</div>'
+        if "audio" in entry and entry["audio"]:
+            self.html += '<div class="media">'
+            self.html += "<audio src=\"%s\" controls=\"controls\"></audio>" % entry["audio"]
             self.html += '</div>'
         try: # TODO let crawler make it
             self.html += str( entry["summary"] )
