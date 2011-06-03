@@ -191,7 +191,7 @@ class Crawler(object):
                     log("No image and/or embed in %s" % entry["title"])
             # TODO Get more text from webpage
             # clean up the text
-            entry["images"] = self.filter_images(set(entry["images"]), minimum=(16,16))
+            entry["images"] = self.filter_images(set(entry["images"]), minimum=(32,32))
             entry["summary"] = self.clean(entry["summary"])
             entry["summary_detail"]["value"] = self.clean(entry["summary_detail"]["value"])
 
