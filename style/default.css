@@ -18,12 +18,12 @@ body {
     padding-right: 20px;
     padding-bottom: 50px;
     margin: 0 auto;
-    max-width: 800px;
+    max-width: 600px;
 }
 
 .issue1 {
     width: 100%;
-    max-width: 800px;
+    max-width: 600px;
     margin: 0 auto;
     /*border-top: 3px solid #000;
     border-bottom: 3px solid #000;*/
