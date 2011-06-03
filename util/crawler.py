@@ -13,7 +13,7 @@ Follows redirections and delivers some useful functions for remote images.
 class Crawler(object):
     re_img = re.compile('((?<=<img src=["\'])[^"\']*(?=["\'])|(?<=<img src=["\'])[^"\']*(?=["\']))', re.I)
     re_a = re.compile('(?<=href=")[^"\']*(?=")', re.I)
-    re_emb = re.compile('(?<=["\'])[^"\']+\.swf[^"\']*(?=["\'])', re.I)
+    re_embed = re.compile('(?<=["\'])[^"\']+\.swf[^"\']*(?=["\'])', re.I)
     re_cln = re.compile('((<img[^>]+>)|(<div>\s*</div>))', re.I)
     re_audio = re.compile('(?<=url=")[^"\']*(?=")', re.I)
 
@@ -29,7 +29,7 @@ class Crawler(object):
         text = text.replace("&gt;",">")
         return text
 
-    def find_on_webpage(self, url, regex=[re_img,], filetypes=("jpg", "png", "gif", "jpeg"), ignore=("swf", "fla"), recursive=0, verbose=False):
+    def find_on_webpage(self, url, regex=[re_img,], filetypes=("jpg", "png", "gif", "jpeg"), ignore=("swf", "fla"), recursive=0, verbose=False, callback=None):
         # restore escaped urls
         url = self.unescape(url)
 
@@ -38,31 +38,37 @@ class Crawler(object):
             if url.lower().split("?")[0].endswith(typ):
                 return [url]
 
-        print "Crawling %s %i-recursively" % (url, recursive)
+        verbose and print "Crawling %s %i-recursively" % (url, recursive)
 
         # recursively call this function with each contained link if recursive>0
         f = self.cache[url]
         f = open(f, 'r')
         text = self.unescape("\n".join(f.readlines()))
         f.close()
-        return self.find(text, url, regex, filetypes, ignore, recursive, verbose)
+        return self.find(text, url, regex, filetypes, ignore, recursive, verbose, callback)
 
-    def find(self, text, url=None, regex=[re_img], filetypes=("jpg", "png", "gif", "jpeg"), ignore=("swf", "fla"), recursive=0, verbose=False):
+    def find(self, text, url=None, regex=[re_img], filetypes=("jpg", "png", "gif", "jpeg"), ignore=("swf", "fla"), recursive=0, verbose=False, callback=None):
         findings = []
-        m = []
-        for rgx in regex:
-            m += rgx.findall(text)
+        matches = []
+        for r in regex:
+            matches += r.findall(text)
 
         if url:
-            for item in m:        
-                findings.append(self.cache[urljoin(url, item)])
+            if callback:
+                for i in range(len(matches)):        
+                    item = matches[i]
+                    callback((float(i+1)/len(matches), item))
+                    findings.append(self.cache[urljoin(url, item)])
+            else:
+                for item in matches:
+                    findings.append(self.cache[urljoin(url, item)])
             links = self.links(url)
             if links and recursive > 0:
                 for item in links:
-                    findings += self.find_on_webpage(urljoin(url, item), regex, filetypes, ignore, recursive-1, verbose)
+                    findings += self.find_on_webpage(urljoin(url, item), regex, filetypes, ignore, recursive-1, verbose, callback)
         else:
-            for item in m:
-                findings.append(self.cache(item))
+            for item in matches:
+                findings.append(self.cache[item])
         if findings and verbose:
             log("found: %s" % str(findings))
         return list(set(findings))
@@ -165,7 +171,7 @@ class Crawler(object):
                     entry["image"] = self.biggest_image(entry["images"])
                 else:
                     entry["images"] += self.find_on_webpage(entry["links"][0]["href"], recursive=0)
-                entry["embededs"] = self.find_on_webpage(entry["links"][0]["href"], regex=[re_embed], filetypes=("fla","swf"), recursive=0)
+                entry["embededs"] = self.find_on_webpage(entry["links"][0]["href"], regex=[self.re_embed], filetypes=("fla","swf"), recursive=0)
                 if entry["embededs"]:
                     entry["embeded"] = entry["embededs"][0]
                 else:
@@ -179,9 +185,12 @@ class Crawler(object):
             entry["summary_detail"]["value"] = self.clean(entry["summary_detail"]["value"])
 
 if __name__ == "__main__":
+
+    def cb(stats):
+        print "\r%.2f%% - %s" % (stats[0]*100, stats[1])
+
     c = Crawler(PersistentCacher())
-    imgs = c.find_on_webpage("http://reddit.com/r/aww/.rss", regex=[c.re_img, c.re_a], filetypes=("jpg","gif","jpeg","png"), recursive=1)
+    imgs = c.find_on_webpage("http://reddit.com/r/aww/.rss", regex=[c.re_img, c.re_a], filetypes=("jpg","gif","jpeg","png"), recursive=0, callback=cb)
     imgs = c.filter_images(imgs, minimum=(100,100))
-    print imgs
     if imgs:
         os.execv("/usr/bin/ristretto", imgs)
