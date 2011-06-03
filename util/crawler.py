@@ -12,7 +12,7 @@ Follows redirections and delivers some useful functions for remote images.
 
 class Crawler(object):
     re_img = re.compile('((?<=<img src=["\'])[^"\']*(?=["\'])|(?<=<img src=["\'])[^"\']*(?=["\']))', re.I)
-    re_a = re.compile('(?<=href=")[^"\']*(?=")', re.I)
+    re_a = re.compile('((?<=href=")[^"\']+(?=")|(?<=<link>)[^<]+(?=</link>))', re.I)
     re_embed = re.compile('(?<=["\'])[^"\']+\.swf[^"\']*(?=["\'])', re.I)
     re_cln = re.compile('((<img[^>]+>)|(<div>\s*</div>))', re.I)
     re_audio = re.compile('(?<=url=")[^"\']*(?=")', re.I)
@@ -37,8 +37,9 @@ class Crawler(object):
         for typ in filetypes:
             if url.lower().split("?")[0].endswith(typ):
                 return [url]
-
-        verbose and print "Crawling %s %i-recursively" % (url, recursive)
+        
+        if verbose:
+            print "Crawling %s %i-recursively" % (url, recursive)
 
         # recursively call this function with each contained link if recursive>0
         f = self.cache[url]
