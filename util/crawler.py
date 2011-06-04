@@ -4,7 +4,6 @@ import urllib, re, mimetypes, os.path, Image
 from urlparse import urljoin
 from lxml.cssselect import CSSSelector
 from lxml.html import make_links_absolute, soupparser
-
 from storage import PersistentCacher
 from logger import log
 
@@ -23,17 +22,18 @@ class Crawler(object):
     def crawl(self, url, type="RSS"):
         """ Returns a set of articles found on url """
         type = type.lower()
-        if "rss" in type:
-            tree = soupparser.parse(open(self.cache[url], 'r'))
-            return self.crawlRSS(tree)
-        elif "html" in type:
-            f = open(self.cache[url])
-            f = make_links_absolute(f, url)
-            tree = soupparser.parse("".join(f.readlines()))
-            return self.crawlHTML(tree)
-        elif "description" in type:
-            tree = soupparser.fromstring(url)
-            return self.crawlHTML(tree)
+        try:
+            if "rss" in type:
+                tree = soupparser.parse(open(self.cache[url], 'r'))
+                return self.crawlRSS(tree)
+            elif "html" in type:
+                f = open(self.cache[url])
+                f = make_links_absolute(f, url)
+                tree = soupparser.parse("".join(f.readlines()))
+                return self.crawlHTML(tree)
+        except ValueError:
+            log("ValueError: %s" % url)
+
     
     def crawlHTML(self, tree, similarcontent=None, depth=0, baseurl=None):
         imagesel = CSSSelector("img")
@@ -44,13 +44,16 @@ class Crawler(object):
                 if elem.text and similarcontent in elem.text:
                     content = elem.text
                     break;
-        images = list(set([urljoin(baseurl,img.get("src") or img.attrib.values()[0]) for img in imagesel(tree)]))
+        keepimage = None
+        images = [urljoin(baseurl,img.get("src") or img.attrib.values()[0]) for img in imagesel(tree)]
+        if images:
+            keepimage = images[0]
         linksel = CSSSelector("a")
         for elem in linksel(tree):
             link = elem.get("href")
             if link and link[-4:] in (".png",".jpg",".gif","jpeg"):
                 images.append(urljoin(baseurl, link))
-        return {"images": list(images), "content": self.clean(content)}
+        return {"image": keepimage, "images": list(images), "content": self.clean(content)}
 
     def crawlRSS(self, tree, depth=1, callback=lambda x,y:None):
         sel = CSSSelector("channel > link, feed > link")
@@ -74,28 +77,40 @@ class Crawler(object):
             else:
                 url = None
             images = list()
+            keepimage = None
             for image in imagesel(item):
-                links = linksel(image)
-                if links:
-                    images.append(links[0].text or links[0].tail) 
+                # keep image that is in the rss-feed
                 if image.attrib:
                     images.append(image.get("src") or image.attrib.values()[0])
-            content = descsel(item)[0].text if descsel(item) else None
-            if content:
-                if depth and url:
-                    htmlarticle = self.crawlHTML(soupparser.parse(open(self.cache[url], 'r')), content, baseurl=url)
-                else:
-                    htmlarticle = self.crawlHTML(soupparser.fromstring(self.unescape(content)))
-                content = self.clean(htmlarticle["content"])
-                images += htmlarticle["images"]
-            else:
-                content = ""
+                    images = self.filter_images(images, minimum=(70,70))
+                    keepimage = self.biggest_image(images)
+                links = linksel(image)
+                if links:
+                    images.append(links[0].text or links[0].tail or links[0].attrib.values()[0]) 
+                    images = self.filter_images(images, minimum=(70,70))
+                    keepimage = keepimages or self.biggest_image(images)
+            content = ""
+            xmlcontent = descsel(item)
+            if xmlcontent:
+                content = self.clean(xmlcontent[0].text) or self.clean(xmlcontent[0].tail)
+                if content:
+                    htmlarticle = self.crawlHTML(soupparser.fromstring(self.unescape(content)), baseurl=url)
+                    content = content or htmlarticle["content"]
+                    content_images = htmlarticle["images"]
+                    if depth and url:
+                        htmlarticle = self.crawlHTML(soupparser.parse(open(self.cache[url], 'r')), content, baseurl=url)
+                        images += content_images + htmlarticle["images"]
+                        images = self.filter_images(images, minimum=(70,70))
+                        keepimage = keepimage or self.biggest_image(htmlarticle["images"])
+            if not keepimage:
+                keepimage = self.biggest_image(images)
             articles.append(
                     {
                         "url": url,
                         "title": title,
+                        "image": keepimage,
                         "images": filter(None, images),
-                        "content": self.clean(content),
+                        "content": content,
                         "origin": origin,
                         }
                     )
@@ -133,7 +148,7 @@ class Crawler(object):
                     x, y = im.size
                     biggest = imgurl
             except IOError:
-                errors.append(self.cache[imgurl])
+                pass
         if errors and self.verbose:
             log("PIL: "+str(errors))
         return biggest
@@ -168,7 +183,7 @@ class Crawler(object):
                     elif im.size[0] <= maximum[0] and im.size[1] <= maximum[1]:
                         result.append(self.cache[imgurl])
             except IOError:
-                pass #result.append(self.cache[imgurl])
+                pass
         return result
 
     def clean(self, htmltext):
@@ -190,7 +205,7 @@ class Crawler(object):
                         "summary": article["content"],
                         "title": article["title"],
                         "images": article["images"],
-                        "image": self.biggest_image(article["images"]),
+                        "image": article["image"] if article["image"] else self.biggest_image(article["images"]),
                         "links": [{"href": article["url"]}]
                         }
                     )
@@ -211,5 +226,7 @@ if __name__ == "__main__":
         os.execv("/usr/bin/ristretto", images)"""
 
     articles = c.crawl("http://www.zockerperlen.de/rss-artikel.php")
+    #articles = c.crawl("http://xkcd.com/rss.xml")
+    #articles = c.crawl("http://feeds.feedburner.com/euronews/en/picture-of-the-day?format=xml")
     import pprint as pp
     pp.pprint(articles)
