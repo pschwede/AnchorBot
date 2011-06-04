@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- encoding: utf-8 -*-
 
 import feedparser, sys, os, urllib, argparse
 import gtk, gtk.gdk, gobject
@@ -131,7 +132,7 @@ class lyrebird( object ):
             self.feeds[feedurl] = feedparser.parse( feedurl )
         else:
             self.feeds[feedurl] = feedparser.parse( self.cache[feedurl] )
-        self.crawler.enrich(self.feeds[feedurl])
+        self.feeds[feedurl] = self.crawler.enrich(self.feeds[feedurl])
         if self.verbose:
             log( "*** " + str( self.feeds.keys().index( feedurl ) ) + " of " + str( len( self.feeds ) ) )
         if callback:

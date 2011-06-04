@@ -2,6 +2,7 @@
 import gtk, pango
 from logger import log
 from util import _
+import pprint
 
 class tweet_window( gtk.Dialog ):
     def __init__( self, service=None, user="", password="", text="" ):
@@ -223,8 +224,6 @@ class htmlSmallWidget():
             self.html += '<a class="about_source" href="' + entry["links"][0]["href"] + '">Source</a>'
             self.html += '<a class="about_share" href="about:share?url=' + entry["links"][0]["href"] + '&text=' + entry["title"] + '">Share</a>'
         except KeyError:
-            import pprint
-            pprint.pprint(entry)
             pass
         self.html += '</div>'
         self.html += '</div>'
