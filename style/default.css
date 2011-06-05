@@ -32,6 +32,9 @@ body {
 .issue_content {
     text-align: justify;
     text-indent: 2em;
+    width: 90%;
+    max-width: 500px;
+    margin: 0 auto;
     /*hyphenate-limit-last: none;*/
 }
 .issue_content:last-line {
@@ -77,6 +80,9 @@ li {
     margin-left: 5px;
 }
 
+.image {
+    padding: 3px;
+}
 .image:nth-child(even) {
     float: left;
     margin-right: 5px;

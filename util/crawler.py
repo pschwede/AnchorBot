@@ -12,7 +12,7 @@ Follows redirections and delivers some useful functions for remote images.
 """
 
 class Crawler(object):
-    re_cln = re.compile('((<img[^>]+>)|(<div>\s*</div>)|[\n\r])', re.I)
+    re_cln = re.compile('((<img[^>]+>)|(<div>\s*</div>)|[\n\r]|(<script.*</script>)|(<iframe.*</iframe>))', re.I)
 
     def __init__(self, cacher, proxies=None, verbose=False):
         self.opener = urllib.FancyURLopener(proxies)
@@ -41,7 +41,7 @@ class Crawler(object):
         content = similarcontent or ""
         if similarcontent:
             for elem in textsel(tree):
-                if elem.text and similarcontent in elem.text:
+                if elem.text and similarcontent[:-3] in elem.text:
                     content = elem.text
                     break;
         keepimage = None
@@ -78,30 +78,35 @@ class Crawler(object):
                 url = None
             images = list()
             keepimage = None
+            # find images in feed-entry
             for image in imagesel(item):
-                # keep image that is in the rss-feed
                 if image.attrib:
                     images.append(image.get("src") or image.attrib.values()[0])
                     images = self.filter_images(images, minimum=(70,70))
-                    keepimage = self.biggest_image(images)
-                links = linksel(image)
-                if links:
-                    images.append(links[0].text or links[0].tail or links[0].attrib.values()[0]) 
+                    keepimage = keepimage or self.biggest_image(images)
+                for link in linksel(image):
+                    images.append(link.text or link.tail or link.attrib.values()[0]) 
                     images = self.filter_images(images, minimum=(70,70))
-                    keepimage = keepimages or self.biggest_image(images)
+                    keepimage = keepimage or self.biggest_image(images)
+            images = self.filter_images(images, minimum=(70,70))
+            keepimage = self.biggest_image(images)
             content = ""
+            # find content and images in description content
             xmlcontent = descsel(item)
             if xmlcontent:
-                content = self.clean(xmlcontent[0].text) or self.clean(xmlcontent[0].tail)
+                content = xmlcontent[0].text or xmlcontent[0].tail
                 if content:
                     htmlarticle = self.crawlHTML(soupparser.fromstring(self.unescape(content)), baseurl=url)
                     content = content or htmlarticle["content"]
-                    content_images = htmlarticle["images"]
-                    if depth and url:
-                        htmlarticle = self.crawlHTML(soupparser.parse(open(self.cache[url], 'r')), content, baseurl=url)
-                        images += content_images + htmlarticle["images"]
-                        images = self.filter_images(images, minimum=(70,70))
-                        keepimage = keepimage or self.biggest_image(htmlarticle["images"])
+                    images += self.filter_images(htmlarticle["images"], minimum=(70, 70))
+                    if htmlarticle["image"]:
+                        filtered = self.filter_images([htmlarticle["image"]], minimum=(70,70))
+                        if filtered:
+                            keepimage = self.biggest_image(filtered) or keepimage
+            if depth and url:
+                htmlarticle = self.crawlHTML(soupparser.parse(open(self.cache[url], 'r')), content, baseurl=url)
+                images += self.filter_images(htmlarticle["images"], minimum=(70,70))
+                keepimage = keepimage or self.biggest_image(htmlarticle["images"])
             if not keepimage:
                 keepimage = self.biggest_image(images)
             articles.append(
@@ -109,9 +114,9 @@ class Crawler(object):
                         "url": url,
                         "title": title,
                         "image": keepimage,
-                        "images": filter(None, images),
-                        "content": content,
-                        "origin": origin,
+                        "images": filter(None, set(images)),
+                        "content": self.clean(content),
+                        "origin": origin or url,
                         }
                     )
 

@@ -193,9 +193,7 @@ class htmlSmallWidget():
         self.html = u'<div class="issue1">'
         title = entry["title"].replace( '"', '&quot;' )
         self.html += u'<h2 class="issue_head" title="' + title + '">' + title + u'</h2>'
-        if "image" in entry and entry["image"]:
-            self.html += '<div class="image"><img src="' + entry["image"] + '" alt=""/></div>'
-        elif "embeded" in entry and entry["embeded"]:
+        if "embeded" in entry and entry["embeded"]:
             self.html += '<div class="media">'
             self.html += """
             <object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000"
@@ -208,6 +206,8 @@ class htmlSmallWidget():
             height="322″></embed>
             </object>""" % (entry["embeded"], entry["embeded"],)
             self.html += '</div>'
+        elif "image" in entry and entry["image"]:
+            self.html += '<div class="image"><img src="' + entry["image"] + '" alt=""/></div>'
         if "audio" in entry and entry["audio"]:
             self.html += '<div class="media">'
             self.html += "<audio src=\"%s\" controls=\"controls\"></audio>" % entry["audio"]
@@ -220,11 +220,9 @@ class htmlSmallWidget():
             except KeyError:
                 pass
         self.html += '<div class="small">'
-        try:
+        if entry["links"][0]["href"]:
             self.html += '<a class="about_source" href="' + entry["links"][0]["href"] + '">Source</a>'
             self.html += '<a class="about_share" href="about:share?url=' + entry["links"][0]["href"] + '&text=' + entry["title"] + '">Share</a>'
-        except KeyError:
-            pass
         self.html += '</div>'
         self.html += '</div>'
 
