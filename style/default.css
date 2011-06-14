@@ -21,6 +21,20 @@ body {
     max-width: 600px;
 }
 
+.issue1 a:link, .issue2 a:link {
+    color: #000;
+    font-style: italic;
+}
+.issue1 :not(.small) a:link:after, .issue2 :not(.small) a:link:after {
+    content: "*";
+}
+.issue1 a:hover, .issue2 a:hover {
+    color: #009;
+}
+.issue1 a:visited, .issue2 a:visited {
+    color: #ff9;
+}
+
 .issue1 {
     width: 100%;
     max-width: 600px;
@@ -70,6 +84,10 @@ li {
     width: 100%;
     text-align: right;
 }
+.small a:link {
+    font-style: Normal;
+    color: #009;
+}
 
 .about_source {
     padding-left: 16px;
@@ -84,12 +102,12 @@ li {
     padding: 3px;
 }
 .image:nth-child(even) {
-    float: left;
-    margin-right: 5px;
-}
-.image:nth-child(odd) {
     float: right;
     margin-left: 5px;
+}
+.image:nth-child(odd) {
+    float: left;
+    margin-right: 5px;
 }
 
 img {
@@ -103,7 +121,7 @@ img {
 .issue_head {
     color: #000;
     padding: 9px;
-    text-align: center;
+    text-align: left;
     margin-bottom: 5px;
     text-shadow: 0 0 2px #fff;
 }

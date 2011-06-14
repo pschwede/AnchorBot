@@ -19,8 +19,7 @@ class Microblogger(object):
             self.hosts.append(hosts)
 
     def send_text(self, text):
-        if TWEEPY:
-            #TODO OAuth
+        if TWEEPY: # if installed
             for host in self.hosts:
                 adr = host.split("/")
                 if host in self.__auth_keys:

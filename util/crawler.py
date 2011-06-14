@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import urllib, re, mimetypes, os.path, Image
+import chardet
 from urlparse import urljoin
 from lxml.cssselect import CSSSelector
 from lxml.html import make_links_absolute, soupparser
@@ -115,37 +116,50 @@ class Crawler(object):
     def enrich(self, feed, recursion=1):
         # filters out images, adds images from html, cleans up content
         for entry in feed["entries"]:
-
             # get more text
             article = None
             try:
-                article = self.crawlHTML(soupparser.fromstring(entry["content"][0].value))
+                content = entry["content"][0].value
+                article = self.crawlHTML(soupparser.fromstring(content))
             except KeyError:
                 try:
-                    article = self.crawlHTML(soupparser.fromstring(entry["summary_detail"].value))
+                    content = entry["summary_detail"].value
+                    article = self.crawlHTML(soupparser.fromstring(content))
                 except KeyError:
                     pass
 
             # get more images
+            # from entry itself
+            entry["image"] = None
             images = set()
             for key in ("links", "enclosures"):
-                try: # entry["enclosures"]
+                try:
                     i = filter(lambda x: x.type.startswith("image"), entry[key])
                     images |= set([item.href for item in i])
                 except KeyError:
                     pass
+            # from html content
             if article:
                 if article["images"]:
                     images |= set(article["images"])
 
             # filter out some images
             entry["images"] = self.filter_images(images, minimum=(70,70))
-            if entry["images"]:
-                entry["image"] = self.biggest_image(entry["images"])
-                entry["images"] = set(images)
-            else:
-                entry["images"] = set(images)
-                entry["image"] = self.biggest_image(entry["images"])
+            entry["image"] = entry["image"] or self.biggest_image(entry["images"])
+
+            # get even more images from links in entry
+            try:
+                for link in entry["links"]:
+                    try:
+                        images |= sef.crawlHTML(soupparser.parse(self.cache[link]))["images"]
+                    except:
+                        pass
+            except KeyError:
+                pass # there were no links
+
+            # give the images to the entry finally
+            entry["images"] = set(images)
+            entry["image"] = entry["image"] or self.biggest_image(entry["images"])
 
             # clean up content
             if article:

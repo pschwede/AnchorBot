@@ -1,10 +1,16 @@
 # -*- coding: iso-8859-15 -*-
 import gtk, pango
 from logger import log
-from util import _
 import pprint
 
+"""
+This module contains all visual entity classes (Widgets).
+* GTK as well as HTML Widgets!
+"""
+
 class tweet_window( gtk.Dialog ):
+    """The µ-Blog dialog.
+    """
     def __init__( self, service=None, user="", password="", text="" ):
         super( tweet_window, self ).__init__()
         self.user, self.__password = user, password
@@ -42,6 +48,7 @@ class tweet_window( gtk.Dialog ):
         self.add_button( gtk.STOCK_YES, gtk.RESPONSE_OK )
 
     def run( self ):
+        self.show()
         resp = super( tweet_window, self ).run()
         if resp == gtk.RESPONSE_OK:
             self.hide()
@@ -53,6 +60,8 @@ class tweet_window( gtk.Dialog ):
             return None
 
 class main_window( gtk.Window ):
+    """ The main window.
+    """
     def __init__( self, info, controller ):
         super( gtk.Window, self ).__init__()
         self.ctrl = controller
@@ -106,17 +115,17 @@ class main_window( gtk.Window ):
 
         groups_model = gtk.TreeStore( str, str )
         self.treedic = {}
-        self.treedic["Feeds"] = groups_model.append( None, [_( "Feeds" ), None] )
+        self.treedic["Feeds"] = groups_model.append( None, [ "Feeds" , None] )
         self.groups.set_model( groups_model )
 
         cat_cell = gtk.CellRendererText()
-        cat_column = gtk.TreeViewColumn( _( 'Category' ) )
+        cat_column = gtk.TreeViewColumn( 'Category' )
         cat_column.pack_start( cat_cell, True )
         cat_column.add_attribute( cat_cell, 'text', 0 )
         self.groups.append_column( cat_column )
 
         itm_cell = gtk.CellRendererText()
-        itm_column = gtk.TreeViewColumn( _( 'Item' ) )
+        itm_column = gtk.TreeViewColumn( 'Item' )
         itm_column.pack_start( itm_cell, True )
         itm_column.add_attribute( itm_cell, 'text', 1 )
         self.groups.append_column( itm_column )
@@ -189,6 +198,9 @@ class main_window( gtk.Window ):
 
 
 class htmlSmallWidget():
+    """The feed-entry inside the browser.
+    There probably will be a bigger htmlBigWidget, too.
+    """
     def __init__( self, entry ):
         self.html = u'<div class="issue1">'
         title = entry["title"].replace( '"', '&quot;' )
@@ -230,6 +242,9 @@ class htmlSmallWidget():
         return self.html
 
 class gtkSmallWidget( gtk.Frame ):
+    """A GTK-Widget. Would be used if no webkit is installed.
+    """
+    #TODO make it equivalent or delete this
     def __init__( self, entry ):
         super( gtkSmallWidget, self ).__init__()
         l = gtk.Label( '<span size="x-large">' + entry["title"] + "</span>" )
@@ -260,6 +275,8 @@ class gtkSmallWidget( gtk.Frame ):
         self.show_all()
 
 if __name__ == "__main__":
+
+    # simple gtkSmallWidget test
     w = gtk.Window()
     w.add( gtkSmallWidget( {
         "title": "UFO In NY!",

@@ -1,6 +1,13 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 
+"""
+This is the main file of Lyrebird, the feed reader that makes you read 
+the important news first.
+
+For further reading, see README.md
+"""
+
 import feedparser, sys, os, urllib, argparse
 import gtk, gtk.gdk, gobject
 import threading, webbrowser, Queue
@@ -24,30 +31,42 @@ __version__ = "0.1 Coccatoo"
 __author__ = "spazzpp2"
 
 class lyrebird( object ):
+    """ The most main Class
+
+    It holds and calls initialization of:
+    * singleton instance lock
+    * main window
+    * configurations
+    * feed downloads
+    * start analysis of the downloaded feeds
+    """
+
     def __init__( self, nogui=False, verbose=False, cache_only=False ):
         self.verbose = verbose
 
-        self.__prepare() # calls exit(1) if instance creation is locked
-        self.__setup_dl_pipes()
+        # prepare lock, config, cache and variables
+        try:
+            self.__prepare()
+        except IOError:
+            sys.exit( 1 )
+        self.__setup_dl_pipes( NUMT )
 
-        # echo cache
+        # print out cache and exit
         if cache_only:
-            # kill all threads
-            self.dl_running = False
-            # print
-            self.cache.pprint()
-            # quit
-            self.cache.quit()
-            self.config.quit()
-            sys.exit(0)
+            self.__print_cache_and_exit()
 
     def __prepare( self ):
+        """ Checks lock, reads config, initializes cache, etc.
+        
+        Raises IOError-exception if Lyrebird is already running.
+        """
+
         # load config
         try:
             self.config = Config( HOME, verbose=self.verbose ) # Raises Exception if locked
         except:
             log(_( "It seems as if Lyrebird is already running. If not, please remove ~/.lyrebird/lock" ))
-            sys.exit( 1 )
+            raise IOError()
 
         # prepare cached browser
         self.browser = browser.WebkitBrowser( HERE )
@@ -66,16 +85,30 @@ class lyrebird( object ):
                 "__author__":  __author__,
             }, self )
 
-    def __setup_dl_pipes( self ):
+    def __setup_dl_pipes( self, number_of_pipes ):
+        """ initializes a list of Download Threads and a Queue.Queue """
         # setup download pipes
         self.dl_queue = Queue.Queue()
         self.dl_running = True
-        for i in range( NUMT ):
+        for i in range( number_of_pipes ):
             t = threading.Thread( target=self.__dl_worker, args=( False, self.update_feeds_tree,  ) )
             t.daemon = True
             t.start()
 
+    def __print_cache_and_exit( self ):
+        """ well, prints cache and exits """
+        # kill all threads
+        self.dl_running = False
+        # print
+        self.cache.pprint()
+        # quit
+        self.cache.quit()
+        self.config.quit()
+        sys.exit(0)
+
     def __about( self, uri ):
+        """handles "about:"-url-requests.
+        """
         if uri.startswith( "about:" ):
             cmd = uri[6:]
             if cmd is "about":
@@ -93,9 +126,13 @@ class lyrebird( object ):
                     self.mblog.send_text( "%s %s" % ( text, url,  ) )
 
     def show_group( self, url ):
+        """Opens single feeds or combined (grouped) ones in browser.
+        """
         self.browser.openfeed( url )
 
     def update_feeds_tree( self, url ):
+        """Redraws the Feed-Tree
+        """
         # removes old entry with url and appends a new one
         gtk.gdk.threads_enter()
         feed = self.feeds[url]
@@ -114,6 +151,8 @@ class lyrebird( object ):
         gtk.gdk.threads_leave()
 
     def quit( self, stuff=None ):
+        """Does a save Quit
+        """
         # stop downloading
         self.dl_running = False
         # quit
@@ -122,12 +161,18 @@ class lyrebird( object ):
         gtk.main_quit()
 
     def __dl_worker( self, cached=False, callback=None ):
+        """Method for Download Threads
+        
+        Setting self.dl_running to False would stop them all.
+        """
         while self.dl_running:
             url = self.dl_queue.get()
             self.download( url, cached, callback )
             self.dl_queue.task_done()
 
     def download( self, feedurl, cached=True, callback=None ):
+        """Download procedure
+        """
         if not cached:
             self.feeds[feedurl] = feedparser.parse( feedurl )
         else:
@@ -139,10 +184,15 @@ class lyrebird( object ):
             callback( feedurl )
 
     def download_all( self, callback=None ):
+        """Puts all feeds into the download queue to be downloaded.
+        """
         for url in self.config.get_abos():
             self.dl_queue.put_nowait( url )
 
     def show( self, url=None ):
+        """Shows url in browser. If url is already shown in browser,
+        the feed will be downloaded again.
+        """
         if not url and self.watched:
             url = self.watched
         if url:
@@ -150,21 +200,26 @@ class lyrebird( object ):
                 self.dl_queue.put_nowait( url )
             self.browser.openfeed( self.feeds[url] )
         else:
-            #TODO analyze first
             self.download_all( self.update_feeds_tree )
         self.watched = url
 
     def add_url( self, url ):
+        """Adds a feed url to the abos
+        """
         self.config.add_abo( url )
         self.download( url )
         self.show( url )
         self.update_feeds_tree( url )
 
     def remove_url( self, url ):
+        """Removes a feed url from the abos
+        """
         self.config.del_abo( url )
         self.update_feeds_tree( url )
 
 def main( urls=[], nogui=False, cache_only=False, verbose=False ):
+    """The main func which creates Lyrebird
+    """
     gobject.threads_init()
     l = lyrebird(nogui, verbose, cache_only)
     gobject.idle_add( l.show )
@@ -179,8 +234,8 @@ if __name__ == "__main__":
     if len( sys.argv ) > 1:
         if len(sys.argv) > 1:
             main(   sys.argv[1:] if "-a" in sys.argv else [],
-                    "-n" in sys.argv,
-                    "-c" in sys.argv,
-                    "-v" in sys.argv )
+                    "-n" in sys.argv, # no-gui option
+                    "-v" in sys.argv, # verbose option
+                    "-c" in sys.argv )# print cache only
     else:
         main()
