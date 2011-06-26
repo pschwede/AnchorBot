@@ -163,7 +163,7 @@ class main_window( gtk.Window ):
         table.set_border_width( 3 )
         w.add( table )
         
-        url_label = gtk.Label( _( "URL:" ) )
+        url_label = gtk.Label( "URL:" )
         table.attach( url_label, 0, 1, 0, 1 )
 
         url_entry = gtk.Entry()

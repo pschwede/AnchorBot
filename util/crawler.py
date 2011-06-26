@@ -9,17 +9,29 @@ from lxml.etree import tostring as xmltostring
 from storage import PersistentCacher
 from logger import log
 
+
 """
 Follows redirections and delivers some useful functions for remote images.
 """
 
 class Crawler(object):
-    re_cln = re.compile('((<img[^>]+>)|(<div>\s*</div>)|[\n\r]|(<script.*</script>)|(<iframe.*</iframe>)|<html>|</html>)', re.I)
+    re_cln = re.compile('(<img[^>]+>|[\n\r]|<script[^>]*>\s*</script>|<iframe.*</iframe>|</*html>|</*head>|</*div[^>]*>)', re.I)
+    re_tag = re.compile('(<[^abip][^>]*>|<br[^>]*>)', re.I)
+    hyph_EN = "/usr/share/liblouis/tables/hyph_en_US.dic"
+    hyph_DE = "/usr/share/liblouis/tables/hyph_de_DE.dic"
+    hyph_FR = "/usr/share/liblouis/tables/hyph_fr_FR.dic"
 
     def __init__(self, cacher, proxies=None, verbose=False):
         self.opener = urllib.FancyURLopener(proxies)
         self.cache = cacher # for not retrieving things twice!
         self.verbose = verbose
+
+        self.hyphenator = None
+        try:
+            from hyphenator import Hyphenator
+            self.hyphenator = Hyphenator(self.hyph_DE)
+        except ImportError:
+            pass
 
     def crawlHTML(self, tree, similarcontent=None, depth=0, baseurl=None):
         imagesel = CSSSelector("img")
@@ -111,7 +123,13 @@ class Crawler(object):
         return result
 
     def clean(self, htmltext):
-        return self.re_cln.sub("", htmltext)
+        tmp = ""
+        while hash(tmp) != hash(htmltext):
+            htmltext = self.re_cln.sub("", htmltext)
+            tmp = htmltext
+        if self.hyphenator:
+            tmp = " ".join([self.hyphenator.inserted(word, "&shy;") for word in self.re_tag.split(tmp)])
+        return tmp
 
     def enrich(self, feed, recursion=1):
         # filters out images, adds images from html, cleans up content

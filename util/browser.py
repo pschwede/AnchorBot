@@ -74,9 +74,10 @@ class WebkitBrowser(gtk.ScrolledWindow):
         return "\n".join(f.readlines())
 
     def openfeed(self, feed):
-        self.html = "<html><head>"
+        self.html = '<html lang="en de"><head>'
         self.html += "</head><style>"+self._style()+"</style>" 
-        self.html += '<script type="text/javascript" src="file://'+self.absolute+'/third-party/jquery-1.5.min.js"></script>'
+        script = '<script type="text/javascript" src="file://'+self.absolute+'/third-party/%s"></script>'
+        self.html += script % 'jquery-1.5.min.js'
         self.html += '<body>'
         #TODO support templates (django api?)
         for entry in feed["entries"]:

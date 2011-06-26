@@ -7,7 +7,7 @@
 
 html, body {
     font-family: "minion-pro-1","minion-pro-2",Palatino,Georgia,"Times New Roman",serif;
-    line-height: 166%;
+    line-height: 133%;
     font-size: 12pt;
     color: #000;
     /*background-color: #bbb;*/
@@ -39,20 +39,20 @@ body {
     width: 100%;
     max-width: 600px;
     margin: 0 auto;
-    /*border-top: 3px solid #000;
-    border-bottom: 3px solid #000;*/
 }
 
 .issue_content {
     text-align: justify;
-    text-indent: 2em;
     width: 90%;
     max-width: 500px;
     margin: 0 auto;
-    /*hyphenate-limit-last: none;*/
+    text-indent: 2em;
 }
-.issue_content:last-line {
-    text-align: default;
+.issue_content p, .issue_content div {
+    text-indent: 2em;
+}
+.issue_content p:first-child, .issue_content div:first-child {
+    text-indent: 0
 }
 
 .issue_content p, .issue-content br {
@@ -121,7 +121,7 @@ img {
 .issue_head {
     color: #000;
     padding: 9px;
-    text-align: left;
+    text-align: center;
     margin-bottom: 5px;
     text-shadow: 0 0 2px #fff;
 }

@@ -19,6 +19,8 @@ Requirements
 * [PyGTK](http://pygtk.org/) python-gtk2
 * [pyWebkitGTK](http://code.google.com/p/pywebkitgtk/) python-webkit
 * [feedparser](http://feedparser.org/) python-feedparser
+* Optional:[hyphenator](https://code.google.com/p/python-hyphenator/) python-hyphenator
+        sudo easy_install hyphenator
 
 Related Projects
 ----------------
