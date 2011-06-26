@@ -23,6 +23,7 @@ Requirements
 Optional:
 
 * [hyphenator](https://code.google.com/p/python-hyphenator/) python-hyphenator
+
         sudo easy_install hyphenator
 
 Related Projects
