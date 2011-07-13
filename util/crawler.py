@@ -29,7 +29,10 @@ class Crawler(object):
         self.hyphenator = None
         try:
             from hyphenator import Hyphenator
-            self.hyphenator = Hyphenator(self.hyph_DE)
+            try:
+                self.hyphenator = Hyphenator(self.hyph_DE)
+            except IOError:
+                pass
         except ImportError:
             pass
 
