@@ -126,6 +126,7 @@ class Crawler(object):
         return result
 
     def clean(self, htmltext):
+        """Removes tags and adds optional hyphens (&shy;) to each word or sentence."""
         tmp = ""
         while hash(tmp) != hash(htmltext):
             htmltext = self.re_cln.sub("", htmltext)
@@ -135,7 +136,7 @@ class Crawler(object):
         return tmp
 
     def enrich(self, feed, recursion=1):
-        # filters out images, adds images from html, cleans up content
+        """Filters out images, adds images from html, cleans up content."""
         for entry in feed["entries"]:
             # get more text
             article = None
