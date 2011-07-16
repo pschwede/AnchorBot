@@ -232,9 +232,12 @@ class htmlSmallWidget():
             except KeyError:
                 pass
         self.html += '<div class="small">'
-        if entry["links"][0]["href"]:
-            self.html += '<a class="about_source" href="' + entry["links"][0]["href"] + '">Source</a>'
-            self.html += '<a class="about_share" href="about:share?url=' + entry["links"][0]["href"] + '&text=' + entry["title"] + '">Share</a>'
+        try:
+            if entry["links"][0]["href"]:
+                self.html += '<a class="about_source" href="' + entry["links"][0]["href"] + '">Source</a>'
+                self.html += '<a class="about_share" href="about:share?url=' + entry["links"][0]["href"] + '&text=' + entry["title"] + '">Share</a>'
+        except KeyError:
+            pass
         self.html += '</div>'
         self.html += '</div>'
 

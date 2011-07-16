@@ -54,7 +54,7 @@ class Crawler(object):
             link = elem.get("href")
             if link and link[-4:] in (".png",".jpg",".gif","jpeg"):
                 images.append(urljoin(baseurl, link))
-        return {"image": keepimage, "images": images, "content": self.clean(content)}
+        return {"image": keepimage, "images": set(images), "content": self.clean(content)}
 
     def unescape(self, text):
         text = text.replace("\/","/")
@@ -82,7 +82,6 @@ class Crawler(object):
         for imgurl in imagelist:
             try:
                 im = Image.open(self.cache[imgurl])
-                imgurl = self.cache[imgurl]
                 if x * y < im.size[0] * im.size[1]:
                     x, y = im.size
                     biggest = imgurl
@@ -173,8 +172,8 @@ class Crawler(object):
             try:
                 for link in entry["links"]:
                     try:
-                        images |= sef.crawlHTML(soupparser.parse(self.cache[link]))["images"]
-                    except:
+                        images |= self.crawlHTML(soupparser.parse(self.cache[link["href"]]))["images"]
+                    except ValueError: #usually caused by invalid characters in html code
                         pass
             except KeyError:
                 pass # there were no links
