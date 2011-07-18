@@ -91,7 +91,7 @@ class lyrebird( object ):
         self.dl_queue = Queue.Queue()
         self.dl_running = True
         for i in range( number_of_pipes ):
-            t = threading.Thread( target=self.__dl_worker, args=( False, self.update_feeds_tree,  ) )
+            t = threading.Thread( target=self.__dl_worker, args=( True, self.update_feeds_tree,  ) )
             t.daemon = True
             t.start()
 
@@ -221,7 +221,7 @@ def main( urls=[], nogui=False, cache_only=False, verbose=False ):
     """The main func which creates Lyrebird
     """
     gobject.threads_init()
-    l = lyrebird(nogui, verbose, cache_only)
+    l = lyrebird(nogui, cache_only, verbose)
     gobject.idle_add( l.show )
     for url in urls:
         gobject.idle_add( l.add_url, ( url, ) )

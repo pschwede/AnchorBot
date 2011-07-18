@@ -5,7 +5,7 @@ import chardet
 from urlparse import urljoin
 from lxml.cssselect import CSSSelector
 from lxml.html import make_links_absolute, soupparser
-from lxml.etree import tostring as xmltostring
+from lxml.etree import tostring as xmltostring, CDATA
 from storage import PersistentCacher
 from logger import log
 
@@ -15,9 +15,9 @@ Follows redirections and delivers some useful functions for remote images.
 """
 
 class Crawler(object):
-    re_cln = re.compile('(<img[^>]+>|[\n\r]|<script[^>]*>\s*</script>|<iframe.*</iframe>|</*html>|</*head>|</*div[^>]*>)', re.I)
+    re_cln = re.compile('(<img[^>]+>|[\n\r]|<script[^>]*>\s*</script>|<iframe.*</iframe>|</*html>|</*head>|</*div[^>]*>| [ ]+)', re.I)
     re_tag = re.compile('(<[^abip][^>]*>|<br[^>]*>)', re.I)
-    re_hyph = re.compile('(<[^>]>|-|\s|&gt;[^(&lt;)]&lt;)')
+    re_hyph = re.compile('(<[^>]+>|&gt;[^(&lt;)]+&lt;)')
     hyph_EN = "/usr/share/liblouis/tables/hyph_en_US.dic"
     hyph_DE = "/usr/share/liblouis/tables/hyph_de_DE.dic"
     hyph_FR = "/usr/share/liblouis/tables/hyph_fr_FR.dic"
@@ -38,23 +38,23 @@ class Crawler(object):
             pass
 
     def crawlHTML(self, tree, similarcontent=None, depth=0, baseurl=None):
-        imagesel = CSSSelector("img")
-        textsel = CSSSelector("div,span,p")
         content = similarcontent or xmltostring(tree)
         if similarcontent:
+            textsel = CSSSelector("div,span,p")
             for elem in textsel(tree):
                 if elem.text and similarcontent[:-3] in elem.text:
                     content = elem.text
                     break;
-        keepimage = None
+        imagesel = CSSSelector("img")
         images = [urljoin(baseurl,img.get("src") or img.attrib.values()[0]) for img in imagesel(tree)]
-        if images:
-            keepimage = images[0]
         linksel = CSSSelector("a")
         for elem in linksel(tree):
             link = elem.get("href")
             if link and link[-4:] in (".png",".jpg",".gif","jpeg"):
                 images.append(urljoin(baseurl, link))
+        keepimage = None
+        if images:
+            keepimage = images[0]
         return {"image": keepimage, "images": set(images), "content": self.clean(content)}
 
     def unescape(self, text):
@@ -127,13 +127,23 @@ class Crawler(object):
 
     def clean(self, htmltext):
         """Removes tags and adds optional hyphens (&shy;) to each word or sentence."""
-        tmp = ""
         if self.hyphenator:
-            tmp = " ".join([self.hyphenator.inserted(word, "&shy;") for word in self.re_hyph.split(tmp)])
+            tree = soupparser.fromstring(htmltext)
+            self.recursive_hyph(tree, u"\u00AD")
+            htmltext = xmltostring(tree, encoding="utf8")
+        tmp = ""
         while hash(tmp) != hash(htmltext):
-            htmltext = self.re_cln.sub("", htmltext)
             tmp = htmltext
-        return tmp
+            htmltext = self.re_cln.sub("", htmltext)
+        return htmltext
+
+    def recursive_hyph(self, tree, hyphen):
+        if tree.text:
+            tree.text = " ".join([self.hyphenator.inserted(word, hyphen) for word in tree.text.split(" ")])
+        if tree.tail:
+            tree.tail = " ".join([self.hyphenator.inserted(word, hyphen) for word in tree.tail.split(" ")])
+        for elem in tree:
+            self.recursive_hyph(elem, hyphen)
 
     def enrich(self, feed, recursion=1):
         """Filters out images, adds images from html, cleans up content."""
@@ -148,7 +158,11 @@ class Crawler(object):
                     content = entry["summary_detail"].value
                     article = self.crawlHTML(soupparser.fromstring(content))
                 except KeyError:
-                    pass
+                    try:
+                        content = entry["summary"].value
+                        article = self.crawlHTML(soupparser.fromstring(content))
+                    except KeyError:
+                        pass
 
             # get more images
             # from entry itself
@@ -194,9 +208,10 @@ if __name__ == "__main__":
     from pprint import pprint as pp
 
     c = Crawler(PersistentCacher())
+    
     #feed = feedparser.parse("http://www.reddit.com/r/aww/.rss")
-    #feed = feedparser.parse("http://www.tigsource.com/feed/")
-    feed = feedparser.parse("http://apod.nasa.gov/apod.rss")
+    feed = feedparser.parse("http://www.dradio.de/rss/nachrichten/")
+    #feed = feedparser.parse("http://apod.nasa.gov/apod.rss")
     c.enrich(feed)
-    pp(feed)
+    pp([e["summary"] for e in feed["entries"]])
     #execv("/usr/bin/ristretto", filter(None, [entry["image"] for entry in feed["entries"]]))

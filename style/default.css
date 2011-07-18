@@ -46,13 +46,6 @@ body {
     width: 90%;
     max-width: 500px;
     margin: 0 auto;
-    text-indent: 2em;
-}
-.issue_content p, .issue_content div {
-    text-indent: 2em;
-}
-.issue_content p:first-child, .issue_content div:first-child {
-    text-indent: 0
 }
 
 .issue_content p, .issue-content br {
