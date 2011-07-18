@@ -42,7 +42,7 @@ class Crawler(object):
         if similarcontent:
             textsel = CSSSelector("div,span,p")
             for elem in textsel(tree):
-                if elem.text and similarcontent[:-3] in elem.text:
+                if elem.text and similarcontent[:-len(similarcontent)/2] in elem.text:
                     content = elem.text
                     break;
         imagesel = CSSSelector("img")
