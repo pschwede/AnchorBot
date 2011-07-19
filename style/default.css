@@ -42,6 +42,8 @@ body {
 }
 
 .issue_content {
+    padding-top: 30px;
+    border-top: 1px solid #333;
     text-align: justify;
     width: 90%;
     max-width: 500px;

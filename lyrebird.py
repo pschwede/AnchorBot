@@ -71,7 +71,7 @@ class lyrebird( object ):
         # prepare cached browser
         self.browser = browser.WebkitBrowser( HERE )
         self.browser.set_about_handler( self.__about )
-        self.cache = storage.PersistentCacher( TEMP, 3 , self.verbose) # keeps files for 3 days
+        self.cache = storage.FileCacher( TEMP, 3 , self.verbose) # keeps files for 3 days
 
         # prepare variables and lists,...
         self.feeds = {}
