@@ -22,16 +22,14 @@ body {
 }
 
 .issue1 a:link, .issue2 a:link {
-    color: #000;
+    color: #009;
     font-style: italic;
 }
-.issue1 :not(.small) a:link:after, .issue2 :not(.small) a:link:after {
-    content: "*";
-}
-.issue1 a:hover, .issue2 a:hover {
+.issue1 :not(.small) a:hover, :not(.small) .issue2 a:hover {
     color: #009;
+    text-decoration: underline;
 }
-.issue1 a:visited, .issue2 a:visited {
+.issue1 :not(.small) a:visited, :not(.small) .issue2 a:visited {
     color: #ff9;
 }
 
@@ -46,7 +44,7 @@ body {
     border-top: 1px solid #333;
     text-align: justify;
     width: 90%;
-    max-width: 500px;
+    max-width: 600px;
     margin: 0 auto;
 }
 
@@ -118,7 +116,9 @@ img {
     padding: 9px;
     text-align: center;
     margin-bottom: 5px;
+    margin-top: 30px;
     text-shadow: 0 0 2px #fff;
+    line-height: 18pt;
 }
 
 h1 {

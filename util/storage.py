@@ -49,20 +49,20 @@ class FileCacher(object):
                 self.stor = pickle.load( open(storpath, 'r'), -1 )
                 successful = True
             except:
-                log("Cache corrupted.. will try to rebuild it.")
+                pass
 
     def vacuum(self, max_age_in_days):
         # first search for really existing && unrotten files,
         # then burn the rest.
-        existing = set([self.storpath])
+        keep = set([self.storpath])
         then = time.time() - max_age_in_days*24*60*60
         for url, (newurl,creation) in self.stor.items():
             if creation < then:
                 self.__remove_item(url)
             else:
-                existing.add(newurl)
-        files = [os.path.join(self.localdir, f) for f in os.listdir(self.localdir)]
-        for f in set(files).difference(existing):
+                keep.add(newurl)
+        toremove = [os.path.join(self.localdir, f) for f in os.listdir(self.localdir)]
+        for f in set(toremove).difference(keep):
             os.remove(os.path.join( self.localdir, f))
 
     def __newurl(self, url):
