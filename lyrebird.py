@@ -91,7 +91,8 @@ class lyrebird( object ):
         self.dl_queue = Queue.Queue()
         self.dl_running = True
         for i in range( number_of_pipes ):
-            t = threading.Thread( target=self.__dl_worker, args=( True, self.update_feeds_tree,  ) )
+            #run dlers *without* caching
+            t = threading.Thread( target=self.__dl_worker, args=( False, self.update_feeds_tree,  ) )
             t.daemon = True
             t.start()
 
