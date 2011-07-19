@@ -38,7 +38,7 @@ class TextBrowser(gtk.TextView):
             gtk.gdk.threads_leave()
             
 class WebkitBrowser(gtk.ScrolledWindow):
-    def __init__(self, absolute=""):
+    def __init__(self, absolute="", style="default.css"):
         super(WebkitBrowser, self).__init__()
         self.absolute = absolute
         self.set_shadow_type(gtk.SHADOW_IN)
@@ -49,6 +49,7 @@ class WebkitBrowser(gtk.ScrolledWindow):
         self.browser.show()
         self.html = ""
         self.about_handler = None
+        self._style = os.path.join(self.absolute, "style/%s" % style)
 
     def _navigation_requested(self, view, frame, req, act, pol):
         url = req.get_uri()
@@ -69,18 +70,17 @@ class WebkitBrowser(gtk.ScrolledWindow):
     def open(self, uri):
         self.browser.open(uri)
 
-    def _style(self, style="default.css"):
-        f = open(os.path.join(self.absolute, "style/%s" % style))
-        return "\n".join(f.readlines())
-
     def openfeed(self, feed):
-        self.html = '<html lang="en de"><head>'
-        self.html += "</head><style>"+self._style()+"</style>" 
-        script = '<script type="text/javascript" src="file://'+self.absolute+'/third-party/%s"></script>'
-        self.html += script % 'jquery-1.5.min.js'
-        self.html += '<body>'
+        self.html = """<!doctype html><html lang="en de"><head>
+        <link rel="stylesheet" type="text/css" href="%s"/>
+        <script type="text/javascript" src="file://%s/third-party/%s"></script>
+        </head>
+        <body>""" % (
+                self._style,
+                self.absolute, 'jquery-1.5.min.js',
+                )
         #TODO support templates (django api?)
-        for entry in feed["entries"]:
+        for entry in tuple(feed["entries"]):
             self.html += str(widgets.htmlSmallWidget(entry))
         self.html += "</body></html>"
         f = open("/tmp/browser.html", 'w')

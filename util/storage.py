@@ -61,9 +61,6 @@ class FileCacher(object):
                 self.__remove_item(url)
             else:
                 keep.add(newurl)
-        toremove = [os.path.join(self.localdir, f) for f in os.listdir(self.localdir)]
-        for f in set(toremove).difference(keep):
-            os.remove(os.path.join( self.localdir, f))
 
     def __newurl(self, url):
         return os.path.join(self.localdir, str(hex(hash(url))).replace("-","0"))
@@ -84,7 +81,10 @@ class FileCacher(object):
             self.verbose and log("Downloading %s." % url)
             try:
                 if not os.path.exists(newurl):
-                    self.dloader.retrieve(url, newurl)
+                    try:
+                        self.dloader.retrieve(url, newurl)
+                    except UnicodeError:
+                        self.dloader.retrieve(urllib.quote_plus(url.decode()), newurl)
                 self.verbose and log("Cached %s to %s." % (url, newurl, ))
                 self.stor[url] = self.stor[newurl] = (newurl, time.time())
             except IOError:

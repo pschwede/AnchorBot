@@ -13,11 +13,9 @@ from logger import log
 """
 Follows redirections and delivers some useful functions for remote images.
 """
+re_cln = re.compile('(<img[^>]+>|[\n\r]|<script[^>]*>\s*</script>|<iframe.*</iframe>|</*html>|</*head>|</*div[^>]*>| [ ]+)', re.I)
 
 class Crawler(object):
-    re_cln = re.compile('(<img[^>]+>|[\n\r]|<script[^>]*>\s*</script>|<iframe.*</iframe>|</*html>|</*head>|</*div[^>]*>| [ ]+)', re.I)
-    re_tag = re.compile('(<[^abip][^>]*>|<br[^>]*>)', re.I)
-    re_hyph = re.compile('(<[^>]+>|&gt;[^(&lt;)]+&lt;)')
     hyph_EN = "/usr/share/liblouis/tables/hyph_en_US.dic"
     hyph_DE = "/usr/share/liblouis/tables/hyph_de_DE.dic"
     hyph_FR = "/usr/share/liblouis/tables/hyph_fr_FR.dic"
@@ -134,7 +132,7 @@ class Crawler(object):
         tmp = ""
         while hash(tmp) != hash(htmltext):
             tmp = htmltext
-            htmltext = self.re_cln.sub("", htmltext)
+            htmltext = re_cln.sub("", htmltext)
         return htmltext
 
     def recursive_hyph(self, tree, hyphen):
