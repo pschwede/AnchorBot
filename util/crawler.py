@@ -6,7 +6,7 @@ from urlparse import urljoin
 from lxml.cssselect import CSSSelector
 from lxml.html import make_links_absolute, soupparser
 from lxml.etree import tostring as xmltostring, CDATA
-from storage import PersistentCacher
+from storage import FileCacher
 from logger import log
 
 
@@ -49,9 +49,9 @@ class Crawler(object):
         images = [urljoin(baseurl,img.get("src") or img.attrib.values()[0]) for img in imagesel(tree)]
         linksel = CSSSelector("a")
         for elem in linksel(tree):
-            link = elem.get("href")
+            link = urljoin(baseurl, elem.get("href"))
             if link and link[-4:] in (".png",".jpg",".gif","jpeg"):
-                images.append(urljoin(baseurl, link))
+                images.append(link)
         keepimage = None
         if images:
             keepimage = images[0]
@@ -147,6 +147,7 @@ class Crawler(object):
 
     def enrich(self, feed, recursion=1):
         """Filters out images, adds images from html, cleans up content."""
+        usedimages = set()
         for entry in feed["entries"]:
             # get more text
             article = None
@@ -171,30 +172,32 @@ class Crawler(object):
             for key in ("links", "enclosures"):
                 try:
                     i = filter(lambda x: x.type.startswith("image"), entry[key])
-                    images |= set([item.href for item in i])
+                    images |= set([item.href for item in i]).difference(usedimages)
                 except KeyError:
                     pass
             # from html content
             if article:
                 if article["images"]:
-                    images |= set(article["images"])
-
-            # filter out some images
-            entry["images"] = self.filter_images(images, minimum=(70,70))
-            entry["image"] = entry["image"] or self.biggest_image(entry["images"])
+                    images |= set(article["images"]).difference(usedimages)
 
             # get even more images from links in entry
             try:
                 for link in entry["links"]:
                     try:
-                        images |= self.crawlHTML(soupparser.parse(self.cache[link["href"]]))["images"]
+                        images |= self.crawlHTML(soupparser.parse(self.cache[link["href"]]))["images"].difference(usedimages)
                     except ValueError: #usually caused by invalid characters in html code
                         pass
             except KeyError:
                 pass # there were no links
 
+            images = images.difference(usedimages)
+            usedimages |= images
+
+            # filter out some images
+            images = set(self.filter_images(images, minimum=(70,70)))
+
             # give the images to the entry finally
-            entry["images"] = set(images)
+            entry["images"] = images
             entry["image"] = entry["image"] or self.biggest_image(entry["images"])
 
             # clean up content
@@ -207,11 +210,11 @@ if __name__ == "__main__":
     from os import execv
     from pprint import pprint as pp
 
-    c = Crawler(PersistentCacher())
+    c = Crawler(FileCacher())
     
-    #feed = feedparser.parse("http://www.reddit.com/r/aww/.rss")
-    feed = feedparser.parse("http://www.dradio.de/rss/nachrichten/")
+    feed = feedparser.parse("http://www.reddit.com/r/aww/.rss")
+    #feed = feedparser.parse("http://www.dradio.de/rss/nachrichten/")
     #feed = feedparser.parse("http://apod.nasa.gov/apod.rss")
     c.enrich(feed)
-    pp([e["summary"] for e in feed["entries"]])
+    pp([e["images"] for e in feed["entries"]])
     #execv("/usr/bin/ristretto", filter(None, [entry["image"] for entry in feed["entries"]]))

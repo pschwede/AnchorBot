@@ -31,7 +31,7 @@ class Cacher(object):
     def clear(self):
         self.dic = {}
 
-class PersistentCacher(object):
+class FileCacher(object):
     def __init__(self, localdir="/tmp/lyrebird/", max_age_in_days=-1, verbose=False):
         self.verbose = verbose
         self.max_age_in_days = max_age_in_days
