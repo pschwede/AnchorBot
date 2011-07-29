@@ -51,7 +51,7 @@ class lyrebird( object ):
         except IOError:
             sys.exit( 1 )
         self.__setup_dl_pipes( NUMT )
-        self.l = l = Logger(verbose, write=True)
+        self.l = l = Logger(verbose, write=os.path.join(HOME, "lyrebird.log"))
 
         # print out cache and exit
         if cache_only:
