@@ -6,6 +6,8 @@ class Logger(object):
         self.pp = pprint.PrettyPrinter(indent=4)
         if verbose:
             self.log = self.__log_verbose
+            if write:
+                self.log = self.__log_verbose_write
         elif write:
             self.log = self.__log_nonverbose_write
         else:
@@ -18,6 +20,12 @@ class Logger(object):
         f.close()
 
     def __log_nonverbose_write(self, obj):
+        f = open("/tmp/lyrebird.log", "a")
+        f.write(str(obj)+"\n")
+        f.close()
+
+    def __log_verbose_write(self, obj):
+        pp.pprint(obj)
         f = open("/tmp/lyrebird.log", "a")
         f.write(str(obj)+"\n")
         f.close()

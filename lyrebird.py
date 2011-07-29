@@ -14,7 +14,7 @@ import threading, webbrowser, Queue
 from tempfile import gettempdir
 
 from util import browser, analyzer, storage, _
-from util.logger import log
+from util.logger import Logger
 from util.config import Config
 from util.microblogging import Microblogger
 from util.crawler import Crawler
@@ -51,6 +51,7 @@ class lyrebird( object ):
         except IOError:
             sys.exit( 1 )
         self.__setup_dl_pipes( NUMT )
+        self.l = l = Logger(verbose, write=True)
 
         # print out cache and exit
         if cache_only:
@@ -66,7 +67,7 @@ class lyrebird( object ):
         try:
             self.config = Config( HOME, verbose=self.verbose ) # Raises Exception if locked
         except:
-            log(_( "It seems as if Lyrebird is already running. If not, please remove ~/.lyrebird/lock" ))
+            self.l.log(_( "It seems as if Lyrebird is already running. If not, please remove ~/.lyrebird/lock" ))
             raise IOError()
 
         # prepare cached browser
@@ -126,8 +127,7 @@ class lyrebird( object ):
                     if arg.startswith( "text=" ):
                         text = urllib.unquote( arg[5:] )
                 if text or url:
-                    if self.verbose:
-                        log( 'Tweet %s %s' % ( text, url,  ) )
+                    self.l.log( 'Tweet %s %s' % ( text, url,  ) )
                     self.mblog.send_text( "%s %s" % ( text, url,  ) )
 
     def show_group( self, url ):
@@ -146,8 +146,7 @@ class lyrebird( object ):
         try:
             title = feed["feed"]["title"]
         except KeyError:
-            if self.verbose:
-                log( "Couldn't find feed[feed][title] in %s" % url )
+            self.l.log( "Couldn't find feed[feed][title] in %s" % url )
         if url in self.window.treedic.keys():
             self.window.groups.get_model().set( self.window.treedic[url], 0, title, 1, url )
         else:
@@ -178,14 +177,13 @@ class lyrebird( object ):
     def download( self, feedurl, cached=True, callback=None ):
         """Download procedure
         """
-        if not cached:
-            self.feeds[feedurl] = feedparser.parse( feedurl )
-        else:
+        if cached:
             self.feeds[feedurl] = feedparser.parse( self.cache[feedurl] )
+        else:
+            self.feeds[feedurl] = feedparser.parse( feedurl )
         article_list = self.crawler.enrich(self.feeds[feedurl], tuple_list=True)
         self.dm.submit_all(Article(entry[0],self.dm.submit_image(entry[1]),entry[2],entry[3],entry[4]) for entry in article_list)
-        if self.verbose:
-            log( "*** " + str( self.feeds.keys().index( feedurl ) ) + " of " + str( len( self.feeds ) ) )
+        self.l.log( "*** " + str( self.feeds.keys().index( feedurl ) ) + " of " + str( len( self.feeds ) ) )
         if callback:
             callback( feedurl )
 
