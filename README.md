@@ -26,7 +26,7 @@ Optional:
 
         sudo easy_install hyphenator
 
-* [tweepy](http://joshthecoder.github.com/tweepy/) tweepy
+* [tweepy](http://joshthecoder.github.com/tweepy/)
 
         sudo easy_install tweepy
 
