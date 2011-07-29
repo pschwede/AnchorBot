@@ -8,6 +8,7 @@ from lxml.html import make_links_absolute, soupparser
 from lxml.etree import tostring as xmltostring, CDATA
 from storage import FileCacher
 from logger import log
+from time import localtime
 
 
 """
@@ -143,9 +144,11 @@ class Crawler(object):
         for elem in tree:
             self.recursive_hyph(elem, hyphen)
 
-    def enrich(self, feed, recursion=1):
+    def enrich(self, feed, recursion=1, tuple_list=False):
         """Filters out images, adds images from html, cleans up content."""
         usedimages = set()
+        if tuple_list:
+            article_list = []
         for entry in feed["entries"]:
             # get more text
             article = None
@@ -201,6 +204,16 @@ class Crawler(object):
             # clean up content
             if article:
                 entry["summary"] = article["content"]
+                if tuple_list:
+                    article_list.append((
+                        entry["title"],
+                        article["image"],
+                        article["content"],
+                        entry["links"][0],
+                        localtime(),
+                        ))
+        if tuple_list:
+            return article_list
         return feed
 
 if __name__ == "__main__":

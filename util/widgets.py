@@ -69,9 +69,7 @@ class main_window( gtk.Window ):
         self.set_title( self.info["__appname__"] + " " + self.info["__version__"] )
         self.connect( "destroy", self.ctrl.quit )
 
-        #vbox = self.vbox = gtk.VBox( False, 0 )
         vbox = gtk.VBox()
-        #vbox.pack_start( hbox, True, True )
 
         # BEGIN toolbar
 
@@ -174,9 +172,9 @@ class main_window( gtk.Window ):
         table.attach( hbox, 0, 2, 1, 2 )
 
         ok = gtk.Button( stock=gtk.STOCK_OK )
-        ok.connect( "clicked", lambda x: ( self.ctrl.add_url( url_entry.get_text() ), w.destroy() ) )
+        ok.connect( "clicked", lambda x: (self.ctrl.add_url( url_entry.get_text() ) , w.destroy(),) )
         hbox.pack_end( ok, False, False )
-        ok.set_property("has-default", True)
+        #ok.set_property("has-default", True)
 
         cancel = gtk.Button( stock=gtk.STOCK_CANCEL )
         cancel.connect( "clicked", lambda x: w.destroy() )

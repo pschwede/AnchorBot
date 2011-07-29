@@ -19,6 +19,7 @@ from util.config import Config
 from util.microblogging import Microblogger
 from util.crawler import Crawler
 from util.widgets import main_window
+from util.datamodel import Source, Article, Image, DataModel
 
 HOME = os.path.join( os.path.expanduser( "~" ),".lyrebird" )
 HERE = os.path.realpath( os.path.dirname( __file__ ) )
@@ -72,6 +73,9 @@ class lyrebird( object ):
         self.browser = browser.WebkitBrowser( HERE )
         self.browser.set_about_handler( self.__about )
         self.cache = storage.FileCacher( TEMP, 3 , self.verbose) # keeps files for 3 days
+
+        # prepare datamodel
+        self.dm = DataModel( os.path.join(HOME,"database.sqlite") )
 
         # prepare variables and lists,...
         self.feeds = {}
@@ -178,7 +182,8 @@ class lyrebird( object ):
             self.feeds[feedurl] = feedparser.parse( feedurl )
         else:
             self.feeds[feedurl] = feedparser.parse( self.cache[feedurl] )
-        self.feeds[feedurl] = self.crawler.enrich(self.feeds[feedurl])
+        article_list = self.crawler.enrich(self.feeds[feedurl], tuple_list=True)
+        self.dm.submit_all(Article(entry[0],self.dm.submit_image(entry[1]),entry[2],entry[3],entry[4]) for entry in article_list)
         if self.verbose:
             log( "*** " + str( self.feeds.keys().index( feedurl ) ) + " of " + str( len( self.feeds ) ) )
         if callback:
@@ -208,9 +213,7 @@ class lyrebird( object ):
         """Adds a feed url to the abos
         """
         self.config.add_abo( url )
-        self.download( url )
-        self.show( url )
-        self.update_feeds_tree( url )
+        self.dl_queue.put_nowait( url )
 
     def remove_url( self, url ):
         """Removes a feed url from the abos
