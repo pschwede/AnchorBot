@@ -1,7 +1,7 @@
 Lyrebird
 ========
 
-Version 0.1 Coccatoo(beta)
+Version 1.0 /fancy surname here/
 (c) spazzpp2 – Licensed under MIT License
 
 It's a news aggregator with the attempt of making you read the most important news first.
@@ -17,7 +17,7 @@ Main Features
 Requirements
 ------------
 * [PyGTK](http://pygtk.org/) python-gtk2
-* [pyWebkitGTK](http://code.google.com/p/pywebkitgtk/) python-webkit
+* [pyWebkitGTK](https://code.google.com/p/pywebkitgtk/) python-webkit
 * [feedparser](http://feedparser.org/) python-feedparser
 
 Optional:
@@ -26,10 +26,16 @@ Optional:
 
         sudo easy_install hyphenator
 
+* [tweepy](http://joshthecoder.github.com/tweepy/) tweepy
+
+        sudo easy_install tweepy
+
+To use easy\_install on a Ubuntu/Mint/Debian Machine, you want to install python-setuptoolsi, first. If you are root, you won't need to sudo.
+
 Related Projects
 ----------------
 * [Flipboard](http://flipboard.com/)
-* [Hotot](http://code.google.com/p/hotot)
+* [Hotot](https://code.google.com/p/hotot)
 * [Google Reader](http://reader.google.com/)
 
 This project is a tribute to the [bird that retweets](http://youtu.be/7XiQDgNUEMw) the terrifying chainsaws that sew down it's rain forest.
