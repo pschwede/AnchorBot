@@ -16,14 +16,16 @@ class Source(Base):
     title = Column(String)
     icon = Column(Integer, ForeignKey('images.id'))
     url = Column(String, unique=True, nullable=False)
+    h = Column(Integer)
 
-    def __init__(self, title, icon, url):
+    def __init__(self, title, icon, url, h):
         self.title = title
         self.icon = icon
         self.url = self.url
+        self.h = h
 
     def __refr__(self):
-        return "<Feed('%s','%s','%s')>" % (self.title, self.icon, self.url)
+        return "<Feed('%s','%s','%s', '%s')>" % (self.title, self.icon, self.url, h)
 
 class Article(Base):
     __tablename__ = 'articles'
@@ -96,14 +98,13 @@ class DataModel:
         try:
             s.commit()
         except IntegrityError, e:
-            print "IntegrityError", e.message, e.params
             s.rollback()
             for i in l:
                 try:
-                    s.add(i)
-                    s.commit()
+                    if i not in s:
+                        s.add(i)
+                        s.commit()
                 except IntegrityError, e:
-                    print "2nd try: IntegrityError", e.message, e.params
                     s.rollback()
 
     def submit_image(self, url):
@@ -117,6 +118,15 @@ class DataModel:
         s.add(Article(title, content, url, date))
         s.add(Image(image))
         s.commit()
+
+    def submit_source(self, title, icon, url, h):
+        s = self.sessionmaker()
+        s.add(Source(title, icon, url, h))
+        try:
+            s.commit()
+        except IntegrityError:
+            s.rollback()
+            #TODO try updating
 
     def has_article(self, url):
         s = self.sessionmaker()

@@ -30,7 +30,7 @@ Optional:
 
         sudo easy_install tweepy
 
-To use easy\_install on an Ubuntu/Mint/Debian machine, you need to install python-setuptoolsi, first. If you are root, you won't need to sudo.
+To use easy\_install on an Ubuntu/Mint/Debian machine, you need to install python-setuptools, first. If you are root, you won't need to sudo.
 
 Related Projects
 ----------------
