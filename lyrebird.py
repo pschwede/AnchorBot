@@ -44,6 +44,7 @@ class lyrebird( object ):
 
     def __init__( self, nogui=False, verbose=False, cache_only=False ):
         self.verbose = verbose
+        self.l = l = Logger(verbose, write=os.path.join(HOME, "lyrebird.log"))
 
         # prepare lock, config, cache and variables
         try:
@@ -51,7 +52,6 @@ class lyrebird( object ):
         except IOError:
             sys.exit( 1 )
         self.__setup_dl_pipes( NUMT )
-        self.l = l = Logger(verbose, write=os.path.join(HOME, "lyrebird.log"))
 
         # print out cache and exit
         if cache_only:
@@ -130,11 +130,6 @@ class lyrebird( object ):
                     self.l.log( 'Tweet %s %s' % ( text, url,  ) )
                     self.mblog.send_text( "%s %s" % ( text, url,  ) )
 
-    def show_group( self, url ):
-        """Opens single feeds or combined (grouped) ones in browser.
-        """
-        self.browser.openfeed( url )
-
     def update_feeds_tree( self, url ):
         """Redraws the Feed-Tree
         """
@@ -174,16 +169,35 @@ class lyrebird( object ):
             self.download( url, cached, callback )
             self.dl_queue.task_done()
 
-    def download( self, feedurl, cached=True, callback=None ):
+    def download( self, feedurl, cached=True, callback=None):
         """Download procedure
-        """
+        """ #TODO move these methods into somewhere better fitting
         if cached:
             self.feeds[feedurl] = feedparser.parse( self.cache[feedurl] )
         else:
             self.feeds[feedurl] = feedparser.parse( feedurl )
-        article_list = self.crawler.enrich(self.feeds[feedurl], tuple_list=True)
-        self.dm.submit_all(Article(entry[0],self.dm.submit_image(entry[1]),entry[2],entry[3],entry[4]) for entry in article_list)
-        self.l.log( "*** " + str( self.feeds.keys().index( feedurl ) ) + " of " + str( len( self.feeds ) ) )
+        submit_list = list()
+        for entry in self.feeds[feedurl]["entries"]:
+            try:
+                if not self.dm.has_article(entry["links"][0]["href"]):
+                    article = self.crawler.enrich(entry)
+                    if article["image"] and not self.dm.has_image(article["image"]):
+                        submit_list.append(Image(article["image"]))
+                    submit_list.append(
+                            Article(
+                                article["title"],
+                                article["image"],
+                                article["content"],
+                                article["link"],
+                                feedurl,
+                                article["date"],
+                                )
+                            )
+            except KeyError:
+                self.l.log("Entry has no link: %s" % entry["title"])
+        print feedurl
+        self.dm.submit_all(submit_list)
+        self.l.log("%i of %i" % (self.feeds.keys().index(feedurl), len( self.feeds ),))
         if callback:
             callback( feedurl )
 
@@ -202,7 +216,7 @@ class lyrebird( object ):
         if url:
             if url == self.watched:
                 self.dl_queue.put_nowait( url )
-            self.browser.openfeed( self.feeds[url] )
+            self.browser.open_articles( self.dm.get_articles(url, number=3))
         else:
             self.download_all( self.update_feeds_tree )
         self.watched = url

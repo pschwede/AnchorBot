@@ -195,6 +195,35 @@ class main_window( gtk.Window ):
         pass #TODO delete, open in browser, reload
 
 
+class htmlArticleWidget:
+    """The feed-entry inside the browser.
+    There probably will be a bigger htmlBigWidget, too.
+    """
+    def __init__( self, article, dominance=0., threshold=1.):
+        self.html = u'<div class="issue1">%s'
+        title = article["title"]
+        self.html = self.html % u'<h2 class="issue_head" title="%s">%s</h2>' % (title,title)
+        try:
+            if article["image"]:
+                self.html += '<div class="image"><img src="' + article["image"] + '" alt=""/></div>'
+        except KeyError:
+            pass
+        try:
+            self.html += "<div class=\"issue_content\">%s</div>"  % article["content"]
+        except KeyError:
+            pass
+        self.html += '<div class="small">'
+        try:
+            if article["link"]:
+                self.html += '<a class="about_source" href="' + article["link"] + '">Source</a>'
+                self.html += '<a class="about_share" href="about:share?url=' + article["link"] + '&text=' + article["title"] + '">Share</a>'
+        except KeyError:
+            pass
+        self.html += '</div></div>'
+
+    def __str__( self ):
+        return self.html
+
 class htmlSmallWidget():
     """The feed-entry inside the browser.
     There probably will be a bigger htmlBigWidget, too.

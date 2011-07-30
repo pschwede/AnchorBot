@@ -66,6 +66,8 @@ class FileCacher(object):
         return os.path.join(self.localdir, str(hex(hash(url))).replace("-","0"))
 
     def __getitem__(self, url):
+        if url == u"None":
+            return None
         if url[-4:] in self.dont_dl:
             self.verbose and log("Ignoring "+ url)
             return url

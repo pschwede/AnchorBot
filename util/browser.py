@@ -70,6 +70,22 @@ class WebkitBrowser(gtk.ScrolledWindow):
     def open(self, uri):
         self.browser.open(uri)
 
+    def open_article(self, article):
+        self.html = """<!doctype html><html lang="en de"><head>
+        <link rel="stylesheet" type="text/css" href="%s"/>
+        <script type="text/javascript" src="file://%s/third-party/%s"></script>
+        </head>
+        <body>""" % (
+                self._style,
+                self.absolute, 'jquery-1.5.min.js',
+                )
+        self.html += str(widgets.htmlArticleWidget(article, dominance=0))
+        self.html += "</body></html>"
+        f = open("/tmp/browser.html", 'w')
+        f.write(self.html)
+        f.close()
+        self.browser.load_string(self.html, "text/html", "utf-8", "file:///")
+
     def openfeed(self, feed):
         self.html = """<!doctype html><html lang="en de"><head>
         <link rel="stylesheet" type="text/css" href="%s"/>
@@ -88,3 +104,22 @@ class WebkitBrowser(gtk.ScrolledWindow):
         f.close()
         self.browser.load_string(self.html, "text/html", "utf-8", "file:///")
         # TODO load stuff with js
+
+    def open_articles(self, list_of_articles, write="/tmp/browser.html"):
+        l = list_of_articles
+        self.html = """<!doctype html><html lang="en de"><head>
+        <link rel="stylesheet" type="text/css" href="%s"/>
+        <script type="text/javascript" src="file://%s/third-party/%s"></script>
+        </head>
+        <body>""" % (
+                self._style,
+                self.absolute, 'jquery-1.5.min.js',
+                )
+        for article in l:
+            self.html += str(widgets.htmlArticleWidget(article))
+        self.html += "</body></html>"
+        self.browser.load_string(self.html, "text/html", "utf-8", "file:///")
+        if write:
+            f = open(write, 'w')
+            f.write(self.html)
+            f.close()

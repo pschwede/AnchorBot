@@ -8,7 +8,7 @@ from lxml.html import make_links_absolute, soupparser
 from lxml.etree import tostring as xmltostring, CDATA
 from storage import FileCacher
 from logger import log
-from time import localtime
+from time import time
 
 
 """
@@ -51,7 +51,7 @@ class Crawler(object):
             link = urljoin(baseurl, elem.get("href"))
             if link and link[-4:] in (".png",".jpg",".gif","jpeg"):
                 images.append(link)
-        keepimage = None
+        keepimage = ""
         if images:
             keepimage = images[0]
         return {"image": keepimage, "images": set(images), "content": self.clean(content)}
@@ -144,77 +144,67 @@ class Crawler(object):
         for elem in tree:
             self.recursive_hyph(elem, hyphen)
 
-    def enrich(self, feed, recursion=1, tuple_list=False):
+    def enrich(self, entry, recursion=1):
         """Filters out images, adds images from html, cleans up content."""
         usedimages = set()
-        if tuple_list:
-            article_list = []
-        for entry in feed["entries"]:
-            # get more text
-            article = None
+        # get more text
+        article = {"content":"", "content":""}
+        try:
+            content = entry["content"][0].value
+            article = self.crawlHTML(soupparser.fromstring(content))
+        except KeyError:
             try:
-                content = entry["content"][0].value
+                content = entry["summary_detail"].value
                 article = self.crawlHTML(soupparser.fromstring(content))
             except KeyError:
                 try:
-                    content = entry["summary_detail"].value
+                    content = entry["summary"].value
                     article = self.crawlHTML(soupparser.fromstring(content))
                 except KeyError:
-                    try:
-                        content = entry["summary"].value
-                        article = self.crawlHTML(soupparser.fromstring(content))
-                    except KeyError:
-                        pass
-
-            # get more images
-            # from entry itself
-            entry["image"] = None
-            images = set()
-            for key in ("links", "enclosures"):
-                try:
-                    i = filter(lambda x: x.type.startswith("image"), entry[key])
-                    images |= set([item.href for item in i]).difference(usedimages)
-                except KeyError:
                     pass
-            # from html content
-            if article:
-                if article["images"]:
-                    images |= set(article["images"]).difference(usedimages)
 
-            # get even more images from links in entry
+        # get more images
+        # from entry itself
+        article["image"] = ""
+        images = set()
+        for key in ("links", "enclosures"):
             try:
-                for link in entry["links"]:
-                    try:
-                        images |= self.crawlHTML(soupparser.parse(self.cache[link["href"]]))["images"].difference(usedimages)
-                    except ValueError: #usually caused by invalid characters in html code
-                        pass
+                i = filter(lambda x: x.type.startswith("image"), entry[key])
+                images |= set([item.href for item in i]).difference(usedimages)
             except KeyError:
-                pass # there were no links
+                pass
+        # from html content
+        try:
+            if article["images"]:
+                images |= set(article["images"]).difference(usedimages)
+        except KeyError:
+            pass
 
-            images = images.difference(usedimages)
-            usedimages |= images
+        # get even more images from links in entry
+        try:
+            for link in entry["links"]:
+                try:
+                    images |= self.crawlHTML(soupparser.parse(self.cache[link["href"]]))["images"].difference(usedimages)
+                except ValueError: #usually caused by invalid characters in html code
+                    pass
+        except KeyError:
+            pass # there were no links
 
-            # filter out some images
-            images = set(self.filter_images(images, minimum=(70,70)))
+        images = images.difference(usedimages)
+        usedimages |= images
 
-            # give the images to the entry finally
-            entry["images"] = images
-            entry["image"] = entry["image"] or self.biggest_image(entry["images"])
+        # filter out some images
+        images = set(self.filter_images(images, minimum=(70,70)))
 
-            # clean up content
-            if article:
-                entry["summary"] = article["content"]
-                if tuple_list:
-                    article_list.append((
-                        entry["title"],
-                        article["image"],
-                        article["content"],
-                        entry["links"][0],
-                        localtime(),
-                        ))
-        if tuple_list:
-            return article_list
-        return feed
+        # give the images to the entry finally
+        article["image"] = article["image"] or self.biggest_image(images)
+
+        return {"title":    unicode(entry["title"].replace('"', '&quot;')),
+                "image":    self.cache[unicode(article["image"])],
+                "content":  unicode(article["content"]),
+                "link":     unicode(entry["links"][0]["href"]),
+                "date":     time(),
+                }
 
 if __name__ == "__main__":
     import feedparser
