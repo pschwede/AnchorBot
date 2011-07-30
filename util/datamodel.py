@@ -50,7 +50,7 @@ class Article(Base):
         return {"title":    self.title,
                 "image":    self.image,
                 "content":  self.content,
-                "url":      self.url,
+                "link":      self.url,
                 "source_url":   self.source_url,
                 "date":     self.date,
                 }

@@ -195,7 +195,6 @@ class lyrebird( object ):
                             )
             except KeyError:
                 self.l.log("Entry has no link: %s" % entry["title"])
-        print feedurl
         self.dm.submit_all(submit_list)
         self.l.log("%i of %i" % (self.feeds.keys().index(feedurl), len( self.feeds ),))
         if callback:
