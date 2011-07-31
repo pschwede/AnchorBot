@@ -224,61 +224,6 @@ class htmlArticleWidget:
     def __str__( self ):
         return self.html
 
-class htmlSmallWidget():
-    """The feed-entry inside the browser.
-    There probably will be a bigger htmlBigWidget, too.
-    """
-    def __init__( self, entry, logger = Logger(False) ):
-        self.html = u'<div class="issue1">%s'
-        title = entry["title"].replace( '"', '&quot;' )
-        self.html = self.html % u'<h2 class="issue_head" title="%s">%s</h2>' % (title,title)
-        self.logger = l = logger
-        try:
-            if entry["embeded"]:
-                self.html += '<div class="media">'
-                self.html += """
-                <object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000"
-                codebase="http://download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=6,0,29,0″ width="400″
-                height="322">
-                <param name="movie" value="%s">
-                <param name="quality" value="high">
-                <embed src="%s" quality="high"
-                pluginspage="http://www.macromedia.com/go/getflashplayer" type="application/x-shockwave-flash" width="700"
-                height="322″></embed>
-                </object>""" % (entry["embeded"], entry["embeded"],)
-                self.html += '</div>'
-        except KeyError:
-            try:
-                if entry["image"]:
-                    self.html += '<div class="image"><img src="' + entry["image"] + '" alt=""/></div>'
-            except KeyError:
-                l.log("%s has no embeds nor images." % entry["title"])
-        try:
-            if entry["audio"]:
-                self.html += '<div class="media">'
-                self.html += "<audio src=\"%s\" controls=\"controls\"></audio>" % entry["audio"]
-                self.html += '</div>'
-        except KeyError:
-            l.log("%s has no audio." % entry["title"])
-        try:
-            self.html += "<div class=\"issue_content\">%s</div>"  % str( entry["summary"] )
-        except KeyError:
-            try:
-                self.html += "<div class=\"issue_content\">%s<div>" % str( entry["content"][0]["value"] )
-            except KeyError:
-                l.log("%s has no content." % entry["title"])
-        self.html += '<div class="small">'
-        try:
-            if entry["links"][0]["href"]:
-                self.html += '<a class="about_source" href="' + entry["links"][0]["href"] + '">Source</a>'
-                self.html += '<a class="about_share" href="about:share?url=' + entry["links"][0]["href"] + '&text=' + entry["title"] + '">Share</a>'
-        except KeyError:
-                l.log("%s has no links." % entry["title"])
-        self.html += '</div></div>'
-
-    def __str__( self ):
-        return self.html
-
 class gtkSmallWidget( gtk.Frame ):
     """A GTK-Widget. Would be used if no webkit is installed.
     """

@@ -2,6 +2,7 @@
 
 from sqlalchemy import Column, Integer, Float, String, ForeignKey, create_engine
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.sql.expression import desc
 from sqlalchemy.orm import sessionmaker, mapper
 from sqlalchemy.exc import IntegrityError
 import sys
@@ -140,10 +141,12 @@ class DataModel:
         s = self.sessionmaker()
         if time_back>0:
             return [a.to_dict() for a in s.query(Article).filter(
-                Article.source_url == source_url
+                    Article.source_url == source_url
                 ).filter(
                     Article.date >= time_back
-                    )[offset:number]
+                ).order_by(
+                    desc(Article.date)
+                )[offset:number]
                 ]
         else:
             return [a.to_dict() for a in s.query(Article).filter(

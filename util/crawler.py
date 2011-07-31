@@ -8,7 +8,7 @@ from lxml.html import make_links_absolute, soupparser
 from lxml.etree import tostring as xmltostring, CDATA
 from storage import FileCacher
 from logger import log
-from time import time
+from time import mktime
 
 
 """
@@ -202,8 +202,8 @@ class Crawler(object):
         return {"title":    unicode(entry["title"].replace('"', '&quot;')),
                 "image":    self.cache[unicode(article["image"])],
                 "content":  unicode(article["content"]),
-                "link":     unicode(entry["links"][0]["href"]),
-                "date":     time(),
+                "link":     unicode(entry.link),
+                "date":     mktime(entry.updated_parsed),
                 }
 
 if __name__ == "__main__":

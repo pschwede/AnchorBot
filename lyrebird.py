@@ -173,11 +173,11 @@ class lyrebird( object ):
         """Download procedure
         """ #TODO move these methods into somewhere better fitting
         if cached:
-            self.feeds[feedurl] = feedparser.parse( self.cache[feedurl] )
+            feed = self.feeds[feedurl] = feedparser.parse( self.cache[feedurl] )
         else:
-            self.feeds[feedurl] = feedparser.parse( feedurl )
+            feed = self.feeds[feedurl] = feedparser.parse( feedurl )
         submit_list = list()
-        for entry in self.feeds[feedurl]["entries"]:
+        for entry in feed["entries"]:
             try:
                 if not self.dm.has_article(entry["links"][0]["href"]):
                     article = self.crawler.enrich(entry)
@@ -193,6 +193,8 @@ class lyrebird( object ):
                                 article["date"],
                                 )
                             )
+                else:
+                    print "known: %s" % entry["links"][0]["href"]
             except KeyError:
                 self.l.log("Entry has no link: %s" % entry["title"])
         self.dm.submit_all(submit_list)
