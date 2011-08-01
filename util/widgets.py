@@ -170,6 +170,11 @@ class main_window( gtk.Window ):
         table.attach( url_entry, 1, 2, 0, 1 )
         url_entry.set_property("has-focus", True)
 
+        cb = gtk.clipboard_get()
+        text = cb.wait_for_text()
+        url_entry.set_text(text)
+        url_entry.select_region(0,-1)
+
         hbox = gtk.HBox( True )
         table.attach( hbox, 0, 2, 1, 2 )
 

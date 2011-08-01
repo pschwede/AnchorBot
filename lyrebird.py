@@ -215,6 +215,9 @@ class lyrebird( object ):
         for url in self.config.get_abos():
             self.dl_queue.put_nowait( url )
 
+    def download_one( self, url, callback=None ):
+        self.dl_queue.put_nowait( url )
+
     def show( self, url=None ):
         """Shows url in browser. If url is already shown in browser,
         the feed will be downloaded again.
@@ -234,7 +237,7 @@ class lyrebird( object ):
         """Adds a feed url to the abos
         """
         self.config.add_abo( url )
-        self.dl_queue.put_nowait( url )
+        self.download_one( url, self.update_feeds_tree )
 
     def remove_url( self, url ):
         """Removes a feed url from the abos
