@@ -38,6 +38,8 @@ class Article(Base):
     url = Column(String, unique=True, nullable=False)
     source_url = Column(String, ForeignKey('sources.url'), nullable=False)
     date = Column(Float)
+    lastread = Column(Float, default=0.)
+    timesread = Column(Integer, default=0)
 
     def __init__(self, title, image, content, url, source_url, date):
         self.title = title
@@ -46,6 +48,7 @@ class Article(Base):
         self.url = url
         self.source_url = source_url
         self.date = date
+        self.lastread, self.timesread = 0., 0
 
     def to_dict(self):
         return {"title":    self.title,
@@ -54,10 +57,12 @@ class Article(Base):
                 "link":      self.url,
                 "source_url":   self.source_url,
                 "date":     self.date,
+                "timesread":     self.timesread,
+                "lastread": self.lastread,
                 }
 
     def __repr__(self):
-        return "<Article('%s','%s','%s','%s')>" % (self.title, self.image, self.url, self.content)
+        return "<Article('%s','%s','%s','%s',...)>" % (self.title, self.image, self.url, self.content)
 
 class Image(Base):
     """Images relate to only one article"""
@@ -151,6 +156,8 @@ class DataModel:
         else:
             return [a.to_dict() for a in s.query(Article).filter(
                         Article.source_url == source_url
+                        ).order_by(
+                            desc(Article.date)
                         )[offset:number]
                         ]
 

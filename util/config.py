@@ -87,6 +87,8 @@ class Config(object):
             return None
 
     def add_abo(self, url):
+        if url[:4] not in ["http"]:
+            url = "http://%s" % url
         self.abos.add(url)
         self.write_abos()
 

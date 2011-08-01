@@ -8,7 +8,7 @@ from lxml.html import make_links_absolute, soupparser
 from lxml.etree import tostring as xmltostring, CDATA
 from storage import FileCacher
 from logger import log
-from time import mktime
+from time import mktime, time
 
 
 """
@@ -86,7 +86,7 @@ class Crawler(object):
                     x, y = im.size
                     biggest = imgurl
             except IOError:
-                pass
+                errors.append(imgurl)
         if errors and self.verbose:
             log("PIL: "+str(errors))
         return biggest
@@ -148,7 +148,7 @@ class Crawler(object):
         """Filters out images, adds images from html, cleans up content."""
         usedimages = set()
         # get more text
-        article = {"content":"", "content":""}
+        article = {"content":"", "image":""}
         try:
             content = entry["content"][0].value
             article = self.crawlHTML(soupparser.fromstring(content))
@@ -165,7 +165,6 @@ class Crawler(object):
 
         # get more images
         # from entry itself
-        article["image"] = ""
         images = set()
         for key in ("links", "enclosures"):
             try:
@@ -184,7 +183,10 @@ class Crawler(object):
         try:
             for link in entry["links"]:
                 try:
-                    images |= self.crawlHTML(soupparser.parse(self.cache[link["href"]]))["images"].difference(usedimages)
+                    images |= self.crawlHTML(
+                            soupparser.parse(self.cache[link["href"]]),
+                            baseurl=link["href"],
+                            )["images"].difference(usedimages)
                 except ValueError: #usually caused by invalid characters in html code
                     pass
         except KeyError:
@@ -199,11 +201,25 @@ class Crawler(object):
         # give the images to the entry finally
         article["image"] = article["image"] or self.biggest_image(images)
 
+        try:
+            link = unicode(entry.link)
+        except AttributeError:
+            try:
+                link = entry["links"][0]["href"]
+            except KeyError:
+                link = ""
+                print "Warning! %s has no link!" % entry["title"]
+
+        try:
+            date = mktime(entry.updated_parsed)
+        except AttributeError:
+            date = time()
+
         return {"title":    unicode(entry["title"].replace('"', '&quot;')),
                 "image":    self.cache[unicode(article["image"])],
                 "content":  unicode(article["content"]),
-                "link":     unicode(entry.link),
-                "date":     mktime(entry.updated_parsed),
+                "link":     link,
+                "date":     date,
                 }
 
 if __name__ == "__main__":

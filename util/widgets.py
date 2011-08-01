@@ -11,8 +11,9 @@ This module contains all visual entity classes (Widgets).
 class tweet_window( gtk.Dialog ):
     """The µ-Blog dialog.
     """
-    def __init__( self, service=None, user="", password="", text="" ):
+    def __init__( self, parent, service=None, user="", password="", text="" ):
         super( tweet_window, self ).__init__()
+        self.__parent = parent
         self.user, self.__password = user, password
         self.service = service
 
@@ -46,6 +47,7 @@ class tweet_window( gtk.Dialog ):
         table.show_all()
         self.add_button( gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL )
         self.add_button( gtk.STOCK_YES, gtk.RESPONSE_OK )
+        self.set_transient_for(parent)
 
     def run( self ):
         self.show()
@@ -153,13 +155,13 @@ class main_window( gtk.Window ):
                 self.ctrl.show( url )
 
     def new_feed_dialog( self ):
-        w = gtk.Window( gtk.WINDOW_POPUP )
+        w = gtk.Dialog()
 
         table = gtk.Table( 2,2 )
         table.set_row_spacings( 3 )
         table.set_col_spacings( 3 )
         table.set_border_width( 3 )
-        w.add( table )
+        w.vbox.add( table )
         
         url_label = gtk.Label( "URL:" )
         table.attach( url_label, 0, 1, 0, 1 )
@@ -180,6 +182,7 @@ class main_window( gtk.Window ):
         cancel.connect( "clicked", lambda x: w.destroy() )
         hbox.pack_end( cancel, False, False )
 
+        w.set_transient_for(self)
         w.show_all()
 
     def show_about( self, stuff=None ):
@@ -203,22 +206,13 @@ class htmlArticleWidget:
         self.html = u'<div class="issue1">%s'
         title = article["title"]
         self.html = self.html % u'<h2 class="issue_head" title="%s">%s</h2>' % (title,title)
-        try:
-            if article["image"]:
-                self.html += '<div class="image"><img src="' + article["image"] + '" alt=""/></div>'
-        except KeyError:
-            pass
-        try:
-            self.html += "<div class=\"issue_content\">%s</div>"  % article["content"]
-        except KeyError:
-            pass
+        if article["image"]:
+            self.html += '<div class="image"><img src="' + article["image"] + '" alt=""/></div>'
+        self.html += "<div class=\"issue_content\">%s</div>"  % article["content"]
         self.html += '<div class="small">'
-        try:
-            if article["link"]:
-                self.html += '<a class="about_source" href="' + article["link"] + '">Source</a>'
-                self.html += '<a class="about_share" href="about:share?url=' + article["link"] + '&text=' + article["title"] + '">Share</a>'
-        except KeyError:
-            pass
+        if article["link"]:
+            self.html += '<a class="about_source" href="' + article["link"] + '">Source</a>'
+            self.html += '<a class="about_share" href="about:share?url=' + article["link"] + '&text=' + article["title"] + '">Share</a>'
         self.html += '</div></div>'
 
     def __str__( self ):

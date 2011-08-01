@@ -3,7 +3,7 @@ try:
     import cPickle as pickle
 except ImportError:
     import pickle
-from logger import log
+from logger import log #TODO use Logger here
 
 class Cacher(object):
     """
@@ -89,8 +89,9 @@ class FileCacher(object):
                         self.dloader.retrieve(urllib.quote_plus(url.decode()), newurl)
                 self.verbose and log("Cached %s to %s." % (url, newurl, ))
                 self.stor[url] = self.stor[newurl] = (newurl, time.time())
-            except IOError:
-                self.verbose and log("IOError: Filename too long?") 
+            except IOError, e:
+                if not url.endswith("gif"): #TODO WHY CAN'T IT HANDLE GIF FILES?
+                    self.verbose and log("IOError: %s (Filename too long? len=%i), %s" % (e.message, len(url), url) )
             return newurl
 
     def __remove_item(self, url):

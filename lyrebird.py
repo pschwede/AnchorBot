@@ -128,7 +128,7 @@ class lyrebird( object ):
                         text = urllib.unquote( arg[5:] )
                 if text or url:
                     self.l.log( 'Tweet %s %s' % ( text, url,  ) )
-                    self.mblog.send_text( "%s %s" % ( text, url,  ) )
+                    self.mblog.send_text( self.window, "%s %s" % ( text, url,  ) )
 
     def update_feeds_tree( self, url ):
         """Redraws the Feed-Tree
@@ -137,11 +137,11 @@ class lyrebird( object ):
         gtk.gdk.threads_enter()
         feed = self.feeds[url]
         # find title or set title to url
-        title = url
         try:
             title = feed["feed"]["title"]
         except KeyError:
-            self.l.log( "Couldn't find feed[feed][title] in %s" % url )
+            self.l.log( "Warning: Couldn't find feed[feed][title] in %s" % url )
+            title = url
         if url in self.window.treedic.keys():
             self.window.groups.get_model().set( self.window.treedic[url], 0, title, 1, url )
         else:
@@ -173,32 +173,39 @@ class lyrebird( object ):
         """Download procedure
         """ #TODO move these methods into somewhere better fitting
         if cached:
+            self.l.log("Warning: Using chached version of %s" % feedurl)
             feed = self.feeds[feedurl] = feedparser.parse( self.cache[feedurl] )
         else:
             feed = self.feeds[feedurl] = feedparser.parse( feedurl )
         submit_list = list()
         for entry in feed["entries"]:
+            url = None
             try:
-                if not self.dm.has_article(entry["links"][0]["href"]):
-                    article = self.crawler.enrich(entry)
-                    if article["image"] and not self.dm.has_image(article["image"]):
-                        submit_list.append(Image(article["image"]))
-                    submit_list.append(
-                            Article(
-                                article["title"],
-                                article["image"],
-                                article["content"],
-                                article["link"],
-                                feedurl,
-                                article["date"],
-                                )
-                            )
-                else:
-                    print "known: %s" % entry["links"][0]["href"]
-            except KeyError:
-                self.l.log("Entry has no link: %s" % entry["title"])
+                url = entry.link
+            except AttributeError, e:
+                self.l.log("Warning: %s %s" % (str(entry), e.message,))
+                try:
+                    url = entry["links"][0]["href"]
+                except KeyError:
+                    self.l.log("Entry has no link: %s" % entry["title"])
+            if self.dm.has_article(url):
+                self.l.log("Known: %s" % url)
+            else:
+                self.l.log("New: %s" % url)
+                article = self.crawler.enrich(entry)
+                if article["image"] and not self.dm.has_image(article["image"]):
+                    submit_list.append(Image(article["image"]))
+                submit_list.append(Article(
+                    article["title"],
+                    article["image"],
+                    article["content"],
+                    url,
+                    feedurl,
+                    article["date"],
+                    )
+                )
         self.dm.submit_all(submit_list)
-        self.l.log("%i of %i" % (self.feeds.keys().index(feedurl), len( self.feeds ),))
+        self.l.log("Done %i of %i" % (self.feeds.keys().index(feedurl)+1, len( self.feeds ),))
         if callback:
             callback( feedurl )
 
@@ -217,7 +224,8 @@ class lyrebird( object ):
         if url:
             if url == self.watched:
                 self.dl_queue.put_nowait( url )
-            self.browser.open_articles( self.dm.get_articles(url, number=3))
+            articles = self.dm.get_articles(url, number=3)
+            self.browser.open_articles( articles )
         else:
             self.download_all( self.update_feeds_tree )
         self.watched = url

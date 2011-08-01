@@ -18,14 +18,14 @@ class Microblogger(object):
         elif type(hosts) == str:
             self.hosts.append(hosts)
 
-    def send_text(self, text):
+    def send_text(self, parent_window, text):
         if TWEEPY: # if installed
             for host in self.hosts:
                 adr = host.split("/")
                 if host in self.__auth_keys:
-                    tw = tweet_window(adr[0], *self.__auth_keys[host], text=text)
+                    tw = tweet_window(parent_window, adr[0], *self.__auth_keys[host], text=text)
                 else:
-                    tw = tweet_window(adr[0], text=text)
+                    tw = tweet_window(parent_window, adr[0], text=text)
                 npt = self.__auth_keys[host] = tw.run()
                 if npt: #tuple of name, password and text
                     self.auth = tweepy.BasicAuthHandler(npt[0], npt[1])
