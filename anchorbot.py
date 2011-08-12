@@ -2,7 +2,7 @@
 # -*- encoding: utf-8 -*-
 
 """
-This is the main file of Lyrebird, the feed reader that makes you read 
+This is the main file of AnchorBot, the feed reader that makes you read 
 the important news first.
 
 For further reading, see README.md
@@ -12,6 +12,8 @@ import feedparser, sys, os, urllib, argparse
 import gtk, gtk.gdk, gobject
 import threading, webbrowser, Queue
 from tempfile import gettempdir
+from traceback import print_tb
+from sqlalchemy.exc import IntegrityError
 
 from util import browser, analyzer, storage, _
 from util.logger import Logger
@@ -19,19 +21,19 @@ from util.config import Config
 from util.microblogging import Microblogger
 from util.crawler import Crawler
 from util.widgets import main_window
-from util.datamodel import Source, Article, Image, DataModel
+from util.datamodel import get_session, get_engine, Source, Article, Image, Keyword
+from util.analyzer import Analyzer
 
-HOME = os.path.join( os.path.expanduser( "~" ),".lyrebird" )
+HOME = os.path.join( os.path.expanduser( "~" ),".anchorbot" )
 HERE = os.path.realpath( os.path.dirname( __file__ ) )
-#TEMP = os.path.join( os.path.realpath( gettempdir() ), "lyrebird/" )
 TEMP = os.path.join( HOME, "cache/" )
 HTML = os.path.join( HOME, "index.html" )
 NUMT = 8
-__appname__ = "Lyrebird"
-__version__ = "0.1 Coccatoo"
+__appname__ = "AnchorBot"
+__version__ = "1.0"
 __author__ = "spazzpp2"
 
-class lyrebird( object ):
+class Anchorbot( object ):
     """ The most main Class
 
     It holds and calls initialization of:
@@ -73,16 +75,18 @@ class lyrebird( object ):
         # prepare cached browser
         self.browser = browser.WebkitBrowser( HERE )
         self.browser.set_about_handler( self.__about )
-        self.cache = storage.FileCacher( TEMP, 3 , self.verbose) # keeps files for 3 days
+        self.cache = storage.FileCacher( TEMP, -1 , self.verbose) # keeps files for 3 days
 
         # prepare datamodel
-        self.dm = DataModel( os.path.join(HOME,"database.sqlite") )
+        path = os.path.join(HOME,"database.sqlite")
+        self.db = get_engine(path)
 
         # prepare variables and lists,...
         self.feeds = {}
         self.watched = None
         self.mblog = Microblogger()
-        self.crawler = Crawler( self.cache )
+        self.analyzer = Analyzer(key="title",eid="link")
+        self.crawler = Crawler(self.cache, self.analyzer)
         self.crawler.verbose = self.verbose
         self.window = main_window( {
                 "__appname__": __appname__,
@@ -177,34 +181,21 @@ class lyrebird( object ):
             feed = self.feeds[feedurl] = feedparser.parse( self.cache[feedurl] )
         else:
             feed = self.feeds[feedurl] = feedparser.parse( feedurl )
-        submit_list = list()
+        try:
+            feedicon = feed["icon"]
+        except KeyError:
+            feedicon = ""
+        s = get_session(self.db)
         for entry in feed["entries"]:
-            url = None
-            try:
-                url = entry.link
-            except AttributeError, e:
-                self.l.log("Warning: %s %s" % (str(entry), e.message,))
+            article = s.query(Article).filter(Article.link == entry.link).first()
+            if not article:
+                source = s.query(Source).filter(Source.link == feedurl).first()
+                article = self.crawler.enrich(entry, source)
+                s.add(article)
                 try:
-                    url = entry["links"][0]["href"]
-                except KeyError:
-                    self.l.log("Entry has no link: %s" % entry["title"])
-            if self.dm.has_article(url):
-                self.l.log("Known: %s" % url)
-            else:
-                self.l.log("New: %s" % url)
-                article = self.crawler.enrich(entry)
-                if article["image"] and not self.dm.has_image(article["image"]):
-                    submit_list.append(Image(article["image"]))
-                submit_list.append(Article(
-                    article["title"],
-                    article["image"],
-                    article["content"],
-                    url,
-                    feedurl,
-                    article["date"],
-                    )
-                )
-        self.dm.submit_all(submit_list)
+                    s.commit()
+                except IntegrityError, e:
+                    s.rollback()
         self.l.log("Done %i of %i" % (self.feeds.keys().index(feedurl)+1, len( self.feeds ),))
         if callback:
             callback( feedurl )
@@ -213,6 +204,11 @@ class lyrebird( object ):
         """Puts all feeds into the download queue to be downloaded.
         """
         for url in self.config.get_abos():
+            s = get_session(self.db)
+            if not s.query(Source).filter(Source.link == url).count():
+                source = Source(url)
+                s.add(source)
+            s.commit()
             self.dl_queue.put_nowait( url )
 
     def download_one( self, url, callback=None ):
@@ -227,8 +223,11 @@ class lyrebird( object ):
         if url:
             if url == self.watched:
                 self.dl_queue.put_nowait( url )
-            articles = self.dm.get_articles(url, number=3)
+            s = get_session(self.db)
+            articles = s.query(Article).join(Article.source).filter(Source.link == url).all()
+            print articles
             self.browser.open_articles( articles )
+            s.close()
         else:
             self.download_all( self.update_feeds_tree )
         self.watched = url
@@ -238,6 +237,10 @@ class lyrebird( object ):
         """
         self.config.add_abo( url )
         self.download_one( url, self.update_feeds_tree )
+        s = get_session(self.db)
+        source = Source(url, None)
+        s.add(source)
+        s.commit()
 
     def remove_url( self, url ):
         """Removes a feed url from the abos
@@ -249,7 +252,7 @@ def main( urls=[], nogui=False, cache_only=False, verbose=False ):
     """The main func which creates Lyrebird
     """
     gobject.threads_init()
-    l = lyrebird(nogui, cache_only, verbose)
+    l = Anchorbot(nogui, cache_only, verbose)
     gobject.idle_add( l.show )
     for url in urls:
         gobject.idle_add( l.add_url, ( url, ) )

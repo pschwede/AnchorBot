@@ -1,6 +1,7 @@
 #!/usr/bin/env python
+# -*- encoding: utf-8 -*-
 
-import urllib, re, mimetypes, os.path, Image
+import urllib, re, mimetypes, os.path, Image as PIL
 import chardet
 from urlparse import urljoin
 from lxml.cssselect import CSSSelector
@@ -9,6 +10,9 @@ from lxml.etree import tostring as xmltostring, CDATA
 from storage import FileCacher
 from logger import log
 from time import mktime, time
+from datamodel import Article, Image, Keyword
+from traceback import print_tb
+import sys
 
 
 """
@@ -21,10 +25,11 @@ class Crawler(object):
     hyph_DE = "/usr/share/liblouis/tables/hyph_de_DE.dic"
     hyph_FR = "/usr/share/liblouis/tables/hyph_fr_FR.dic"
 
-    def __init__(self, cacher, proxies=None, verbose=False):
+    def __init__(self, cacher, analyzer, proxies=None, verbose=False):
         self.opener = urllib.FancyURLopener(proxies)
         self.cache = cacher # for not retrieving things twice!
         self.verbose = verbose
+        self.analyzer = analyzer
 
         self.hyphenator = None
         try:
@@ -32,9 +37,9 @@ class Crawler(object):
             try:
                 self.hyphenator = Hyphenator(self.hyph_DE)
             except IOError:
-                pass
+                self.verbose and log("Not using hyphenator since %s can not be loaded." % self.hyph_DE)
         except ImportError:
-            pass
+            self.verbose and log("Not using hyphenator since it's not installed.")
 
     def crawlHTML(self, tree, similarcontent=None, depth=0, baseurl=None):
         content = similarcontent or xmltostring(tree)
@@ -42,7 +47,7 @@ class Crawler(object):
             textsel = CSSSelector("div,span,p")
             for elem in textsel(tree):
                 if elem.text and similarcontent[:-len(similarcontent)/2] in elem.text:
-                    content = elem.text
+                    content = elem.text.decode("utf-8")
                     break;
         imagesel = CSSSelector("img")
         images = [urljoin(baseurl,img.get("src") or img.attrib.values()[0]) for img in imagesel(tree)]
@@ -54,7 +59,7 @@ class Crawler(object):
         keepimage = ""
         if images:
             keepimage = images[0]
-        return {"image": keepimage, "images": set(images), "content": self.clean(content)}
+        return (keepimage, set(images), self.clean(content))
 
     def unescape(self, text):
         text = text.replace("\/","/")
@@ -64,9 +69,9 @@ class Crawler(object):
         return text
 
     def compare_image(self, im1, im2):
-        im = Image.open(self.cache[im1])
+        im = PIL.open(self.cache[im1])
         x1, y1 = im.size
-        im = Image(open(self.cache[im2]))
+        im = PIL.open(self.cache[im2])
         x2, y2 = im.size
         if x1*y1 < x2*y2:
             return -1
@@ -75,20 +80,20 @@ class Crawler(object):
         return 1
 
     def biggest_image(self, imagelist):
-        biggest = None
+        biggest = u""
         imagelist = list(set(imagelist))
         x, y = 0, 0
         errors =  []
         for imgurl in imagelist:
             try:
-                im = Image.open(self.cache[imgurl])
+                im = PIL.open(self.cache[imgurl])
                 if x * y < im.size[0] * im.size[1]:
                     x, y = im.size
                     biggest = imgurl
             except IOError:
                 errors.append(imgurl)
         if errors and self.verbose:
-            log("PIL: "+str(errors))
+            self.verbose and log("PIL: "+str(errors))
         return biggest
 
     def closest_image(self, imagelist, x, y):
@@ -97,14 +102,14 @@ class Crawler(object):
         errors = []
         for imgurl in imagelist:
             try:
-                im = Image.open(self.cache[imgurl])
+                im = PIL.open(self.cache[imgurl])
                 if dx/dy > abs(im.size[0]-x) / abs(im.size[1]-y):
                     dx, dy = abs(im.size[0]-x), abs(im.size[1]-y)
                     closest = imgurl
             except IOError:
                 errors.append(self.cache[imgurl])
         if errors and self.verbose:
-            log("PIL: "+str(errors))
+            self.verbose and log("PIL: "+str(errors))
         return closest
 
     def filter_images(self, images, minimum=(0, 0,), maximum=(0, 0,)):
@@ -114,14 +119,14 @@ class Crawler(object):
         result = []
         for imgurl in images:
             try:
-                im = Image.open(self.cache[imgurl])
+                im = PIL.open(self.cache[imgurl])
                 if im.size[0] >= minimum[0] and im.size[1] >= minimum[1]:
                     if maximum == (0, 0,):
                         result.append(self.cache[imgurl])
                     elif im.size[0] <= maximum[0] and im.size[1] <= maximum[1]:
                         result.append(self.cache[imgurl])
             except IOError:
-                pass
+                self.verbose and log("Can't open that file: %s" % imgurl)
         return result
 
     def clean(self, htmltext):
@@ -130,7 +135,7 @@ class Crawler(object):
             tree = soupparser.fromstring(htmltext)
             self.recursive_hyph(tree, u"\u00AD")
             htmltext = xmltostring(tree, encoding="utf8")
-        tmp = ""
+        tmp = u""
         while hash(tmp) != hash(htmltext):
             tmp = htmltext
             htmltext = re_cln.sub("", htmltext)
@@ -138,59 +143,61 @@ class Crawler(object):
 
     def recursive_hyph(self, tree, hyphen):
         if tree.text:
-            tree.text = " ".join([self.hyphenator.inserted(word, hyphen) for word in tree.text.split(" ")])
+            tree.text = " ".join([self.hyphenator.inserted(word, hyphen) for word in tree.text.split(" ")]).decode("utf-8")
         if tree.tail:
-            tree.tail = " ".join([self.hyphenator.inserted(word, hyphen) for word in tree.tail.split(" ")])
+            tree.tail = " ".join([self.hyphenator.inserted(word, hyphen) for word in tree.tail.split(" ")]).decode("utf-8")
+
         for elem in tree:
             self.recursive_hyph(elem, hyphen)
 
-    def enrich(self, entry, recursion=1):
+    def enrich(self, entry, source, recursion=1):
         """Filters out images, adds images from html, cleans up content."""
         usedimages = set()
         # get more text
-        article = {"content":"", "image":""}
+        image = u""
+        images = set()
+        content = u""
         try:
-            content = entry["content"][0].value
-            article = self.crawlHTML(soupparser.fromstring(content))
+            html = entry["content"][0].value.decode("utf-8")
+            image, images, content = self.crawlHTML(soupparser.fromstring(html))
         except KeyError:
             try:
-                content = entry["summary_detail"].value
-                article = self.crawlHTML(soupparser.fromstring(content))
+                html = entry["summary_detail"].value.decode("utf-8")
+                image, images, content = self.crawlHTML(soupparser.fromstring(html))
             except KeyError:
                 try:
-                    content = entry["summary"].value
-                    article = self.crawlHTML(soupparser.fromstring(content))
+                    html = entry["summary"].value.decode("utf-8")
+                    image, images, content = self.crawlHTML(soupparser.fromstring(html))
                 except KeyError:
-                    pass
-
+                    self.verbose and log("No content! %s" % entry)
         # get more images
         # from entry itself
-        images = set()
         for key in ("links", "enclosures"):
             try:
                 i = filter(lambda x: x.type.startswith("image"), entry[key])
-                images |= set([item.href for item in i]).difference(usedimages)
             except KeyError:
-                pass
+                self.verbose and log("%s not found in entry.keys()" % key)
+            images |= set([item.href.decode("utf-8") for item in i]).difference(usedimages)
         # from html content
-        try:
-            if article["images"]:
-                images |= set(article["images"]).difference(usedimages)
-        except KeyError:
-            pass
+        if images:
+            images |= set(images).difference(usedimages)
 
         # get even more images from links in entry
         try:
             for link in entry["links"]:
-                try:
+                if link["href"]:
+                    f = open(self.cache[link["href"]])
+                    encoding = chardet.detect(f.read())["encoding"]
+                    f.seek(0)
+                    html = f.read().decode(encoding)
                     images |= self.crawlHTML(
-                            soupparser.parse(self.cache[link["href"]]),
+                            soupparser.fromstring(html),
                             baseurl=link["href"],
-                            )["images"].difference(usedimages)
-                except ValueError: #usually caused by invalid characters in html code
-                    pass
+                            )[1].difference(
+                                    usedimages
+                                    )
         except KeyError:
-            pass # there were no links
+            self.verbose and log("There were no links: %s" % entry)
 
         images = images.difference(usedimages)
         usedimages |= images
@@ -199,10 +206,10 @@ class Crawler(object):
         images = set(self.filter_images(images, minimum=(70,70)))
 
         # give the images to the entry finally
-        article["image"] = article["image"] or self.biggest_image(images)
+        image = Image(image or self.biggest_image(images))
 
         try:
-            link = unicode(entry.link)
+            link = entry.link
         except AttributeError:
             try:
                 link = entry["links"][0]["href"]
@@ -215,23 +222,9 @@ class Crawler(object):
         except AttributeError:
             date = time()
 
-        return {"title":    unicode(entry["title"].replace('"', '&quot;')),
-                "image":    self.cache[unicode(article["image"])],
-                "content":  unicode(article["content"]),
-                "link":     link,
-                "date":     date,
-                }
+        title = entry["title"]
+        a = self.analyzer
+        a.add({a.eid: link, a.key: title})
+        keywords = [Keyword(kw) for kw in a.get_keywords_of_article({a.eid: link, a.key: title})]
+        return Article(date, title, content, link, source, image, keywords)
 
-if __name__ == "__main__":
-    import feedparser
-    from os import execv
-    from pprint import pprint as pp
-
-    c = Crawler(FileCacher())
-    
-    feed = feedparser.parse("http://www.reddit.com/r/aww/.rss")
-    #feed = feedparser.parse("http://www.dradio.de/rss/nachrichten/")
-    #feed = feedparser.parse("http://apod.nasa.gov/apod.rss")
-    c.enrich(feed)
-    pp([e["images"] for e in feed["entries"]])
-    #execv("/usr/bin/ristretto", filter(None, [entry["image"] for entry in feed["entries"]]))

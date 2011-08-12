@@ -86,27 +86,8 @@ class WebkitBrowser(gtk.ScrolledWindow):
         f.close()
         self.browser.load_string(self.html, "text/html", "utf-8", "file:///")
 
-    def openfeed(self, feed):
-        self.html = """<!doctype html><html lang="en de"><head>
-        <link rel="stylesheet" type="text/css" href="%s"/>
-        <script type="text/javascript" src="file://%s/third-party/%s"></script>
-        </head>
-        <body>""" % (
-                self._style,
-                self.absolute, 'jquery-1.5.min.js',
-                )
-        #TODO support templates (django api?)
-        for entry in tuple(feed["entries"]):
-            self.html += str(widgets.htmlSmallWidget(entry))
-        self.html += "</body></html>"
-        f = open("/tmp/browser.html", 'w')
-        f.write(self.html)
-        f.close()
-        self.browser.load_string(self.html, "text/html", "utf-8", "file:///")
-        # TODO load stuff with js
-
     def open_articles(self, list_of_articles, write="/tmp/browser.html"):
-        l = list_of_articles
+        loa = list_of_articles
         self.html = """<!doctype html><html lang="en de"><head>
         <link rel="stylesheet" type="text/css" href="%s"/>
         <script type="text/javascript" src="file://%s/third-party/%s"></script>
@@ -115,7 +96,7 @@ class WebkitBrowser(gtk.ScrolledWindow):
                 self._style,
                 self.absolute, 'jquery-1.5.min.js',
                 )
-        for article in l:
+        for article in loa:
             self.html += str(widgets.htmlArticleWidget(article))
         self.html += "</body></html>"
         self.browser.load_string(self.html, "text/html", "utf-8", "file:///")

@@ -1,7 +1,7 @@
-Lyrebird
-========
+AnchorBot
+=========
 
-Version 1.0 /fancy surname here/
+Version 1.0
 (c) spazzpp2 – Licensed under MIT License
 
 It's a news aggregator with the attempt of making you read the most important news first.
@@ -30,6 +30,9 @@ Optional:
 
         sudo easy_install tweepy
 
+* [sqlalchemy](http://sqlalchemy.org) python-sqlalchemy
+* [sqlite3](http://sqlite.org) python-sqlite3
+
 To use easy\_install on an Ubuntu/Mint/Debian machine, you need to install python-setuptools, first. If you are root, you won't need to sudo.
 
 Related Projects
@@ -38,4 +41,4 @@ Related Projects
 * [Hotot](https://code.google.com/p/hotot)
 * [Google Reader](http://reader.google.com/)
 
-This project is a tribute to the [bird that retweets](http://youtu.be/7XiQDgNUEMw) the terrifying chainsaws that sew down it's rain forest.
+This project was once known as "Lyrebird" and is a tribute to the [bird that retweets](http://youtu.be/7XiQDgNUEMw) the terrifying chainsaws that sew down it's rain forest.

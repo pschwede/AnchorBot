@@ -1,169 +1,151 @@
-# -*- encoding; utf-8 -*-
+# -*- encoding: utf-8 -*-
 
-from sqlalchemy import Column, Integer, Float, String, ForeignKey, create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.sql.expression import desc
-from sqlalchemy.orm import sessionmaker, mapper
-from sqlalchemy.exc import IntegrityError
-import sys
-#TODO use Logger class for outputs
+from sqlalchemy.orm import relationship, sessionmaker, scoped_session
+from sqlalchemy import create_engine, Table, Column, Float, Integer, String, Unicode, ForeignKey
+import Image as PIL
 
 Base = declarative_base()
 
+class Image(Base):
+    __tablename__ = "images"
+
+    ID = Column(Integer, primary_key=True, autoincrement=True)
+    filename = Column(String, unique=True)
+
+    def __init__(self, filename):
+        self.filename = filename
+
+    def __repr__(self):
+        return "<%s%s>" % (type(self), self.filename)
+
+    def __cmp__(self, other):
+        im = PIL.open(self.cache[im1])
+        a1 = int.__mul__(im.size)
+        im = PIL.open(self.cache[im2])
+        a2 = int.__mul__(im.size)
+        if a1 < a2:
+            return -1
+        elif a1 == a2:
+            return 0
+        return 1
+
 class Source(Base):
-    __tablename__ = 'sources'
+    __tablename__ = "sources"
 
-    id = Column(Integer, primary_key=True)
-    title = Column(String)
-    icon = Column(Integer, ForeignKey('images.id'))
-    url = Column(String, unique=True, nullable=False)
-    h = Column(Integer)
+    ID = Column(Integer, primary_key=True)
+    link = Column(String, unique=True)
+    image_id = Column(Integer, ForeignKey("images.ID"))
+    image = relationship("Image", backref="source_br")
+    
+    def __init__(self, link, image=None):
+        self.link = link
+        self.image = image
 
-    def __init__(self, title, icon, url, h):
-        self.title = title
-        self.icon = icon
-        self.url = self.url
-        self.h = h
+    def __repr__(self):
+        return "<%s%s>" % (type(self), (self.link, self.image))
 
-    def __refr__(self):
-        return "<Feed('%s','%s','%s', '%s')>" % (self.title, self.icon, self.url, h)
+class Page(Base):
+    __tablename__ = "pages"
+
+    ID = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(Unicode)
+    date = Column(Float, nullable=False)
+    
+    def __init__(self, name, date):
+        self.name = name.decode("utf-8")
+        self.date = date
 
 class Article(Base):
-    __tablename__ = 'articles'
-
-    id = Column(Integer, primary_key=True)
-    title = Column(String, default=u'')
-    image = Column(Integer, ForeignKey('articles.url'), nullable=True, default=u'')
-    content = Column(String, default=u'')
-    url = Column(String, unique=True, nullable=False)
-    source_url = Column(String, ForeignKey('sources.url'), nullable=False)
-    date = Column(Float)
-    lastread = Column(Float, default=0.)
+    __tablename__ = "articles"
+    
+    ID = Column(Integer, primary_key=True, autoincrement=True)
+    date = Column(Float, nullable=False)
+    title = Column(Unicode, nullable=False)
+    content = Column(Unicode, nullable=False)
+    link = Column(String, unique=True)
+    lastread = Column(Float, default=-1)
     timesread = Column(Integer, default=0)
+    source_id = Column(Integer, ForeignKey("sources.ID"), nullable=False)
+    source = relationship("Source", backref="article_br")
+    image_id = Column(Integer, ForeignKey("images.ID"), nullable=False)
+    image = relationship("Image", backref="article_br")
+    page_id = Column(Integer, ForeignKey("pages.ID"))
+    page = relationship("Page", backref="article_br", lazy="dynamic")
+    keywords = relationship("Keyword", backref="article_br",
+            secondary="kw2arts")
 
-    def __init__(self, title, image, content, url, source_url, date):
-        self.title = title
-        self.image = image
-        self.content = content
-        self.url = url
-        self.source_url = source_url
+    def __init__(self, date, title, content, link, source, image, keywords=None):
         self.date = date
-        self.lastread, self.timesread = 0., 0
+        self.title = title.decode("utf-8")
+        self.content = content.decode("utf-8")
+        self.link = link.decode("utf-8")
+        self.source = source
+        self.image = image
+        if keywords:
+            self.set_keywords(keywords)
 
-    def to_dict(self):
-        return {"title":    self.title,
-                "image":    self.image,
-                "content":  self.content,
-                "link":      self.url,
-                "source_url":   self.source_url,
-                "date":     self.date,
-                "timesread":     self.timesread,
-                "lastread": self.lastread,
-                }
+    def set_keywords(self, keywords):
+        for kw in keywords:
+            self.keywords.append(kw)
 
-    def __repr__(self):
-        return "<Article('%s','%s','%s','%s',...)>" % (self.title, self.image, self.url, self.content)
-
-class Image(Base):
-    """Images relate to only one article"""
-    __tablename__ = 'images'
-
-    id = Column(Integer, primary_key=True)
-    url = Column(String, unique=True, nullable=False, default=u'')
-
-    def __init__(self, url):
-        self.url = url
+    def finished(self, date):
+        """Has to be called when article has been read to update statistics."""
+        self.lastread = date
+        self.timesread += 1
 
     def __repr__(self):
-        return "<Image('%s')>" % self.url
+        return "<%s%s>" % ("Article",(self.ID, self.title))
 
-class DataModel:
-    def __init__(self, filename=None):
-        if filename:
-            print "Using %s database for engine" % filename
-            self.__engine = engine = create_engine("sqlite:///%s" % filename)
-        else:
-            print "No filename given. Setting up temporary sqlalchemy engine to /:memory:"
-            self.__engine = engine = create_engine("sqlite:///:memory:", echo=True)
+class Keyword(Base):
+    __tablename__ = "keywords"
 
-        # ugly unicode accept hack from stackoverflow.com:
-        self.__engine.raw_connection().connection.text_factory = str
+    ID = Column(Integer, primary_key=True)
+    word = Column(Unicode, unique=True)
+    clickcount = Column(Integer, default=0)
+    articles = relationship("Article", backref="keywords_br", secondary="kw2arts")
 
-        self.sessionmaker = sessionmaker(bind=engine)
-        Base.metadata.create_all(engine, checkfirst=True)
+    def __init__(self, word, clickcount=0):
+        self.word = word.decode("utf-8")
+        self.clickcount = clickcount
 
-    def submit(self, thing):
-        s = self.sessionmaker()
-        s.add(thing)
-        s.commit()
-    
-    def submit_all(self, list_of_things):
-        s = self.sessionmaker()
-        l = list_of_things
-        s.add_all(l)
-        try:
-            s.commit()
-        except IntegrityError, e:
-            s.rollback()
-            for i in l:
-                try:
-                    if i not in s:
-                        s.add(i)
-                        s.commit()
-                except IntegrityError, e:
-                    s.rollback()
+    def __repr__(self):
+        return "<%s%s>" % ("Keyword", (self.word,))
 
-    def submit_image(self, url):
-        s = self.sessionmaker()
-        s.add(Image(url))
-        s.commit()
-        return s.query(Image).filter(Image.url==url)[0]
-    
-    def submit_article(self, title, content, url, date, image_uri):
-        s = self.sessionmaker()
-        s.add(Article(title, content, url, date))
-        s.add(Image(image))
-        s.commit()
+class Kw2art(Base):
+    __tablename__ = "kw2arts"
 
-    def submit_source(self, title, icon, url, h):
-        s = self.sessionmaker()
-        s.add(Source(title, icon, url, h))
-        try:
-            s.commit()
-        except IntegrityError:
-            s.rollback()
-            #TODO try updating
+    kw_id = Column(Integer, ForeignKey("keywords.ID"), primary_key=True)
+    kw = relationship("Keyword", backref="kw2art_br")
+    art_id = Column(Integer, ForeignKey("articles.ID"), primary_key=True)
+    art = relationship("Article", backref="kw2art_br")
 
-    def has_article(self, url):
-        s = self.sessionmaker()
-        return 0 < s.query(Article).filter(Article.url == url).count()
+    def __init__(self, kw, art):
+        self.kw = kw
+        self.art = art
 
-    def has_image(self, url):
-        s = self.sessionmaker()
-        return 0 < s.query(Image).filter(Image.url == url).count()
+def get_engine(filename=':memory:'):
+    """Initializes the engine, etc.
+       Returns engine."""
+    engine = create_engine("sqlite:///%s" % filename)
+    Base.metadata.bind=engine
+    Base.metadata.create_all(engine)
+    return engine
 
-    def get_articles(self, source_url, time_back=0, number=0, offset=0):
-        s = self.sessionmaker()
-        if time_back>0:
-            return [a.to_dict() for a in s.query(Article).filter(
-                    Article.source_url == source_url
-                ).filter(
-                    Article.date >= time_back
-                ).order_by(
-                    desc(Article.date)
-                )[offset:number]
-                ]
-        else:
-            return [a.to_dict() for a in s.query(Article).filter(
-                        Article.source_url == source_url
-                        ).order_by(
-                            desc(Article.date)
-                        )[offset:number]
-                        ]
+def get_session(engine):
+    """Threads can get one here."""
+    session = scoped_session(sessionmaker()) 
+    session.configure(bind=engine)
+    return session
 
 if __name__ == "__main__":
-    engine = create_engine("sqlite:///:memory:")
-    import time
-    image = Image("")
-    Article(u"UFOS",u"",u"x\dfUfos bla bla",u"",0)#time.time())
-
+    e = get_engine()
+    session = get_session(e)
+    i = Image("url")
+    k = Keyword("bla")
+    s = Source("url", i)
+    a = Article(0., u"title", "content", "link", s, i, [k])
+    session.add(a)
+    session.flush()
+    a = session.query(Article).filter(Article.link == "link").first()
+    print [k.articles for k in a.keywords]

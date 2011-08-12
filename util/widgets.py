@@ -2,6 +2,7 @@
 import gtk, pango
 from logger import Logger
 import pprint
+from datamodel import Article, Image, Keyword
 
 """
 This module contains all visual entity classes (Widgets).
@@ -207,17 +208,19 @@ class htmlArticleWidget:
     """The feed-entry inside the browser.
     There probably will be a bigger htmlBigWidget, too.
     """
-    def __init__( self, article, dominance=0., threshold=1.):
+    def __init__( self, article, keywordsa=[], dominance=0., threshold=1.):
+        a = article
         self.html = u'<div class="issue1">%s'
-        title = article["title"]
-        self.html = self.html % u'<h2 class="issue_head" title="%s">%s</h2>' % (title,title)
-        if article["image"]:
-            self.html += '<div class="image"><img src="' + article["image"] + '" alt=""/></div>'
-        self.html += "<div class=\"issue_content\">%s</div>"  % article["content"]
+        self.html = self.html % u'<h2 class="issue_head" title="%s">%s</h2>' % (a.title,a.title)
+        if article.image:
+            self.html += '<div class="image"><img src="' + article.image.filename + '" alt=""/></div>'
+        self.html += "<div class=\"issue_content\">%s</div>"  % a.content
         self.html += '<div class="small">'
-        if article["link"]:
-            self.html += '<a class="about_source" href="' + article["link"] + '">Source</a>'
-            self.html += '<a class="about_share" href="about:share?url=' + article["link"] + '&text=' + article["title"] + '">Share</a>'
+        if a.keywords:
+            self.html += str([str(kw.word) for kw in a.keywords])
+        if a.link:
+            self.html += '<a class="about_source" href="' + a.link + '">Source</a>'
+            self.html += '<a class="about_share" href="about:share?url=' + a.link + '&text=' + a.title + '">Share</a>'
         self.html += '</div></div>'
 
     def __str__( self ):
