@@ -249,7 +249,7 @@ class Anchorbot( object ):
             s = get_session(self.db)
             if url == self.watched:
                 source = s.query(Source).filter(Source.link == url).first()
-                self.download_one(source, self.update_feeds_tree)
+                self.download_one(url, self.update_feeds_tree)
             # but also reload the view
             articles = s.query(Article).join(Article.source).filter(Source.link == url).all()
             self.browser.open_articles( articles )

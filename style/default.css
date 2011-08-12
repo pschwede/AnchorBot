@@ -3,7 +3,7 @@
     margin: 0;
     padding: 0;
     text-decoration: none;
-}
+    }
 
 html, body {
     font-family: "minion-pro-1","minion-pro-2",Palatino,Georgia,"Times New Roman",serif;
@@ -11,7 +11,7 @@ html, body {
     font-size: 12pt;
     color: #000;
     /*background-color: #bbb;*/
-}
+    }
 
 body {
     padding-left: 20px;
@@ -19,25 +19,47 @@ body {
     padding-bottom: 50px;
     margin: 0 auto;
     max-width: 600px;
-}
+    }
+
+img {
+    max-width: 100%;
+    max-height: 600px;
+    border: 3px solid #000;
+    padding: 1px;
+    background: #fff;
+    }
+
+li {
+    text-indent: 3em;
+    }
+
+
+h1 {
+    font-size: 18pt;
+    font-weight: bold;
+    }
+
+table {
+    font-size: 66%;
+    }
 
 .issue1 a:link, .issue2 a:link {
     color: #009;
     font-style: italic;
-}
+    }
 .issue1 :not(.small) a:hover, :not(.small) .issue2 a:hover {
     color: #009;
     text-decoration: underline;
-}
+    }
 .issue1 :not(.small) a:visited, :not(.small) .issue2 a:visited {
     color: #ff9;
-}
+    }
 
 .issue1 {
     width: 100%;
     max-width: 600px;
     margin: 50px auto;
-}
+    }
 
 .issue_content {
     padding-top: 30px;
@@ -46,22 +68,18 @@ body {
     width: 90%;
     max-width: 600px;
     margin: 0 auto;
-}
+    }
 
 .issue_content p, .issue-content br {
     padding-top: 10px;
-}
-
-li {
-    text-indent: 3em;
-}
+    }
 
 .issue2 {
     width: 50%;
     max-width: 390px;
     display: inline-block;
     vertical-align: top;
-}
+    }
 
 .issue1, .issue2 {
     clear: both;
@@ -70,46 +88,38 @@ li {
     margin: 0 auto;
     /*box-shadow: 0 0 200px #bbb inset, 0 0 200px #fff;*/
     background: #fff;
-}
+    }
 
 .small {
     clear: both;
     width: 100%;
     text-align: right;
-}
+    }
 .small a:link {
     font-style: Normal;
     color: #009;
-}
+    }
 
 .about_source {
     padding-left: 16px;
-}
+    }
 
 .about_share {
     padding-left: 16px;
     margin-left: 5px;
-}
+    }
 
 .image {
     padding: 3px;
-}
+    }
 .image:nth-child(even) {
     float: right;
     margin-left: 5px;
-}
+    }
 .image:nth-child(odd) {
     float: left;
     margin-right: 5px;
-}
-
-img {
-    max-width: 100%;
-    max-height: 600px;
-    border: 3px solid #000;
-    padding: 1px;
-    background: #fff;
-}
+    }
 
 .issue_head {
     color: #000;
@@ -119,13 +129,4 @@ img {
     margin-top: 30px;
     text-shadow: 0 0 2px #fff;
     line-height: 130%;
-}
-
-h1 {
-    font-size: 18pt;
-    font-weight: bold;
-}
-
-table {
-    font-size: 66%;
-}
+    }
