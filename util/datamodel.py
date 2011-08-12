@@ -74,8 +74,9 @@ class Article(Base):
     page = relationship("Page", backref="article_br", lazy="dynamic")
     keywords = relationship("Keyword", backref="article_br",
             secondary="kw2arts")
+    entryhash = Column(Integer, default=None)
 
-    def __init__(self, date, title, content, link, source, image, keywords=None):
+    def __init__(self, date, title, content, link, source, image, keywords=None, ehash=None):
         self.date = date
         self.title = title.decode("utf-8")
         self.content = content.decode("utf-8")
@@ -84,6 +85,8 @@ class Article(Base):
         self.image = image
         if keywords:
             self.set_keywords(keywords)
+        if ehash:
+            self.ehash = ehash
 
     def set_keywords(self, keywords):
         for kw in keywords:

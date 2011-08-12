@@ -150,6 +150,17 @@ class Crawler(object):
         for elem in tree:
             self.recursive_hyph(elem, hyphen)
 
+    def get_link(self, entry):
+        link = ""
+        try:
+            link = entry.link
+        except AttributeError:
+            try:
+                link = entry["links"][0]["href"]
+            except KeyError:
+                print "Warning! %s has no link!" % entry["title"]
+        return link
+   
     def enrich(self, entry, source, recursion=1):
         """Filters out images, adds images from html, cleans up content."""
         usedimages = set()
@@ -208,14 +219,7 @@ class Crawler(object):
         # give the images to the entry finally
         image = Image(image or self.biggest_image(images))
 
-        try:
-            link = entry.link
-        except AttributeError:
-            try:
-                link = entry["links"][0]["href"]
-            except KeyError:
-                link = ""
-                print "Warning! %s has no link!" % entry["title"]
+        link = self.get_link(entry)
 
         try:
             date = mktime(entry.updated_parsed)

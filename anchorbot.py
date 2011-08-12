@@ -187,7 +187,7 @@ class Anchorbot( object ):
             feedicon = ""
         s = get_session(self.db)
         for entry in feed["entries"]:
-            article = s.query(Article).filter(Article.link == entry.link).first()
+            article = s.query(Article).filter(Article.link == self.crawler.get_link(entry)).first()
             if not article:
                 source = s.query(Source).filter(Source.link == feedurl).first()
                 article = self.crawler.enrich(entry, source)
@@ -205,10 +205,13 @@ class Anchorbot( object ):
         """
         for url in self.config.get_abos():
             s = get_session(self.db)
-            if not s.query(Source).filter(Source.link == url).count():
-                source = Source(url)
-                s.add(source)
-            s.commit()
+            s.add(Source(url))
+            try:
+                s.commit()
+            except IntegrityError, e:
+                s.rollback()
+            s.close()
+             
             self.dl_queue.put_nowait( url )
 
     def download_one( self, url, callback=None ):
