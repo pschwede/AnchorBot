@@ -19,8 +19,8 @@ class Analyzer(object):
         """
         word = self.__crop(word)
         try:
-            if self.keywords[word][0]+cnt < len(self.rarity):
             # only add words that don't occure too often
+            if self.keywords[word][0]+cnt < len(self.rarity):
                 self.keywords[word] =  (
                         self.keywords[word][0] + cnt,
                         self.keywords[word][1] + [entry[self.eid]],
@@ -38,12 +38,14 @@ class Analyzer(object):
 
     def __climb_escore(self, cnt, word, step, entry):
         try:
-            if cnt > self.entryscore[word][1]:
+            #TODO probably check, which of the entries is prefered!
+            if cnt >= self.entryscore[word][1]:
                 self.entryscore[word] = (entry[self.eid], 1.*cnt/step)
         except KeyError:
             self.entryscore[word] = (entry[self.eid], 1.*cnt/step)
 
     def get_keywords_of_article(self, entry):
+        self.__filter_keywords()
         keyw = []
         for word, (eid, cnt) in self.entryscore.items():
             if eid == entry[self.eid]:
@@ -69,7 +71,7 @@ class Analyzer(object):
         Returns itself.
         """
         self.num_entries += 1
-        ewords = entry[self.key].lower().split(" ")
+        ewords = filter(lambda x: len(x)>1, map(self.__crop, entry[self.key].lower().split(" ")))
         ewset, l = set(ewords), len(ewords)
         for word in ewset:
             cnt = ewords.count(word)
@@ -85,10 +87,15 @@ if __name__ == "__main__":
             {"url":1, "content":"UFO in NY NY NY"},
             {"url":2, "content":"Fun with ufos"},
             {"url":3, "content":"How to live in NY"},
-            {"url":4, "content":"Fun FUN fun NY NY"}
+            {"url":4, "content":"Fun FUN fun - NY NY"},
+            {"url":5, "content":"UFO in NY"},
+            {"url":6, "content":"london riot"},
+            {"url":7, "content":"update: london riot"},
             ]
-    a = Analyzer(eid="url",rarity=xrange(3,99))
-    print a.get_keywords_of_articles(entries)
-    a.add({"url":5, "content":"UFO in NY"})
+    a = Analyzer(eid="url",rarity=xrange(1,99))
+    for entry in entries:
+        print a.get_keywords_of_articles()
+        print a.entryscore
+        a.add(entry)
     print a.entryscore
-    print a.get_keywords_of_articles()
+    print a.get_keywords_of_article(entries[-2])

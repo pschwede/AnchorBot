@@ -181,6 +181,7 @@ class Crawler(object):
                     image, images, content = self.crawlHTML(soupparser.fromstring(html))
                 except KeyError:
                     self.verbose and log("No content! %s" % entry)
+                    content = entry["title"]
         # get more images
         # from entry itself
         for key in ("links", "enclosures"):
@@ -197,16 +198,22 @@ class Crawler(object):
         try:
             for link in entry["links"]:
                 if link["href"]:
+                    # check for encoding
                     f = open(self.cache[link["href"]])
                     encoding = chardet.detect(f.read())["encoding"]
-                    f.seek(0)
-                    html = f.read().decode(encoding)
-                    images |= self.crawlHTML(
-                            soupparser.fromstring(html),
-                            baseurl=link["href"],
-                            )[1].difference(
-                                    usedimages
-                                    )
+                    if encoding and encoding is not "utf-8":
+                        f.seek(0)
+                        # reset the encoding to utf-8
+                        html = f.read().decode(encoding).encode("utf-8")
+                    try:
+                        images |= self.crawlHTML(
+                                soupparser.fromstring(html),
+                                baseurl=link["href"],
+                                )[1].difference(
+                                        usedimages
+                                        )
+                    except ValueError, e:
+                        self.verbose and log("Wrong char? %s" % e)
         except KeyError:
             self.verbose and log("There were no links: %s" % entry)
 
@@ -215,9 +222,12 @@ class Crawler(object):
 
         # filter out some images
         images = set(self.filter_images(images, minimum=(70,70)))
-
         # give the images to the entry finally
-        image = Image(image or self.biggest_image(images))
+        if images and image not in images:
+            image = Image(self.biggest_image(images))
+        else:
+            image = Image(image)
+        #TODO resize image to a prefered size here!
 
         link = self.get_link(entry)
 

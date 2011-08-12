@@ -68,9 +68,9 @@ class Anchorbot( object ):
         # load config
         try:
             self.config = Config( HOME, verbose=self.verbose ) # Raises Exception if locked
-        except:
-            self.l.log(_( "It seems as if Lyrebird is already running. If not, please remove ~/.lyrebird/lock" ))
-            raise IOError()
+        except Exception, e:
+            print "It seems as if Lyrebird is already running. If not, please remove ~/.lyrebird/lock"
+            raise e
 
         # prepare cached browser
         self.browser = browser.WebkitBrowser( HERE )
@@ -97,7 +97,7 @@ class Anchorbot( object ):
 
     def __run_downloader(self):
         """run a downloader *without* caching"""
-        t = threading.Thread( target=self.__dl_worker, args=( False, self.update_feeds_tree,  ) )
+        t = threading.Thread( target=self.__dl_worker, args=( self.update_feeds_tree,  ) )
         t.daemon = True
         t.start()
         self.downloaders.append(t)
@@ -139,18 +139,13 @@ class Anchorbot( object ):
                     self.l.log( 'Tweet %s %s' % ( text, url,  ) )
                     self.mblog.send_text( self.window, "%s %s" % ( text, url,  ) )
 
-    def update_feeds_tree( self, url ):
+    def update_feeds_tree( self, title, url=None ):
         """Redraws the Feed-Tree
         """
+        url = url or title
         # removes old entry with url and appends a new one
         gtk.gdk.threads_enter()
-        feed = self.feeds[url]
         # find title or set title to url
-        try:
-            title = feed["feed"]["title"]
-        except KeyError:
-            self.l.log( "Warning: Couldn't find feed[feed][title] in %s" % url )
-            title = url
         if url in self.window.treedic.keys():
             self.window.groups.get_model().set( self.window.treedic[url], 0, title, 1, url )
         else:
@@ -168,55 +163,77 @@ class Anchorbot( object ):
         self.config.quit()
         gtk.main_quit()
 
-    def __dl_worker( self, cached=False, callback=None ):
+    def __dl_worker( self, callback=None ):
         """Method for download threads
         Setting self.dl_running to False would stop them all.
         """
         while self.dl_running:
             url = self.dl_queue.get()
-            self.download( url, cached, callback )
+            self.download( url, callback )
             self.dl_queue.task_done()
 
-    def download( self, feedurl, cached=True, callback=None):
-        """Download procedure
-        """ #TODO move these methods into somewhere better fitting
-        if cached:
-            self.l.log("Warning: Using chached version of %s" % feedurl)
-            feed = self.feeds[feedurl] = feedparser.parse( self.cache[feedurl] )
-        else:
-            feed = self.feeds[feedurl] = feedparser.parse( feedurl )
-        try:
-            feedicon = feed["icon"]
-        except KeyError:
-            feedicon = ""
+    def download( self, feedurl, callback=None):
+        """Download procedure"""
+        feed = self.feeds[feedurl] = feedparser.parse( self.cache[feedurl] )
         s = get_session(self.db)
+        source = s.query(Source).filter(Source.link == feedurl).first()
+        title = source.title = feed["feed"]["title"]
+        s.close()
         for entry in feed["entries"]:
+            s = get_session(self.db)
             article = s.query(Article).filter(Article.link == self.crawler.get_link(entry)).first()
             if not article:
-                source = s.query(Source).filter(Source.link == feedurl).first()
                 article = self.crawler.enrich(entry, source)
                 s.add(article)
                 try:
                     s.commit()
                 except IntegrityError, e:
                     s.rollback()
+                    self.l.log("IntegrityError: %s" % e)
+            s.close()
         self.l.log("Done %i of %i" % (self.feeds.keys().index(feedurl)+1, len( self.feeds ),))
         if callback:
-            callback( feedurl )
+            callback(title, feedurl)
 
-    def download_all( self, callback=None ):
+    def __download_all(self, callback=None):
         """Puts all feeds into the download queue to be downloaded.
+        Needs some DLers in downloaders list
         """
         for url in self.config.get_abos():
             s = get_session(self.db)
-            s.add(Source(url))
-            try:
-                s.commit()
-            except IntegrityError, e:
-                s.rollback()
-            s.close()
+            source = s.query(Source).filter(Source.link == url).first()
+            if not source:
+                source = Source(url)
+                s.add(source)
+                try:
+                    s.commit()
+                except IntegrityError:
+                    s.rollback()
              
-            self.dl_queue.put_nowait( url )
+            del self.cache[url]
+            f = open(self.cache[url])
+            h = hash(f.read())
+            f.close()
+            if not source.quickhash or h != source.quickhash:
+                source.quickhash = h
+                s.close()
+
+                if len(self.downloaders) >= NUMT:
+                    self.dl_queue.put_nowait(url)
+                else:
+                    self.download_one(url, callback)
+            else:
+                print "Nothing new: %s" % url, h
+                if callback:
+                    callback(source.link, source.title)
+                self.l.log("Nothing new: %s" % url)
+                s.close()
+
+    def download_all( self, callback=None ):
+        """Threaded wrapper around __download_all"""
+        t = threading.Thread( target=self.__download_all, args=( self.update_feeds_tree,  ) )
+        t.daemon = True
+        t.start()
 
     def download_one( self, url, callback=None ):
         self.dl_queue.put_nowait( url )
@@ -229,9 +246,11 @@ class Anchorbot( object ):
         if not url and self.watched:
             url = self.watched
         if url:
-            if url == self.watched:
-                self.dl_queue.put_nowait( url )
             s = get_session(self.db)
+            if url == self.watched:
+                source = s.query(Source).filter(Source.link == url).first()
+                self.download_one(source, self.update_feeds_tree)
+            # but also reload the view
             articles = s.query(Article).join(Article.source).filter(Source.link == url).all()
             self.browser.open_articles( articles )
             s.close()

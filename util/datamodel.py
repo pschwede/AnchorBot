@@ -35,11 +35,14 @@ class Source(Base):
 
     ID = Column(Integer, primary_key=True)
     link = Column(String, unique=True)
+    title = Column(Unicode, default=u"")
     image_id = Column(Integer, ForeignKey("images.ID"))
     image = relationship("Image", backref="source_br")
+    quickhash = Column(Integer, default=0)
     
-    def __init__(self, link, image=None):
+    def __init__(self, link, title=u"", image=None):
         self.link = link
+        self.title = title
         self.image = image
 
     def __repr__(self):

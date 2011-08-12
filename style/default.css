@@ -118,9 +118,14 @@ img {
     margin-bottom: 5px;
     margin-top: 30px;
     text-shadow: 0 0 2px #fff;
-    line-height: 18pt;
+    line-height: 130%;
 }
 
 h1 {
     font-size: 18pt;
+    font-weight: bold;
+}
+
+table {
+    font-size: 66%;
 }
