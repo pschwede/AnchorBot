@@ -83,6 +83,7 @@ class Anchorbot( object ):
 
         # prepare variables and lists,...
         self.feeds = {}
+        self.downloaders = []
         self.watched = None
         self.mblog = Microblogger()
         self.analyzer = Analyzer(key="title",eid="link")
@@ -94,16 +95,20 @@ class Anchorbot( object ):
                 "__author__":  __author__,
             }, self )
 
+    def __run_downloader(self):
+        """run a downloader *without* caching"""
+        t = threading.Thread( target=self.__dl_worker, args=( False, self.update_feeds_tree,  ) )
+        t.daemon = True
+        t.start()
+        self.downloaders.append(t)
+
     def __setup_dl_pipes( self, number_of_pipes ):
         """ initializes a list of Download Threads and a Queue.Queue """
         # setup download pipes
         self.dl_queue = Queue.Queue()
         self.dl_running = True
         for i in range( number_of_pipes ):
-            #run dlers *without* caching
-            t = threading.Thread( target=self.__dl_worker, args=( False, self.update_feeds_tree,  ) )
-            t.daemon = True
-            t.start()
+            self.__run_downloader()
 
     def __print_cache_and_exit( self ):
         """ well, prints cache and exits """
@@ -164,8 +169,7 @@ class Anchorbot( object ):
         gtk.main_quit()
 
     def __dl_worker( self, cached=False, callback=None ):
-        """Method for Download Threads
-        
+        """Method for download threads
         Setting self.dl_running to False would stop them all.
         """
         while self.dl_running:
@@ -216,6 +220,7 @@ class Anchorbot( object ):
 
     def download_one( self, url, callback=None ):
         self.dl_queue.put_nowait( url )
+        self.__run_downloader() # Careful with this, since they could get more and more here
 
     def show( self, url=None ):
         """Shows url in browser. If url is already shown in browser,
@@ -228,7 +233,6 @@ class Anchorbot( object ):
                 self.dl_queue.put_nowait( url )
             s = get_session(self.db)
             articles = s.query(Article).join(Article.source).filter(Source.link == url).all()
-            print articles
             self.browser.open_articles( articles )
             s.close()
         else:
