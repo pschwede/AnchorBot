@@ -101,7 +101,7 @@ class FileCacher(object):
             del self.stor[self.__newurl(url)]
             del self.stor[url]
         except:
-            pass # oll korrect
+            pass # it is oll korrect
 
     def __delitem__(self, url):
         self.__remove_item(url)

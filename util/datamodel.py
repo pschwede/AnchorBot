@@ -4,6 +4,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker, scoped_session
 from sqlalchemy import create_engine, Table, Column, Float, Integer, String, Unicode, ForeignKey
 import Image as PIL
+from time import localtime, strftime
 
 Base = declarative_base()
 
@@ -71,7 +72,7 @@ class Article(Base):
     timesread = Column(Integer, default=0)
     source_id = Column(Integer, ForeignKey("sources.ID"), nullable=False)
     source = relationship("Source", backref="article_br")
-    image_id = Column(Integer, ForeignKey("images.ID"), nullable=False)
+    image_id = Column(Integer, ForeignKey("images.ID"), nullable=True)
     image = relationship("Image", backref="article_br")
     page_id = Column(Integer, ForeignKey("pages.ID"))
     page = relationship("Page", backref="article_br", lazy="dynamic")
@@ -100,8 +101,27 @@ class Article(Base):
         self.lastread = date
         self.timesread += 1
 
+    def html(self):
+        """The feed-entry inside the browser."""
+        # TODO This rimes: Probably not a good idea to put that here.
+        self.html = u'<div class="issue1">%s'
+        self.html = self.html % u'<h2 class="issue_head" title="%s">%s</h2>' % (self.title,self.title)
+        if self.image:
+            self.html += '<div class="image"><img src="' + self.image.filename + '" alt=""/></div>'
+        self.html += "<div class=\"issue_content\">%s</div>"  % self.content
+        self.html += '<div class="small">'
+        self.html += "%s " % strftime("%X %x", localtime(self.date))
+        if self.keywords:
+            self.html += str([str(kw.word) for kw in self.keywords])
+        if self.link:
+            self.html += '<a class="about_source" href="' + self.link + '">Source</a>'
+            self.html += '<a class="about_share" href="about:share?url=' + self.link + '&text=' + self.title + '">Share</a>'
+        self.html += '</div></div>'
+        return self.html
+
+
     def __repr__(self):
-        return "<%s%s>" % ("Article",(self.ID, self.title))
+        return "<%s%s>" % ("Article",(self.ID, self.title, self.content, self.link))
 
 class Keyword(Base):
     __tablename__ = "keywords"

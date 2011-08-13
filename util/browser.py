@@ -79,7 +79,7 @@ class WebkitBrowser(gtk.ScrolledWindow):
                 self._style,
                 self.absolute, 'jquery-1.5.min.js',
                 )
-        self.html += str(widgets.htmlArticleWidget(article, dominance=0))
+        self.html += article.html()
         self.html += "</body></html>"
         f = open("/tmp/browser.html", 'w')
         f.write(self.html)
@@ -97,7 +97,7 @@ class WebkitBrowser(gtk.ScrolledWindow):
                 self.absolute, 'jquery-1.5.min.js',
                 )
         for article in loa:
-            self.html += str(widgets.htmlArticleWidget(article))
+            self.html += article.html()
         self.html += "</body></html>"
         self.browser.load_string(self.html, "text/html", "utf-8", "file:///")
         if write:

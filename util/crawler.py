@@ -180,7 +180,6 @@ class Crawler(object):
                     html = entry["summary"].value.decode("utf-8")
                     image, images, content = self.crawlHTML(soupparser.fromstring(html))
                 except KeyError:
-                    self.verbose and log("No content! %s" % entry)
                     content = entry["title"]
         # get more images
         # from entry itself
@@ -213,7 +212,7 @@ class Crawler(object):
                                         usedimages
                                         )
                     except ValueError, e:
-                        self.verbose and log("Wrong char? %s" % e)
+                        self.verbose and log("Wrong %s char? %s" % (encoding,e,))
         except KeyError:
             self.verbose and log("There were no links: %s" % entry)
 
@@ -224,9 +223,11 @@ class Crawler(object):
         images = set(self.filter_images(images, minimum=(70,70)))
         # give the images to the entry finally
         if images and image not in images:
-            image = Image(self.biggest_image(images))
-        else:
+            image = self.biggest_image(images)
+        if image:
             image = Image(image)
+        else:
+            image = None
         #TODO resize image to a prefered size here!
 
         link = self.get_link(entry)

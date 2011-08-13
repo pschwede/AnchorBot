@@ -28,7 +28,7 @@ HOME = os.path.join( os.path.expanduser( "~" ),".anchorbot" )
 HERE = os.path.realpath( os.path.dirname( __file__ ) )
 TEMP = os.path.join( HOME, "cache/" )
 HTML = os.path.join( HOME, "index.html" )
-NUMT = 8
+NUMT = 6
 __appname__ = "AnchorBot"
 __version__ = "1.0"
 __author__ = "spazzpp2"
@@ -152,6 +152,10 @@ class Anchorbot( object ):
             self.window.treedic[url] = self.window.groups.get_model().append( self.window.treedic["Feeds"], [title, url] )
         self.window.groups.expand_all()
         gtk.gdk.threads_leave()
+        s = get_session(self.db)
+        source = s.query(Source).filter(Source.link == url).first()
+        source.quickhash = self.get_hash(url)
+        s.commit()
 
     def quit( self, stuff=None ):
         """Does a save Quit
@@ -180,8 +184,9 @@ class Anchorbot( object ):
         title = source.title = feed["feed"]["title"]
         s.close()
         for entry in feed["entries"]:
+            url = self.crawler.get_link(entry)
             s = get_session(self.db)
-            article = s.query(Article).filter(Article.link == self.crawler.get_link(entry)).first()
+            article = s.query(Article).filter(Article.link == url).first()
             if not article:
                 article = self.crawler.enrich(entry, source)
                 s.add(article)
@@ -190,10 +195,18 @@ class Anchorbot( object ):
                 except IntegrityError, e:
                     s.rollback()
                     self.l.log("IntegrityError: %s" % e)
+                print s.query(Article).filter(Article.link == url).first()
             s.close()
         self.l.log("Done %i of %i" % (self.feeds.keys().index(feedurl)+1, len( self.feeds ),))
         if callback:
             callback(title, feedurl)
+
+    def get_hash(self, feedurl):
+        del self.cache[feedurl]
+        f = open(self.cache[feedurl])
+        h = hash(f.read())
+        f.close()
+        return h
 
     def __download_all(self, callback=None):
         """Puts all feeds into the download queue to be downloaded.
@@ -203,6 +216,7 @@ class Anchorbot( object ):
             s = get_session(self.db)
             source = s.query(Source).filter(Source.link == url).first()
             if not source:
+                print "New source: %s" % url
                 source = Source(url)
                 s.add(source)
                 try:
@@ -210,14 +224,9 @@ class Anchorbot( object ):
                 except IntegrityError:
                     s.rollback()
              
-            del self.cache[url]
-            f = open(self.cache[url])
-            h = hash(f.read())
-            f.close()
+            h = self.get_hash(url)
             if not source.quickhash or h != source.quickhash:
-                source.quickhash = h
-                s.close()
-
+                print "Something new: %s" % url, h, source.quickhash
                 if len(self.downloaders) >= NUMT:
                     self.dl_queue.put_nowait(url)
                 else:
@@ -225,7 +234,7 @@ class Anchorbot( object ):
             else:
                 print "Nothing new: %s" % url, h
                 if callback:
-                    callback(source.link, source.title)
+                    callback(source.title, source.link)
                 self.l.log("Nothing new: %s" % url)
                 s.close()
 
