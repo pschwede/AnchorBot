@@ -87,7 +87,7 @@ class FileCacher(object):
                     try:
                         self.dloader.retrieve(url, newurl)
                     except UnicodeError:
-                        self.dloader.retrieve(urllib.quote_plus(url.decode()), newurl)
+                        self.dloader.retrieve(urllib.quote_plus(url.encode("utf-8")), newurl)
                 self.verbose and log("Cached %s to %s." % (url, newurl, ))
                 self.stor[url] = self.stor[newurl] = (newurl, time.time())
             except IOError, e:

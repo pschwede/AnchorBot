@@ -87,7 +87,7 @@ class WebkitBrowser(gtk.ScrolledWindow):
         self.browser.load_string(self.html, "text/html", "utf-8", "file:///")
 
     def open_articles(self, list_of_articles, write="/tmp/browser.html"):
-        loa = list_of_articles
+        loa = set(list_of_articles)
         self.html = """<!doctype html><html lang="en de"><head>
         <link rel="stylesheet" type="text/css" href="%s"/>
         <script type="text/javascript" src="file://%s/third-party/%s"></script>

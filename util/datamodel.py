@@ -104,24 +104,24 @@ class Article(Base):
     def html(self):
         """The feed-entry inside the browser."""
         # TODO This rimes: Probably not a good idea to put that here.
-        self.html = u'<div class="issue1">%s'
-        self.html = self.html % u'<h2 class="issue_head" title="%s">%s</h2>' % (self.title,self.title)
+        html = u'<div class="issue1">%s'
+        html = html % u'<h2 class="issue_head" title="%s">%s</h2>' % (self.title,self.title)
         if self.image:
-            self.html += '<div class="image"><img src="' + self.image.filename + '" alt=""/></div>'
-        self.html += "<div class=\"issue_content\">%s</div>"  % self.content
-        self.html += '<div class="small">'
-        self.html += "%s " % strftime("%X %x", localtime(self.date))
+            html += '<div class="image"><img src="' + self.image.filename + '" alt=""/></div>'
+        html += "<div class=\"issue_content\">%s</div>"  % self.content
+        html += '<div class="small">'
+        html += "%s " % strftime("%X %x", localtime(self.date))
         if self.keywords:
-            self.html += str([str(kw.word) for kw in self.keywords])
+            html += str([str(kw.word) for kw in self.keywords])
         if self.link:
-            self.html += '<a class="about_source" href="' + self.link + '">Source</a>'
-            self.html += '<a class="about_share" href="about:share?url=' + self.link + '&text=' + self.title + '">Share</a>'
-        self.html += '</div></div>'
-        return self.html
+            html += '<a class="about_source" href="' + self.link + '">Source</a>'
+            html += '<a class="about_share" href="about:share?url=' + self.link + '&text=' + self.title + '">Share</a>'
+        html += '</div></div>'
+        return html
 
 
     def __repr__(self):
-        return "<%s%s>" % ("Article",(self.ID, self.title, self.content, self.link))
+        return "<%s%s>" % ("Article",(self.ID, self.title, self.content, self.link, self.image))
 
 class Keyword(Base):
     __tablename__ = "keywords"

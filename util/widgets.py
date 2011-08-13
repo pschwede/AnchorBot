@@ -116,6 +116,7 @@ class main_window( gtk.Window ):
 
         groups_model = gtk.TreeStore( str, str )
         self.treedic = {}
+        self.treedic["Start"] = groups_model.append( None, [ "Start" , "about:start"] )
         self.treedic["Feeds"] = groups_model.append( None, [ "Feeds" , None] )
         self.groups.set_model( groups_model )
 

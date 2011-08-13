@@ -24,6 +24,10 @@ from util.widgets import main_window
 from util.datamodel import get_session, get_engine, Source, Article, Image, Keyword
 from util.analyzer import Analyzer
 
+from multiprocessing import Process, Pool
+
+from time import time
+
 HOME = os.path.join( os.path.expanduser( "~" ),".anchorbot" )
 HERE = os.path.realpath( os.path.dirname( __file__ ) )
 TEMP = os.path.join( HOME, "cache/" )
@@ -125,6 +129,7 @@ class Anchorbot( object ):
         """handles "about:"-url-requests.
         """
         if uri.startswith( "about:" ):
+            print uri
             cmd = uri[6:]
             if cmd is "about":
                 self.show_about()
@@ -138,6 +143,8 @@ class Anchorbot( object ):
                 if text or url:
                     self.l.log( 'Tweet %s %s' % ( text, url,  ) )
                     self.mblog.send_text( self.window, "%s %s" % ( text, url,  ) )
+            elif cmd.startswith("start"):
+                self.show_start()
 
     def update_feeds_tree( self, title, url=None ):
         """Redraws the Feed-Tree
@@ -176,14 +183,8 @@ class Anchorbot( object ):
             self.download( url, callback )
             self.dl_queue.task_done()
 
-    def download( self, feedurl, callback=None):
-        """Download procedure"""
-        feed = self.feeds[feedurl] = feedparser.parse( self.cache[feedurl] )
-        s = get_session(self.db)
-        source = s.query(Source).filter(Source.link == feedurl).first()
-        title = source.title = feed["feed"]["title"]
-        s.close()
-        for entry in feed["entries"]:
+    def enrich(self, entries, source):
+        for entry in entries:
             url = self.crawler.get_link(entry)
             s = get_session(self.db)
             article = s.query(Article).filter(Article.link == url).first()
@@ -195,8 +196,43 @@ class Anchorbot( object ):
                 except IntegrityError, e:
                     s.rollback()
                     self.l.log("IntegrityError: %s" % e)
-                print s.query(Article).filter(Article.link == url).first()
+                    # replace keywords and image by already existing ones or keep them
+                    article.keywords = [s.query(Keyword).filter(Keyword.word == kw.word).first() or kw for kw in article.keywords]
+                    s.add(article)
+                    try:
+                        s.commit()
+                    except IntegrityError, e:
+                        s.rollback()
+                        del article.image
+                        s.add(article)
+                        try:
+                            s.commit()
+                        except IntegrityError, e:
+                            s.rollback()
+                            print_tb(sys.exc_info()[2])
+                            print "Ignored %s! IntegrityError: %s" % (url,e)
+                self.l.log( s.query(Article).filter(Article.link == url).first())
             s.close()
+
+    def download( self, feedurl, callback=None):
+        """Download procedure"""
+        feed = self.feeds[feedurl] = feedparser.parse( self.cache[feedurl] )
+        s = get_session(self.db)
+        source = s.query(Source).filter(Source.link == feedurl).first()
+        title = source.title = feed["feed"]["title"]
+        s.close()
+        
+        entries = feed["entries"]
+        processes = []
+        # split up entries and start processes with a smaller set of entries.
+        n = 1 # NUMT
+        for i in range(0, len(entries), len(entries)/n):
+            p = Process(target=self.enrich, args=(entries[i:i+NUMT],source,))
+            p.daemon = True
+            processes.append(p)
+        [p.start() for p in processes]
+        [p.join() for p in processes]
+
         self.l.log("Done %i of %i" % (self.feeds.keys().index(feedurl)+1, len( self.feeds ),))
         if callback:
             callback(title, feedurl)
@@ -216,7 +252,7 @@ class Anchorbot( object ):
             s = get_session(self.db)
             source = s.query(Source).filter(Source.link == url).first()
             if not source:
-                print "New source: %s" % url
+                self.l.log( "New source: %s" % url)
                 source = Source(url)
                 s.add(source)
                 try:
@@ -226,13 +262,12 @@ class Anchorbot( object ):
              
             h = self.get_hash(url)
             if not source.quickhash or h != source.quickhash:
-                print "Something new: %s" % url, h, source.quickhash
+                self.l.log( "Something new: %s, %i != %i" % (url, h, source.quickhash,))
                 if len(self.downloaders) >= NUMT:
                     self.dl_queue.put_nowait(url)
                 else:
                     self.download_one(url, callback)
             else:
-                print "Nothing new: %s" % url, h
                 if callback:
                     callback(source.title, source.link)
                 self.l.log("Nothing new: %s" % url)
@@ -248,6 +283,18 @@ class Anchorbot( object ):
         self.dl_queue.put_nowait( url )
         self.__run_downloader() # Careful with this, since they could get more and more here
 
+    def show_start(self, dtime=24*3600):
+        s = get_session(self.db)
+        for art in s.query(Article).filter(Article.date > time() - dtime).all():
+            self.analyzer.add({"title":art.title, "link":art.link})
+        self.analyzer.get_keywords_of_articles()
+        print self.analyzer.keywords
+        arts = []
+        for score, url in sorted(self.analyzer.popularity.items(), reverse=True):
+            arts.append(s.query(Article).filter(Article.link == url).first())
+        self.browser.open_articles(arts)
+        s.close()
+
     def show( self, url=None ):
         """Shows url in browser. If url is already shown in browser,
         the feed will be downloaded again.
@@ -255,6 +302,9 @@ class Anchorbot( object ):
         if not url and self.watched:
             url = self.watched
         if url:
+            if url.startswith("about:"):
+                self.__about(url)
+                return
             s = get_session(self.db)
             if url == self.watched:
                 source = s.query(Source).filter(Source.link == url).first()

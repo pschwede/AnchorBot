@@ -191,7 +191,7 @@ class Crawler(object):
             images |= set([item.href.decode("utf-8") for item in i]).difference(usedimages)
         # from html content
         if images:
-            images |= set(images).difference(usedimages)
+            images |= images.difference(usedimages)
 
         # get even more images from links in entry
         try:
@@ -204,28 +204,28 @@ class Crawler(object):
                         f.seek(0)
                         # reset the encoding to utf-8
                         html = f.read().decode(encoding).encode("utf-8")
-                    try:
-                        images |= self.crawlHTML(
-                                soupparser.fromstring(html),
-                                baseurl=link["href"],
-                                )[1].difference(
-                                        usedimages
-                                        )
-                    except ValueError, e:
-                        self.verbose and log("Wrong %s char? %s" % (encoding,e,))
+                        try:
+                            images |= self.crawlHTML(
+                                    soupparser.fromstring(html),
+                                    baseurl=link["href"],
+                                    )[1].difference(
+                                            usedimages
+                                            )
+                        except ValueError, e:
+                            self.verbose and log("Wrong %s char? %s" % (encoding,e,))
         except KeyError:
             self.verbose and log("There were no links: %s" % entry)
 
         images = images.difference(usedimages)
-        usedimages |= images
 
         # filter out some images
         images = set(self.filter_images(images, minimum=(70,70)))
         # give the images to the entry finally
         if images and image not in images:
             image = self.biggest_image(images)
-        if image:
+        if image and image not in usedimages:
             image = Image(image)
+            usedimages |= set([image])
         else:
             image = None
         #TODO resize image to a prefered size here!

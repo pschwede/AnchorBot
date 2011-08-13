@@ -3,10 +3,11 @@ from re import compile
 
 class Analyzer(object):
     r_crop = compile("\W")
-    def __init__(self, key="content", eid="link", rarity=xrange(2,99)):
+    def __init__(self, key="content", eid="link", rarity=(0.001,1.)):
         self.entryscore = {} # {word: (eid, cnt)}
         self.key, self.eid = key, eid
         self.keywords = {} # {word: score}
+        self.popularity = {}
         self.num_entries = 0
         self.rarity = rarity
 
@@ -20,11 +21,12 @@ class Analyzer(object):
         word = self.__crop(word)
         try:
             # only add words that don't occure too often
-            if self.keywords[word][0]+cnt < len(self.rarity):
+            #if float(self.keywords[word][0]+cnt)/(len(self.keywords)+1) < self.rarity[1]:
                 self.keywords[word] =  (
                         self.keywords[word][0] + cnt,
                         self.keywords[word][1] + [entry[self.eid]],
                         )
+                self.popularity[self.keywords[word][0]] = entry[self.eid] 
         except KeyError:
             self.keywords[word] = (cnt, [entry[self.eid]],)
 
@@ -33,7 +35,7 @@ class Analyzer(object):
         Filters out keywords that are too rare.
         """
         for word, score in self.keywords.items():
-            if score < self.rarity[0]:
+            if score[0]/len(self.keywords) < self.rarity[0]:
                 del self.keywords[word]
 
     def __climb_escore(self, cnt, word, step, entry):
@@ -92,7 +94,7 @@ if __name__ == "__main__":
             {"url":6, "content":"london riot"},
             {"url":7, "content":"update: london riot"},
             ]
-    a = Analyzer(eid="url",rarity=xrange(1,99))
+    a = Analyzer(eid="url",rarity=(.001,1.))
     for entry in entries:
         print a.get_keywords_of_articles()
         print a.entryscore
