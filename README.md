@@ -19,6 +19,7 @@ Requirements
 * [PyGTK](http://pygtk.org/) python-gtk2
 * [pyWebkitGTK](https://code.google.com/p/pywebkitgtk/) python-webkit
 * [feedparser](http://feedparser.org/) python-feedparser
+* [lxml](http://lxml.org) python-lxml
 
 Optional:
 
