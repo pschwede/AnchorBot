@@ -1,6 +1,7 @@
 import gtk, gobject, os, urllib, webbrowser
 import widgets
 from logger import log
+from templates import article as temp_art
 
 try:
     import webkit
@@ -38,6 +39,17 @@ class TextBrowser(gtk.TextView):
             gtk.gdk.threads_leave()
             
 class WebkitBrowser(gtk.ScrolledWindow):
+    html_template = """<!doctype html>
+        <html lang="en de">
+            <head>
+                <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+                <link rel="stylesheet" type="text/css" href="%s"/>
+                <script type="text/javascript" src="file://%s/third-party/%s"></script>
+            </head>
+            <body>
+                %s
+            </body>
+        </html>"""
     def __init__(self, absolute="", style="default.css"):
         super(WebkitBrowser, self).__init__()
         self.absolute = absolute
@@ -70,35 +82,29 @@ class WebkitBrowser(gtk.ScrolledWindow):
     def open(self, uri):
         self.browser.open(uri)
 
-    def open_article(self, article):
-        self.html = """<!doctype html><html lang="en de"><head>
-        <link rel="stylesheet" type="text/css" href="%s"/>
-        <script type="text/javascript" src="file://%s/third-party/%s"></script>
-        </head>
-        <body>""" % (
+    def open_article(self, article, mode):
+        self.html = self.html_template % (
                 self._style,
                 self.absolute, 'jquery-1.5.min.js',
                 )
-        self.html += article.html()
+        content += temp_art(article, mode)
         self.html += "</body></html>"
-        f = open("/tmp/browser.html", 'w')
-        f.write(self.html)
-        f.close()
         self.browser.load_string(self.html, "text/html", "utf-8", "file:///")
+        if write:
+            f = open(write, 'w')
+            f.write(self.html)
+            f.close()
 
-    def open_articles(self, list_of_articles, write="/tmp/browser.html"):
-        loa = set(list_of_articles)
-        self.html = """<!doctype html><html lang="en de"><head>
-        <link rel="stylesheet" type="text/css" href="%s"/>
-        <script type="text/javascript" src="file://%s/third-party/%s"></script>
-        </head>
-        <body>""" % (
+    def open_articles(self, list_of_articles, write="/tmp/browser.html", mode=1):
+        loa = list_of_articles
+        content = u""
+        for article in loa:
+            content += temp_art(article, mode)
+        self.html = self.html_template % (
                 self._style,
                 self.absolute, 'jquery-1.5.min.js',
+                content,
                 )
-        for article in loa:
-            self.html += article.html()
-        self.html += "</body></html>"
         self.browser.load_string(self.html, "text/html", "utf-8", "file:///")
         if write:
             f = open(write, 'w')

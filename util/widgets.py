@@ -85,7 +85,7 @@ class main_window( gtk.Window ):
         toolbar.add( new_tool )
 
         show_tool = gtk.ToolButton( gtk.STOCK_REFRESH )
-        show_tool.connect( "clicked", lambda w: self.ctrl.download_all() )
+        show_tool.connect( "clicked", lambda w: self.ctrl.update_all() )
         toolbar.add( show_tool )
 
         conf_tool = gtk.ToolButton( gtk.STOCK_PREFERENCES )

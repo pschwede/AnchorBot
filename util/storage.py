@@ -93,6 +93,7 @@ class FileCacher(object):
             except IOError, e:
                 if not url.endswith("gif"): #TODO WHY CAN'T IT HANDLE GIF FILES?
                     self.verbose and log("IOError: %s (Filename too long? len=%i), %s" % (e.message, len(url), url) )
+                return url
             return newurl
 
     def __remove_item(self, url):

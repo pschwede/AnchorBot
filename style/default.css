@@ -18,117 +18,165 @@ body {
     padding-right: 20px;
     padding-bottom: 50px;
     margin: 0 auto;
-    max-width: 600px;
     }
 
-img {
-    max-width: 100%;
-    max-height: 600px;
-    border: 3px solid #000;
-    padding: 1px;
-    background: #fff;
-    }
 
 li {
     text-indent: 3em;
-    }
-
-
-h1 {
-    font-size: 18pt;
-    font-weight: bold;
-    color: #222;
-    text-shadow: 1 1 1 #000 -1 -1 #fff;
     }
 
 table {
     font-size: 66%;
     }
 
-.issue1 a:link, .issue2 a:link {
-    color: #009;
-    font-style: italic;
-    }
-.issue1 :not(.small) a:hover, :not(.small) .issue2 a:hover {
-    color: #009;
-    text-decoration: underline;
-    }
-.issue1 :not(.small) a:visited, :not(.small) .issue2 a:visited {
-    color: #ff9;
-    }
-
 .issue1 {
     width: 100%;
     max-width: 600px;
     margin: 50px auto;
-    }
-
-.issue_content {
     padding-top: 30px;
-    border-top: 1px solid #333;
-    text-align: justify;
-    width: 90%;
-    max-width: 600px;
-    margin: 0 auto;
+    padding-bottom: 30px;
+    }
+    .issue1 .small {
+        clear: both;
+        width: 100%;
+        text-align: right;
+        font-size: 50%;
+        }
+        .issue1 .small a:link {
+            font: 10px sans-serif;
+            }
+        .issue1 .small .button {
+            padding: 2px 3px;
+            font-size: 75%;
+            display: inline-block;
+        }
+    .issue1 .issue_content a:link, .issue2 .issue_content a:link {
+        color: #009;
+        font-style: italic;
+        }
+    .issue1 :not(.small) a:hover {
+        color: #009;
+        text-decoration: underline;
+        }
+    .issue1 :not(.small) a:visited {
+        color: #ff9;
+        }
+    .issue1 .image {
+        max-width: 100%;
+        padding: 5px;
+        background: #fff;
+        }
+    .issue1 .image img {
+        border: 3px solid #000;
+        min-width: 50%;
+        max-width: 100%;
+        max-height: 600px;
+        }
+    .issue1:nth-child(even) .image {
+        float: right;
+        }
+    .issue1:nth-child(odd) .image {
+        float: left;
+        }
+    .issue1 .issue_head {
+        text-align: center;
+        width:100%;
+        color: #333;
+        text-shadow: -1px -1px 0px rgba(0,0,0,0.7), 1px 1px 0px rgba(255,255,255,0.7);
+        font-size: 18pt;
+        line-height: 130%;
+        }
+    .issue1 .issue_content {
+        padding-top: 20px;
+        border-top: 1px solid #333;
+        text-align: justify;
+        width: 100%;
+        margin: 0 auto;
+        }
+
+.button {
+    font-family: sans-serif;
+    font-weight: bold;
+    padding: 4px 8px;
+    background-color: #eee;
+    font-size: 15px;
+    border-radius: 16px;
+    border: 1px solid rgba(0,0,0,0.3);
+    box-shadow: 0px 1px 0px rgba(0,0,0,0.2);
+    text-shadow: 1px 1px 0 rgba(255,255,255,0.7);
+    text-align: center;
+    margin: 2px;
+    display: block;
+    color: #666;
+}
+    .button:hover {
+        background-color: #08f;
+        text-shadow: -1px -1px 0 rgba(0,0,0,0.3);
+        color: #fff;
     }
 
-.issue_content p, .issue-content br {
-    padding-top: 10px;
+.about_share, .about_source {
+    float: left;
+}
+    .about_share:before {
+        content: "♻  "
+    }
+    .about_source:before {
+        content: "⬈ "
     }
 
 .issue2 {
-    width: 50%;
-    max-width: 390px;
+    width: 200px;
+    height: 200px;
     display: inline-block;
     vertical-align: top;
+    margin: 2px;
+    overflow: visible;
+    background: #EEE 33% 33% no-repeat;
+    box-shadow: #000 1px 1px 2px;
     }
+    .issue2 .small {
+        font: 10px sans-serif;
+        background: rgba(0,0,0,0.6);
+        color: #fff;
+        display: none;
+        padding: 1em;
+        height: 100%;
+        z-index: 5;
+        }
+    .issue2 .button {
+        padding: 2px 3px;
+        font-size: 75%;
+        display: inline-block;
+    }
+    .issue2 .about_share,
+    .issue2 .about_source {
+        font-size: 100%;
+        width: 150px;
+        display: block;
+    }
+    .issue2:hover .small {
+        display: block;
+        }
+    .issue2 .issue_content {
+        display: none;
+        }
+    .issue2 .issue_head {
+        font-family: sans-serif, "Impact";
+        width: 100%;
+        z-index: 5;
+        color:#fff;
+        background: rgba(0,0,0,0.6);
+        text-shadow: none;
+        font-size: 10px;
+        text-align: center;
+        line-height: 15px;
+        text-transform: uppercase;
+        }
 
 .issue1, .issue2 {
     clear: both;
-    /*margin-top: 50px;*/
-    padding: 5px;
     margin: 0 auto;
-    /*box-shadow: 0 0 200px #bbb inset, 0 0 200px #fff;*/
-    background: #fff;
+    background-color: #fff;
     }
 
-.small {
-    clear: both;
-    width: 100%;
-    text-align: right;
-    }
-.small a:link {
-    font-style: Normal;
-    color: #009;
-    }
-
-.about_source {
-    padding-left: 16px;
-    }
-
-.about_share {
-    padding-left: 16px;
-    margin-left: 5px;
-    }
-
-.image {
-    padding: 3px;
-    }
-.image:nth-child(even) {
-    float: right;
-    margin-left: 5px;
-    }
-.image:nth-child(odd) {
-    float: left;
-    margin-right: 5px;
-    }
-
-.issue_head {
-    color: #000;
-    padding: 9px;
-    text-align: center;
-    margin-bottom: 5px;
-    margin-top: 30px;
-    text-shadow: 0 0 2px #fff;
-    line-height: 130%;
-    }

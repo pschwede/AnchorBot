@@ -1,8 +1,8 @@
 import multiprocessing as mp
-from re import compile
+from re import compile, UNICODE as re_u
 
 class Analyzer(object):
-    r_crop = compile("\W")
+    r_crop = compile("\W", re_u)
     def __init__(self, key="content", eid="link", rarity=(0.001,1.)):
         self.entryscore = {} # {word: (eid, cnt)}
         self.key, self.eid = key, eid

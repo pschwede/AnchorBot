@@ -32,7 +32,7 @@ Optional:
         sudo easy_install tweepy
 
 * [sqlalchemy](http://sqlalchemy.org) python-sqlalchemy
-* [sqlite3](http://sqlite.org) python-sqlite3
+* [sqlite3](http://pysqlite.org) python-sqlite3
 
 To use easy\_install on an Ubuntu/Mint/Debian machine, you need to install python-setuptools, first. If you are root, you won't need to sudo.
 

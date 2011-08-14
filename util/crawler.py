@@ -120,10 +120,10 @@ class Crawler(object):
         for imgurl in images:
             try:
                 im = PIL.open(self.cache[imgurl])
-                if im.size[0] >= minimum[0] and im.size[1] >= minimum[1]:
-                    if maximum == (0, 0,):
-                        result.append(self.cache[imgurl])
-                    elif im.size[0] <= maximum[0] and im.size[1] <= maximum[1]:
+                if maximum == (0, 0,):
+                    result.append(self.cache[imgurl])
+                elif im.size[0] >= minimum[0] and im.size[1] >= minimum[1] and\
+                     im.size[0] <= maximum[0] and im.size[1] <= maximum[1]:
                         result.append(self.cache[imgurl])
             except IOError:
                 self.verbose and log("Can't open that file: %s" % imgurl)
@@ -187,7 +187,7 @@ class Crawler(object):
             try:
                 i = filter(lambda x: x.type.startswith("image"), entry[key])
             except KeyError:
-                self.verbose and log("%s not found in entry.keys()" % key)
+                pass
             images |= set([item.href.decode("utf-8") for item in i]).difference(usedimages)
         # from html content
         if images:
@@ -241,5 +241,6 @@ class Crawler(object):
         a = self.analyzer
         a.add({a.eid: link, a.key: title})
         keywords = [Keyword(kw) for kw in a.get_keywords_of_article({a.eid: link, a.key: title})]
-        return Article(date, title, content, link, source, image, keywords)
+        art = Article(date, title, content, link, source, image)
+        return art, keywords
 

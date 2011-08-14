@@ -4,7 +4,6 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker, scoped_session
 from sqlalchemy import create_engine, Table, Column, Float, Integer, String, Unicode, ForeignKey
 import Image as PIL
-from time import localtime, strftime
 
 Base = declarative_base()
 
@@ -18,7 +17,7 @@ class Image(Base):
         self.filename = filename
 
     def __repr__(self):
-        return "<%s%s>" % (type(self), self.filename)
+        return "<%s%s>" % ("Image", (self.ID, self.filename,))
 
     def __cmp__(self, other):
         im = PIL.open(self.cache[im1])
@@ -76,7 +75,7 @@ class Article(Base):
     image = relationship("Image", backref="article_br")
     page_id = Column(Integer, ForeignKey("pages.ID"))
     page = relationship("Page", backref="article_br", lazy="dynamic")
-    keywords = relationship("Keyword", backref="article_br",
+    keywords = relationship("Keyword", backref="article_br", lazy="dynamic",
             secondary="kw2arts")
     entryhash = Column(Integer, default=None)
 
@@ -89,8 +88,7 @@ class Article(Base):
         self.image = image
         if keywords:
             self.set_keywords(keywords)
-        if ehash:
-            self.ehash = ehash
+        self.ehash = ehash
 
     def set_keywords(self, keywords):
         for kw in keywords:
@@ -101,27 +99,16 @@ class Article(Base):
         self.lastread = date
         self.timesread += 1
 
-    def html(self):
-        """The feed-entry inside the browser."""
-        # TODO This rimes: Probably not a good idea to put that here.
-        html = u'<div class="issue1">%s'
-        html = html % u'<h2 class="issue_head" title="%s">%s</h2>' % (self.title,self.title)
-        if self.image:
-            html += '<div class="image"><img src="' + self.image.filename + '" alt=""/></div>'
-        html += "<div class=\"issue_content\">%s</div>"  % self.content
-        html += '<div class="small">'
-        html += "%s " % strftime("%X %x", localtime(self.date))
-        if self.keywords:
-            html += str([str(kw.word) for kw in self.keywords])
-        if self.link:
-            html += '<a class="about_source" href="' + self.link + '">Source</a>'
-            html += '<a class="about_share" href="about:share?url=' + self.link + '&text=' + self.title + '">Share</a>'
-        html += '</div></div>'
-        return html
 
 
     def __repr__(self):
-        return "<%s%s>" % ("Article",(self.ID, self.title, self.content, self.link, self.image))
+        return "<%s(%s)>" % ("Article","""
+        id=%s,
+        title=%s,
+        link=%s,
+        img=%s,
+        keys=%s
+        """ % (self.ID, self.title, self.link, self.image, [kw.word for kw in self.keywords] ))
 
 class Keyword(Base):
     __tablename__ = "keywords"
@@ -136,7 +123,7 @@ class Keyword(Base):
         self.clickcount = clickcount
 
     def __repr__(self):
-        return "<%s%s>" % ("Keyword", (self.word,))
+        return "<%s%s>" % ("Keyword", (self.ID, self.word))
 
 class Kw2art(Base):
     __tablename__ = "kw2arts"
@@ -165,13 +152,22 @@ def get_session(engine):
     return session
 
 if __name__ == "__main__":
+    from sqlalchemy.exc import IntegrityError
+
     e = get_engine()
     session = get_session(e)
-    i = Image("url")
     k = Keyword("bla")
-    s = Source("url", i)
-    a = Article(0., u"title", "content", "link", s, i, [k])
-    session.add(a)
-    session.flush()
-    a = session.query(Article).filter(Article.link == "link").first()
-    print [k.articles for k in a.keywords]
+    session.add(k)
+    session.commit()
+
+    # after long time, without knowing, Keyword("bla") is already there
+    session.add(k)
+    try:
+        session.commit()
+    except IntegrityError, e:
+        session.rollback()
+       # print [session.query(Keyword).filter(Keyword.word == kw).first() or Keyword(kw) for kw in ["bla", "foo"]]
+        #session.add(a)
+        session.add(session.query(Keyword).filter(Keyword.word == u"bla").first() or Keyword("bla"))
+        session.add(session.query(Keyword).filter(Keyword.word == u"foo").first() or Keyword("foo"))
+        session.commit()
