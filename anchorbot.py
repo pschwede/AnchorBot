@@ -128,7 +128,7 @@ class Anchorbot( object ):
                 self.show_start()
             elif cmd.startswith("more?key="):
                 s = get_session(self.db)
-                arts = s.query(Article).join(Article.keywords).filter(Keyword.word == cmd[9:]).order_by(Article.date).all()
+                arts = s.query(Article).join(Article.keywords).filter(Keyword.ID == int(cmd[9:])).order_by(Article.date).all()
                 self.browser.open_articles(arts, mode=0)
                 s.close()
 
@@ -171,13 +171,14 @@ class Anchorbot( object ):
                 while tries > 0:
                     s = get_session(self.db)
                     article, keywords = self.crawler.enrich(entry, source)
-                    if keywords:
+                    if keywords and tries == 10:
                         article.set_keywords([s.query(Keyword).filter(Keyword.word == kw.word).first() or kw for kw in keywords])
                     if article.image:
                         if article.image in s:
                             s.expunge(article.image)
                         img = s.query(Image).filter(Image.filename == article.image.filename).first()
-                        article.image = img or article.image
+                        if img:
+                            article.image = img
                     try:
                         s.merge(article)
                         s.commit()

@@ -132,8 +132,13 @@ table {
     vertical-align: top;
     margin: 2px;
     overflow: visible;
-    background: #EEE 33% 33% no-repeat;
     box-shadow: #000 1px 1px 2px;
+    }
+    .issue2:nth-child(odd) {
+        background: #EEE 33% 33% no-repeat;
+    }
+    .issue2:nth-child(even) {
+        background: #EEE 66% 66% no-repeat;
     }
     .issue2 .small {
         font: 10px sans-serif;
@@ -141,7 +146,6 @@ table {
         color: #fff;
         display: none;
         padding: 1em;
-        height: 100%;
         z-index: 5;
         }
     .issue2 .button {

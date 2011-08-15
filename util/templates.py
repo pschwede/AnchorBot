@@ -2,7 +2,7 @@
 from time import localtime, strftime
 
 def keyword(kw):
-    return "<a class=\"button\" href=\"about:more?key=%s\">%s</a>" % (kw.word, kw.word)
+    return "<a class=\"button\" href=\"about:more?key=%s\">%s</a>" % (kw.ID, kw.word)
 
 def about_button(service, link, text=None):
     return {
@@ -40,14 +40,14 @@ def art_read(article):
     image = ""
     buttons = ""
     if article.image:
-        image = article.image.filename
+        image = """<div class="image"><img src="%s" alt=""/></div>""" % article.image.filename
     if article.link:
         buttons = about_button("source",article.link) + about_button("share",article.link,article.title)
     """The feed-entry inside the browser."""
     return u"""\
             <div class="issue1">
                 <h2 class="issue_head" title="%s">%s</h2>
-                <div class="image"><img src="%s" alt=""/></div>
+                %s
                 <div class="issue_content">%s</div>
                 <div class="small">
                     <span class="time">%s</span>

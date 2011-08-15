@@ -118,6 +118,7 @@ class Crawler(object):
 
         result = []
         for imgurl in images:
+            tries = 5
             try:
                 im = PIL.open(self.cache[imgurl])
                 if maximum == (0, 0,):
@@ -126,7 +127,7 @@ class Crawler(object):
                      im.size[0] <= maximum[0] and im.size[1] <= maximum[1]:
                         result.append(self.cache[imgurl])
             except IOError:
-                self.verbose and log("Can't open that file: %s" % imgurl)
+                self.verbose and log("Can't open that file: %s" % self.cache[imgurl])
         return result
 
     def clean(self, htmltext):
