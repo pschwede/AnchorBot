@@ -28,7 +28,7 @@ from util.analyzer import Analyzer
 from util.processor import Processor
 from multiprocessing import Lock
 
-from time import time
+from time import time, sleep
 
 HOME = os.path.join( os.path.expanduser( "~" ),".anchorbot" )
 HERE = os.path.realpath( os.path.dirname( __file__ ) )
@@ -89,7 +89,8 @@ class Anchorbot( object ):
             self.dblock = Lock()
             self.downloader = Processor(NUMT, self.download, self.update_feeds_tree)
             # in background, make daemons download feeds
-            #self.downloader.run_threaded( self.update_all, self.update_feeds_tree )
+            self.running, self.timeout = True, 3000 #TODO load from config
+            self.downloader.run_threaded( self.update_all, self.update_feeds_tree )
         except IOError:
             sys.exit( 1 )
 
@@ -155,6 +156,7 @@ class Anchorbot( object ):
     def quit( self, stuff=None ):
         """Does a save quit"""
         # stop downloading
+        self.running = False
         self.downloader.running = False
         # quit
         self.cache.quit()
@@ -194,13 +196,14 @@ class Anchorbot( object ):
 
     def download( self, feedurl, callback=None):
         """Download procedure"""
+        del self.cache[feedurl] # make sure, you got the newest
         feed = self.feeds[feedurl] = feedparser.parse( self.cache[feedurl] )
         s = get_session(self.db)
         source = s.query(Source).filter(Source.link == feedurl).first()
         try:
             title = source.title = feed["feed"]["title"]
         except KeyError:
-            title = source.title = u""
+            title = source.title = feedurl 
         s.close()
         
         # make DLer start some processes to enrich entries
@@ -222,29 +225,31 @@ class Anchorbot( object ):
         """Puts all feeds into the download queue to be downloaded.
         Needs some DLers in downloaders list
         """
-        for url in self.config.get_abos():
-            s = get_session(self.db)
-            source = s.query(Source).filter(Source.link == url).first()
-            if not source:
-                self.l.log( "New source: %s" % url)
-                source = Source(url)
-                s.add(source)
-                try:
-                    s.commit()
-                except IntegrityError:
-                    s.rollback()
-                    self.l.log("Couldn't store source %s" % source)
-             
-            h = self.get_hash(url)
-            if not source.quickhash or h != source.quickhash:
-                self.l.log( "Something new: %s" % url)
-                # throw url before the daemons
-                self.downloader.run_one(url)
-            else:
-                if callback:
-                    callback(source.link, source.title)
-                self.l.log("Nothing new: %s" % url)
-                s.close()
+        while self.running:
+            for url in self.config.get_abos():
+                s = get_session(self.db)
+                source = s.query(Source).filter(Source.link == url).first()
+                if not source:
+                    self.l.log( "New source: %s" % url)
+                    source = Source(url)
+                    s.add(source)
+                    try:
+                        s.commit()
+                    except IntegrityError:
+                        s.rollback()
+                        self.l.log("Couldn't store source %s" % source)
+                 
+                h = self.get_hash(url)
+                if not source.quickhash or h != source.quickhash:
+                    self.l.log( "Something new: %s" % url)
+                    # throw url before the daemons
+                    self.downloader.run_one(url)
+                else:
+                    if callback:
+                        callback(source.link, source.title)
+                    self.l.log("Nothing new: %s" % url)
+                    s.close()
+            sleep(self.timeout)
 
     def show_start(self, dtime=24*3600):
         arts = set([])
@@ -272,16 +277,15 @@ class Anchorbot( object ):
             if url.startswith("about:"):
                 self.__about(url)
                 return
-            s = get_session(self.db)
             if url == self.watched:
-                source = s.query(Source).filter(Source.link == url).first()
                 self.downloader.run_one(url, self.update_feeds_tree)
-            # but also reload the view
-            articles = s.query(Article).join(Article.source).filter(Source.link == url).order_by(desc(Article.date)).all()
-            self.browser.open_articles( articles )
-            s.close()
+            else:
+                s = get_session(self.db)
+                articles = s.query(Article).join(Article.source).filter(Source.link == url).order_by(desc(Article.date)).all()
+                self.browser.open_articles( articles )
+                s.close()
         else:
-            self.downloader.run_threaded( self.update_all, self.update_feeds_tree )
+            pass #self.downloader.run_threaded( self.update_all, self.update_feeds_tree )
         self.watched = url
 
     def add_url( self, url ):

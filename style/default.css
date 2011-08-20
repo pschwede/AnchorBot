@@ -136,7 +136,7 @@ table {
     margin: 2px 0px;
     overflow: hidden;
     box-shadow: #000 1px 1px 2px;
-    background-color: #000;
+    background-color: #ddd;
     border: 1px solid #aaa;
     border-radius: 5px;
     }
@@ -152,10 +152,11 @@ table {
         background-position: 66% 66%;
     }
     .issue2 .small {
+        width: 190px;
         font: 10px sans-serif;
         color: #fff;
         display: none;
-        padding: 1em;
+        padding: 5px;
         float:left;
         box-shadow: 0px 5px 5px rgba(0,0,0,0.3);
         border-radius: 0 0 15px 15px;
@@ -177,6 +178,8 @@ table {
         font-size: 100%;
         width: 150px;
         display: block;
+        float: none;
+        margin: 2px auto;
     }
     .issue2:hover {
         background-image: none;
@@ -207,6 +210,7 @@ table {
         border-bottom: 1px solid #555;
         padding-left: 5px;
         padding-right: 5px;
+        width: 190px;
         }
 
 .issue1, .issue2 {

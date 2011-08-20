@@ -31,7 +31,7 @@ def art_gallery(article):
                     image,
                     title, title,
                     strftime(u"%X %x", localtime(article.date)),
-                    u"".join([keyword(kw) for kw in article.keywords]),
+                    u"".join([keyword(kw) for kw in sorted(article.keywords, key=lambda x: x.clickcount)]),
                     buttons,
                     )
 

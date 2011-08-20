@@ -98,11 +98,11 @@ class FileCacher(object):
 
     def __remove_item(self, url):
         try:
-            os.remove(self.stor[url])
-            del self.stor[self.__newurl(url)]
+            os.remove(self.stor[url][0])
             del self.stor[url]
-        except:
-            pass # it is oll korrect
+            del self.stor[self.__newurl(url)]
+        except KeyError, e:
+            pass # Oll Korrect
 
     def __delitem__(self, url):
         self.__remove_item(url)
