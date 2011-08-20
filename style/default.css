@@ -194,7 +194,6 @@ table {
         }
     .issue2 .issue_head {
         font-family: sans-serif, "Impact";
-        width: 100%;
         z-index: 5;
         color:#fff;
         background: rgba(0,0,0,0.6);
@@ -206,6 +205,8 @@ table {
         position: relative;
         box-shadow: 0px 5px 5px rgba(0,0,0,0.3);
         border-bottom: 1px solid #555;
+        padding-left: 5px;
+        padding-right: 5px;
         }
 
 .issue1, .issue2 {
