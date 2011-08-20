@@ -16,15 +16,15 @@ def art_gallery(article):
     image = u""
     buttons = u""
     if article.image:
-        image = ' style="background-image: url(%s);"' % article.image.filename
+        image = '%s' % article.image.filename
     if article.link:
         buttons = about_button("source",article.link) + about_button("share",article.link,article.title)
     return u"""\
-            <div class="issue2"%s>
+            <div class="issue2" style="background-image:url(%s);">
                 <h2 class="issue_head" title="%s">%s</h2>
                 <div class="small">
-                    <p>%s</p><p>%s</p>
-                    %s
+                    <div>%s</div><div class="tags">%s</div>
+                    <div>%s</div>
                 </div>
             </div>
             """ % (
@@ -65,7 +65,6 @@ def art_read(article):
             )
 
 def article(article, mode=0):
-
     if mode is 1:
         return art_gallery(article)
     else:

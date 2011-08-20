@@ -56,7 +56,7 @@ class Processor(object):
         processes = list()
         # split up entries and start processes with a smaller set of entries.
         l = len(bunch)
-        step = l/n
+        step = l/n or 1
         if len(bunch) > step:
             lock = Lock()
             if single:
