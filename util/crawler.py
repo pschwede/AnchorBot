@@ -56,10 +56,7 @@ class Crawler(object):
             link = urljoin(baseurl, elem.get("href"))
             if link and link[-4:] in (".png",".jpg",".gif","jpeg"):
                 images.append(link)
-        keepimage = ""
-        if images:
-            keepimage = images[0]
-        return (keepimage, set(images), self.clean(content))
+        return (set(images), self.clean(content),)
 
     def unescape(self, text):
         text = text.replace("\/","/")
@@ -112,20 +109,20 @@ class Crawler(object):
             self.verbose and log("PIL: "+str(errors))
         return closest
 
-    def filter_images(self, images, minimum=(0, 0,), maximum=(0, 0,)):
-        if minimum == (0, 0,) and maximum == (0, 0,):
+    def filter_images(self, images, minimum=None, maximum=None):
+        if not minimum and not maximum:
             return images
+        else:
+            minimum = minimum or (0, 0,)
+            maximum = maximum or (9999, 9999,)
 
         result = []
         for imgurl in images:
-            tries = 5
             try:
                 im = PIL.open(self.cache[imgurl])
-                if maximum == (0, 0,):
-                    result.append(self.cache[imgurl])
-                elif im.size[0] >= minimum[0] and im.size[1] >= minimum[1] and\
+                if im.size[0] >= minimum[0] and im.size[1] >= minimum[1] and\
                      im.size[0] <= maximum[0] and im.size[1] <= maximum[1]:
-                        result.append(self.cache[imgurl])
+                        result.append(imgurl)
             except IOError:
                 self.verbose and log("Can't open that file: %s" % self.cache[imgurl])
         return result
@@ -164,35 +161,29 @@ class Crawler(object):
    
     def enrich(self, entry, source, recursion=1):
         """Filters out images, adds images from html, cleans up content."""
-        usedimages = set()
-        # get more text
-        image = u""
-        images = set()
-        content = u""
+        image = None
+        # get more text and images
         try:
             html = entry["content"][0].value.decode("utf-8")
-            image, images, content = self.crawlHTML(soupparser.fromstring(html))
+            images, content = self.crawlHTML(soupparser.fromstring(html))
         except KeyError:
             try:
                 html = entry["summary_detail"].value.decode("utf-8")
-                image, images, content = self.crawlHTML(soupparser.fromstring(html))
+                images, content = self.crawlHTML(soupparser.fromstring(html))
             except KeyError:
                 try:
                     html = entry["summary"].value.decode("utf-8")
-                    image, images, content = self.crawlHTML(soupparser.fromstring(html))
+                    images, content = self.crawlHTML(soupparser.fromstring(html))
                 except KeyError:
                     content = entry["title"]
-        # get more images
-        # from entry itself
+
+        # get images from entry itself
         for key in ("links", "enclosures"):
             try:
                 i = filter(lambda x: x.type.startswith("image"), entry[key])
             except KeyError:
                 pass
-            images |= set([item.href.decode("utf-8") for item in i]).difference(usedimages)
-        # from html content
-        if images:
-            images |= images.difference(usedimages)
+            images |= set([item.href.decode("utf-8") for item in i])
 
         # get even more images from links in entry
         try:
@@ -201,34 +192,28 @@ class Crawler(object):
                     # check for encoding
                     f = open(self.cache[link["href"]])
                     encoding = chardet.detect(f.read())["encoding"]
+                    f.seek(0)
                     if encoding and encoding is not "utf-8":
-                        f.seek(0)
                         # reset the encoding to utf-8
                         html = f.read().decode(encoding).encode("utf-8")
-                        try:
-                            images |= self.crawlHTML(
-                                    soupparser.fromstring(html),
-                                    baseurl=link["href"],
-                                    )[1].difference(
-                                            usedimages
-                                            )
-                        except ValueError, e:
-                            self.verbose and log("Wrong %s char? %s" % (encoding,e,))
+                    else:
+                        html = f.read()
+                    try:
+                        images |= self.crawlHTML(
+                                soupparser.fromstring(html),
+                                baseurl=link["href"],
+                                )[0]
+                    except ValueError, e:
+                        self.verbose and log("Wrong %s char? %s" % (encoding,e,))
+                        print "Wrong %s char? %s" % (encoding,e,)
         except KeyError:
             self.verbose and log("There were no links: %s" % entry)
 
-        images = images.difference(usedimages)
-
         # filter out some images
-        images = set(self.filter_images(images, minimum=(70,70)))
         # give the images to the entry finally
-        if images and image not in images:
+        images = self.filter_images(images, minimum=(40,40,))
+        if not image or image.endswith("gif"):
             image = self.biggest_image(images)
-        if image and image not in usedimages:
-            image = Image(image)
-            usedimages |= set([image])
-        else:
-            image = None
         #TODO resize image to a prefered size here!
 
         link = self.get_link(entry)
@@ -242,6 +227,5 @@ class Crawler(object):
         a = self.analyzer
         a.add({a.eid: link, a.key: title})
         keywords = [Keyword(kw) for kw in a.get_keywords_of_article({a.eid: link, a.key: title})]
-        art = Article(date, title, content, link, source, image)
-        return art, keywords
-
+        art = Article(date, title, content, link, source, Image(image))
+        return art, images, keywords

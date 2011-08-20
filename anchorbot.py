@@ -110,7 +110,6 @@ class Anchorbot( object ):
     def __about( self, uri ):
         """handles "about:"-url-requests."""
         if uri.startswith( "about:" ):
-            print uri
             cmd = uri[6:]
             if cmd is "about":
                 self.show_about()
@@ -127,8 +126,10 @@ class Anchorbot( object ):
             elif cmd.startswith("start"):
                 self.show_start()
             elif cmd.startswith("more?key="):
+                ID = int(cmd[9:])
                 s = get_session(self.db)
-                arts = s.query(Article).join(Article.keywords).filter(Keyword.ID == int(cmd[9:])).order_by(Article.date).all()
+                s.query(Keyword).filter(Keyword.ID == ID).first().clickcount += 1;
+                arts = s.query(Article).join(Article.keywords).filter(Keyword.ID == ID).order_by(Article.date).all()
                 self.browser.open_articles(arts, mode=0)
                 s.close()
 
@@ -164,31 +165,32 @@ class Anchorbot( object ):
         for entry in entries:
             url = self.crawler.get_link(entry)
             s = get_session(self.db)
-            article = s.query(Article).filter(Article.link == url).first()
+            article = s.query(Article).filter(Article.link == url).count()
             s.close()
-            if not article:
-                tries = 10
-                while tries > 0:
-                    s = get_session(self.db)
-                    article, keywords = self.crawler.enrich(entry, source)
-                    if keywords and tries == 10:
-                        article.set_keywords([s.query(Keyword).filter(Keyword.word == kw.word).first() or kw for kw in keywords])
-                    if article.image:
-                        if article.image in s:
-                            s.expunge(article.image)
-                        img = s.query(Image).filter(Image.filename == article.image.filename).first()
-                        if img:
-                            article.image = img
+            if article == 0:
+                s = get_session(self.db)
+                article, images, keywords = self.crawler.enrich(entry, source)
+                if keywords:
+                    article.set_keywords([(s.query(Keyword).filter(Keyword.word == kw.word).first() or kw) for kw in keywords])
+                try:
+                    s.add(article)
+                    s.commit()
+                except IntegrityError, e:
+                    s.rollback()
+                    if article.image in s:
+                        s.expunge(article.image)
+                    article.image = s.query(Image).filter(Image.filename == article.image.filename).first()
                     try:
-                        s.merge(article)
+                        s.add(article)
                         s.commit()
-                        tries = 0
                     except IntegrityError, e:
                         s.rollback()
-                        tries -= 1
-                        print "No success %i, %s @%s" % (tries, e, url)
-                    finally:
-                        s.close()
+                        if article.image in s:
+                            s.expunge(article.image)
+                        article.image = None
+                        s.add(article)
+                        s.commit()
+            s.close()
 
     def download( self, feedurl, callback=None):
         """Download procedure"""
@@ -245,15 +247,19 @@ class Anchorbot( object ):
                 s.close()
 
     def show_start(self, dtime=24*3600):
+        arts = set([])
+        # add articles of most used keywords
         s = get_session(self.db)
         for art in s.query(Article).filter(Article.date > time() - dtime).all():
             self.analyzer.add({"title":art.title, "link":art.link})
         self.analyzer.get_keywords_of_articles()
-        print self.analyzer.keywords
-        arts = []
         for score, url in sorted(self.analyzer.popularity.items(), reverse=True):
-            arts.append(s.query(Article).filter(Article.link == url).first())
-        self.browser.open_articles(arts)
+            arts.add(s.query(Article).filter(Article.link == url).first())
+
+        # add articles of most clicked keywords
+        #arts |= set(s.query(Article).join(Keywords).order_by(Keywords.clickcount).all())
+
+        self.browser.open_articles(list(arts))
         s.close()
 
     def show( self, url=None ):
