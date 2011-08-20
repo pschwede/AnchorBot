@@ -60,7 +60,7 @@ def art_read(article):
             image,
             article.content,
             strftime("%X %x", localtime(article.date)),
-            u"".join([keyword(kw) for kw in article.keywords]),
+            u"".join([keyword(kw) for kw in sorted(article.keywords, key=lambda x: x.clickcount)]),
             buttons,
             )
 

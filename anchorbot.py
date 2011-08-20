@@ -129,7 +129,10 @@ class Anchorbot( object ):
             elif cmd.startswith("more?key="):
                 ID = int(cmd[9:])
                 s = get_session(self.db)
-                s.query(Keyword).filter(Keyword.ID == ID).first().clickcount += 1;
+                kw = s.query(Keyword).filter(Keyword.ID == ID).first()
+                kw.clickcount += 1
+                s.merge(kw)
+                s.commit()
                 arts = s.query(Article).join(Article.keywords).filter(Keyword.ID == ID).order_by(Article.date).all()
                 self.browser.open_articles(arts, mode=0)
                 s.close()
@@ -252,19 +255,14 @@ class Anchorbot( object ):
             sleep(self.timeout)
 
     def show_start(self, dtime=24*3600):
-        arts = set([])
-        # add articles of most used keywords
-        s = get_session(self.db)
-        for art in s.query(Article).filter(Article.date > time() - dtime).all():
-            self.analyzer.add({"title":art.title, "link":art.link})
-        self.analyzer.get_keywords_of_articles()
-        for score, url in sorted(self.analyzer.popularity.items(), reverse=True):
-            arts.add(s.query(Article).filter(Article.link == url).first())
-
         # add articles of most clicked keywords
-        #arts |= set(s.query(Article).join(Keywords).order_by(Keywords.clickcount).all())
-
-        self.browser.open_articles(list(arts))
+        s = get_session(self.db)
+        keywords = s.query(Keyword).order_by(desc(Keyword.clickcount)).limit(10)
+        arts = []
+        for kw in set(keywords):
+            newarts = s.query(Article).filter(Article.keywords.contains(kw)).filter(Article.date > time()-24*3600).all() #TODO last-visited
+            arts.extend(newarts)
+        self.browser.open_articles(sorted(list(set(arts)), key=lambda x: x.date))
         s.close()
 
     def show( self, url=None ):
