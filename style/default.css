@@ -130,7 +130,7 @@ table {
     height: 200px;
     display: inline-block;
     vertical-align: top;
-    margin: 2px;
+    margin: 2px 0px;
     overflow: visible;
     box-shadow: #000 1px 1px 2px;
     }
@@ -181,7 +181,5 @@ table {
 
 .issue1, .issue2 {
     clear: both;
-    margin: 0 auto;
-    background-color: #fff;
     }
 
