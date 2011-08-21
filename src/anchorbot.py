@@ -9,9 +9,6 @@ For further reading, see README.md
 """
 
 import feedparser, sys, os, urllib
-from gobject import threads_init, idle_add
-from gtk import main, main_quit
-from gtk.gdk import threads_enter, threads_leave
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql.expression import desc
 
@@ -26,6 +23,7 @@ from util.analyzer import Analyzer
 
 from util.processor import Processor
 from multiprocessing import Lock
+import gobject, gtk, gtk.gdk
 
 from time import time, sleep
 
@@ -144,14 +142,14 @@ class Anchorbot( object ):
         """
         title = title or url
         # removes old entry with url and appends a new one
-        threads_enter()
+        gtk.gdk.threads_enter()
         # find title or set title to url
         if url in self.window.treedic.keys():
             self.window.groups.get_model().set( self.window.treedic[url], 0, title, 1, url )
         else:
             self.window.treedic[url] = self.window.groups.get_model().append( self.window.treedic["Feeds"], [title, url] )
         self.window.groups.expand_all()
-        threads_leave()
+        gtk.gdk.threads_leave()
         s = get_session( self.db )
         source = s.query( Source ).filter( Source.link == url ).first()
         source.quickhash = self.get_hash( url )
@@ -166,7 +164,7 @@ class Anchorbot( object ):
         # quit
         self.cache.quit()
         self.config.quit()
-        main_quit()
+        gtk.main_quit()
 
     def enrich( self, entries, source ):
         for entry in entries:
@@ -307,12 +305,12 @@ class Anchorbot( object ):
 def main( urls=[], nogui=False, cache_only=False, verbose=False ):
     """The main func which creates Lyrebird
     """
-    threads_init()
+    gobject.threads_init()
     l = Anchorbot( nogui, cache_only, verbose )
-    idle_add( l.show )
+    gobject.idle_add( l.show )
     for url in urls:
-        idle_add( l.add_url, ( url, ) )
-    main()
+        gobject.idle_add( l.add_url, ( url, ) )
+    gtk.main()
 
 def get_cmd_options():
     usage = "anchorbot.py"

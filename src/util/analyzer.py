@@ -1,9 +1,9 @@
 import multiprocessing as mp
 from re import compile, UNICODE as re_u
 
-class Analyzer(object):
-    r_crop = compile("\W", re_u)
-    def __init__(self, key="content", eid="link", rarity=(0.001,1.)):
+class Analyzer( object ):
+    r_crop = compile( "\W", re_u )
+    def __init__( self, key="content", eid="link", rarity=( 0.001, 1. ) ):
         self.entryscore = {} # {word: (eid, cnt)}
         self.key, self.eid = key, eid
         self.keywords = {} # {word: score}
@@ -11,50 +11,50 @@ class Analyzer(object):
         self.num_entries = 0
         self.rarity = rarity
 
-    def __crop(self, word):
-        return u"".join(self.r_crop.split(word))
+    def __crop( self, word ):
+        return u"".join( self.r_crop.split( word ) )
 
-    def __climb_keyword(self, cnt, word, entry):
+    def __climb_keyword( self, cnt, word, entry ):
         """
         Increments countings concerning keywords and the entries they occur in.
         """
-        word = self.__crop(word)
+        word = self.__crop( word )
         try:
             # only add words that don't occure too often
             #if float(self.keywords[word][0]+cnt)/(len(self.keywords)+1) < self.rarity[1]:
-                self.keywords[word] =  (
+                self.keywords[word] = ( 
                         self.keywords[word][0] + cnt,
                         self.keywords[word][1] + [entry[self.eid]],
                         )
-                self.popularity[self.keywords[word][0]] = entry[self.eid] 
+                self.popularity[self.keywords[word][0]] = entry[self.eid]
         except KeyError:
-            self.keywords[word] = (cnt, [entry[self.eid]],)
+            self.keywords[word] = ( cnt, [entry[self.eid]], )
 
-    def __filter_keywords(self):
+    def __filter_keywords( self ):
         """
         Filters out keywords that are too rare.
         """
         for word, score in self.keywords.items():
-            if score[0]/len(self.keywords) < self.rarity[0]:
+            if score[0] / len( self.keywords ) < self.rarity[0]:
                 del self.keywords[word]
 
-    def __climb_escore(self, cnt, word, step, entry):
+    def __climb_escore( self, cnt, word, step, entry ):
         try:
             #TODO probably check, which of the entries is prefered!
             if cnt >= self.entryscore[word][1]:
-                self.entryscore[word] = (entry[self.eid], 1.*cnt/step)
+                self.entryscore[word] = ( entry[self.eid], 1. * cnt / step )
         except KeyError:
-            self.entryscore[word] = (entry[self.eid], 1.*cnt/step)
+            self.entryscore[word] = ( entry[self.eid], 1. * cnt / step )
 
-    def get_keywords_of_article(self, entry):
+    def get_keywords_of_article( self, entry ):
         self.__filter_keywords()
         keyw = []
-        for word, (eid, cnt) in self.entryscore.items():
+        for word, ( eid, cnt ) in self.entryscore.items():
             if eid == entry[self.eid]:
-                keyw.append(word)
+                keyw.append( word )
         return keyw
 
-    def get_keywords_of_articles(self, entries=[]):
+    def get_keywords_of_articles( self, entries=[] ):
         """
         Checks a list of entries for reoccuring unique words and keeps them.
         Adds score and keywords to entries.
@@ -62,23 +62,23 @@ class Analyzer(object):
         """
         # gather occuring words
         for entry in entries:
-            self.add(entry)
+            self.add( entry )
         self.__filter_keywords()
         return self.keywords
 
-    def add(self, entry):
+    def add( self, entry ):
         """
         Analyzes a dict's entry in key for statistics and reminds them.
         Does not filter keywords.
         Returns itself.
         """
         self.num_entries += 1
-        ewords = filter(lambda x: len(x)>1, map(self.__crop, entry[self.key].lower().split(" ")))
-        ewset, l = set(ewords), len(ewords)
+        ewords = filter( lambda x: len( x ) > 1, map( self.__crop, entry[self.key].lower().split( " " ) ) )
+        ewset, l = set( ewords ), len( ewords )
         for word in ewset:
-            cnt = ewords.count(word)
-            self.__climb_keyword(cnt, word, entry)
-            self.__climb_escore(cnt, word, (float(l)/self.num_entries), entry)
+            cnt = ewords.count( word )
+            self.__climb_keyword( cnt, word, entry )
+            self.__climb_escore( cnt, word, ( float( l ) / self.num_entries ), entry )
         return self
 
 if __name__ == "__main__":
@@ -94,10 +94,10 @@ if __name__ == "__main__":
             {"url":6, "content":"london riot"},
             {"url":7, "content":"update: london riot"},
             ]
-    a = Analyzer(eid="url",rarity=(.001,1.))
+    a = Analyzer( eid="url", rarity=( .001, 1. ) )
     for entry in entries:
         print a.get_keywords_of_articles()
         print a.entryscore
-        a.add(entry)
+        a.add( entry )
     print a.entryscore
-    print a.get_keywords_of_article(entries[-2])
+    print a.get_keywords_of_article( entries[-2] )

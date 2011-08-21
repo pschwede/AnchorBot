@@ -22,20 +22,20 @@ class tweet_window( gtk.Dialog ):
         self.vbox.pack_start( table )
 
         self.serv_label = gtk.Label( service )
-        table.attach( self.serv_label, 0,2,0,1 )
+        table.attach( self.serv_label, 0, 2, 0, 1 )
 
         self.user_label = gtk.Label( "Name:" )
-        table.attach( self.user_label, 0,1,1,2 )
+        table.attach( self.user_label, 0, 1, 1, 2 )
         self.user_entry = gtk.Entry()
-        self.user_entry.set_text(self.user)
-        table.attach( self.user_entry, 1,2,1,2 )
+        self.user_entry.set_text( self.user )
+        table.attach( self.user_entry, 1, 2, 1, 2 )
 
         self.user_label = gtk.Label( "Password:" )
-        table.attach( self.user_label, 0,1,2,3 )
+        table.attach( self.user_label, 0, 1, 2, 3 )
         self.user_password = gtk.Entry()
-        self.user_password.set_text(self.__password)
+        self.user_password.set_text( self.__password )
         self.user_password.set_visibility( False )
-        table.attach( self.user_password, 1,2,2,3 )
+        table.attach( self.user_password, 1, 2, 2, 3 )
 
         scrolled = gtk.ScrolledWindow()
         self.text_buf = gtk.TextBuffer()
@@ -43,20 +43,20 @@ class tweet_window( gtk.Dialog ):
         textv = gtk.TextView( self.text_buf )
         textv.set_wrap_mode( gtk.WRAP_WORD_CHAR )
         scrolled.add( textv )
-        table.attach( scrolled, 0,2,3,4 )
+        table.attach( scrolled, 0, 2, 3, 4 )
 
         table.show_all()
         self.add_button( gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL )
         self.add_button( gtk.STOCK_YES, gtk.RESPONSE_OK )
-        self.set_transient_for(parent)
+        self.set_transient_for( parent )
 
     def run( self ):
         self.show()
         resp = super( tweet_window, self ).run()
         if resp == gtk.RESPONSE_OK:
             self.hide()
-            return ( self.user_entry.get_text(), 
-                    self.user_password.get_text(), 
+            return ( self.user_entry.get_text(),
+                    self.user_password.get_text(),
                     self.text_buf.get_text( self.text_buf.get_start_iter(), self.text_buf.get_end_iter() ), )
         else:
             self.hide()
@@ -138,10 +138,10 @@ class main_window( gtk.Window ):
 
         # END self.groups
 
-        
+
         hpaned.pack2( self.ctrl.browser )
         hpaned.set_position( 0 )
-        
+
         self.status = gtk.Statusbar()
         vbox.pack_start( self.status, False, True )
 
@@ -159,29 +159,29 @@ class main_window( gtk.Window ):
     def new_feed_dialog( self ):
         w = gtk.Dialog()
 
-        table = gtk.Table( 2,2 )
+        table = gtk.Table( 2, 2 )
         table.set_row_spacings( 3 )
         table.set_col_spacings( 3 )
         table.set_border_width( 3 )
         w.vbox.add( table )
-        
+
         url_label = gtk.Label( "URL:" )
         table.attach( url_label, 0, 1, 0, 1 )
 
         url_entry = gtk.Entry()
         table.attach( url_entry, 1, 2, 0, 1 )
-        url_entry.set_property("has-focus", True)
+        url_entry.set_property( "has-focus", True )
 
         cb = gtk.clipboard_get()
         text = cb.wait_for_text()
-        url_entry.set_text(text)
-        url_entry.select_region(0,-1)
+        url_entry.set_text( text )
+        url_entry.select_region( 0, -1 )
 
         hbox = gtk.HBox( True )
         table.attach( hbox, 0, 2, 1, 2 )
 
         ok = gtk.Button( stock=gtk.STOCK_OK )
-        ok.connect( "clicked", lambda x: (self.ctrl.add_url( url_entry.get_text() ) , w.destroy(),) )
+        ok.connect( "clicked", lambda x: ( self.ctrl.add_url( url_entry.get_text() ) , w.destroy(), ) )
         hbox.pack_end( ok, False, False )
         #ok.set_property("has-default", True)
 
@@ -189,7 +189,7 @@ class main_window( gtk.Window ):
         cancel.connect( "clicked", lambda x: w.destroy() )
         hbox.pack_end( cancel, False, False )
 
-        w.set_transient_for(self)
+        w.set_transient_for( self )
         w.show_all()
 
     def show_about( self, stuff=None ):
@@ -201,7 +201,7 @@ class main_window( gtk.Window ):
         ad.run()
         ad.destroy()
 
-    def context_menu( self, url):
+    def context_menu( self, url ):
         pass #TODO delete, open in browser, reload
 
 
@@ -209,16 +209,16 @@ class htmlArticleWidget:
     """The feed-entry inside the browser.
     There probably will be a bigger htmlBigWidget, too.
     """
-    def __init__( self, article, keywordsa=[], dominance=0., threshold=1.):
+    def __init__( self, article, keywordsa=[], dominance=0., threshold=1. ):
         a = article
         self.html = u'<div class="issue1">%s'
-        self.html = self.html % u'<h2 class="issue_head" title="%s">%s</h2>' % (a.title,a.title)
+        self.html = self.html % u'<h2 class="issue_head" title="%s">%s</h2>' % ( a.title, a.title )
         if article.image:
             self.html += '<div class="image"><img src="' + article.image.filename + '" alt=""/></div>'
-        self.html += "<div class=\"issue_content\">%s</div>"  % a.content
+        self.html += "<div class=\"issue_content\">%s</div>" % a.content
         self.html += '<div class="small">'
         if a.keywords:
-            self.html += str([str(kw.word) for kw in a.keywords])
+            self.html += str( [str( kw.word ) for kw in a.keywords] )
         if a.link:
             self.html += '<a class="about_source" href="' + a.link + '">Source</a>'
             self.html += '<a class="about_share" href="about:share?url=' + a.link + '&text=' + a.title + '">Share</a>'
@@ -238,7 +238,7 @@ class gtkSmallWidget( gtk.Frame ):
         self.set_label_widget( l )
 
         hbox = gtk.HBox( False, 2 )
-        
+
         if entry["image"]:
             im = gtk.Image()
             im.set_from_file( entry["image"] )
@@ -246,17 +246,17 @@ class gtkSmallWidget( gtk.Frame ):
 
         vbox = gtk.VBox( False, 1 )
         hbox.pack_start( vbox, False, False )
-        
+
         text = gtk.TextView()
         buf = gtk.TextBuffer()
         buf.set_text( entry["summary"].encode( "utf-8" ) )
         text.set_buffer( buf )
         text.set_editable( False )
-        text.set_size_request( 400,-1 )
+        text.set_size_request( 400, -1 )
         text.set_wrap_mode( gtk.WRAP_WORD_CHAR )
         text.show()
         vbox.pack_start( text, False, False )
-        
+
         self.add( hbox )
         self.show_all()
 
@@ -267,7 +267,7 @@ if __name__ == "__main__":
     w.add( gtkSmallWidget( {
         "title": "UFO In NY!",
         "image": None,
-        "summary": "300 people swear to have seen one!" + 
+        "summary": "300 people swear to have seen one!" +
         " Really! "} ) )
     w.show_all()
     w.connect( "destroy", gtk.main_quit )

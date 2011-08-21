@@ -5,8 +5,7 @@ except ImportError:
     import pickle
 
 class SelfRenewingLock( threading.Thread ):
-
-    def __init__( self, lockfile, dtime=13 ):
+    def __init__( self, lockfile, dtime=130 ):
         super( SelfRenewingLock, self ).__init__()
         self.lockfile = lockfile
         self.__locked = False
@@ -25,10 +24,12 @@ class SelfRenewingLock( threading.Thread ):
     def locked( self ):
         if self.__locked:
             return True
-        elif os.path.exists( self.lockfile ):
+        if os.path.exists( self.lockfile ):
             old = pickle.load( open( self.lockfile, 'r' ) )
             self.__locked = time.time() - old <= self.DTIME
-        return self.__locked
+            return self.__locked
+        else:
+            return False
 
     def quit( self ):
         os.remove( self.lockfile )
@@ -41,8 +42,9 @@ class Config( object ):
         self.lock = SelfRenewingLock( self.lockfile )
         self.locked = self.lock.locked()
         if self.locked:
-            raise Exception( "It seems as if it's already running. "\
-                            "If not, please remove %s" % self.lockfile )
+            raise Exception( "It seems as if it's already running."\
+                            " If this is not the case,"\
+                            " please remove '%s' manually." % self.lockfile )
         if not os.path.isdir( self.path ):
             os.mkdir( self.path )
         self.lock.start()
@@ -77,6 +79,9 @@ class Config( object ):
 
     def __setitem__( self, name, value ):
         self.set( name, value )
+
+    def __getitem__( self, name ):
+        return self.get( name )
 
     def get( self, name ):
         try:
