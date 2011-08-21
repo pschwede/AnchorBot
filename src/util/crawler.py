@@ -228,4 +228,4 @@ class Crawler(object):
         a.add({a.eid: link, a.key: title})
         keywords = [Keyword(kw) for kw in a.get_keywords_of_article({a.eid: link, a.key: title})]
         art = Article(date, title, content, link, source, Image(image))
-        return art, images, keywords
+        return art, keywords
