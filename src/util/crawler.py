@@ -13,9 +13,11 @@ from datamodel import Article, Image, Keyword
 
 
 """
+Generic crawler.
 Follows redirections and delivers some useful functions for remote images.
 """
 re_cln = re.compile( '(<img[^>]+>|[\n\r]|<script[^>]*>\s*</script>|<iframe.*</iframe>|</*html>|</*head>|</*div[^>]*>| [ ]+)', re.I )
+re_cont = re.compile( "((<([abip]|li|ul|img|span|strong)[^>]*>.*)+(</([abip]|li|ul|span|strong)>.*)+)+", re.U + re.I )
 
 class Crawler( object ):
     hyph_EN = "/usr/share/liblouis/tables/hyph_en_US.dic"
@@ -38,14 +40,14 @@ class Crawler( object ):
         except ImportError:
             self.verbose and log( "Not using hyphenator since it's not installed." )
 
+    def __content( self, html, simcontent=None ):
+        codec = chardet.detect(html)["encoding"]
+        res = sorted([x[0].decode(codec) for x in re_cont.findall( html )], key=lambda x: len(x.split(" ")), reverse=True)
+        if res:
+            return res[0]
+
     def crawlHTML( self, tree, similarcontent=None, depth=0, baseurl=None ):
-        content = similarcontent or xmltostring( tree )
-        if similarcontent:
-            textsel = CSSSelector( "div,span,p" )
-            for elem in textsel( tree ):
-                if elem.text and similarcontent[:-len( similarcontent ) / 2] in elem.text:
-                    content = elem.text.decode( "utf-8" )
-                    break;
+        content = self.__content( xmltostring( tree ), similarcontent ) or xmltostring( tree )
         imagesel = CSSSelector( "img" )
         images = [urljoin( baseurl, img.get( "src" ) or img.attrib.values()[0] ) for img in imagesel( tree )]
         linksel = CSSSelector( "a" )
@@ -159,6 +161,7 @@ class Crawler( object ):
     def enrich( self, entry, source, recursion=1 ):
         """Filters out images, adds images from html, cleans up content."""
         image = None
+        images = set()
         # get more text and images
         try:
             html = entry["content"][0].value.decode( "utf-8" )
@@ -197,10 +200,12 @@ class Crawler( object ):
                         html = f.read()
                     if html:
                         try:
-                            images |= self.crawlHTML( 
+                            imgs, cont = self.crawlHTML( 
                                 soupparser.fromstring( html ),
                                 baseurl=link["href"],
-                                )[0]
+                                )
+                            images |= imgs
+                            content += cont
                         except ValueError, e:
                             self.verbose and log( "Wrong %s char? %s" % ( encoding, e, ) )
                             print "Wrong %s char? %s" % ( encoding, e, )
