@@ -70,7 +70,7 @@ class FileCacher( object ):
             self.verbose and log( "Ignoring " + url )
             return url
         try:
-            result = self.stor[url]
+            result = self.stor[url][0]
             if not os.path.exists( result ):
                 raise KeyError()
             self.stor[url] = self.stor[self.stor[url]] = ( self.stor[url][0], time.time() )
