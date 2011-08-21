@@ -41,8 +41,8 @@ class Crawler( object ):
             self.verbose and log( "Not using hyphenator since it's not installed." )
 
     def __content( self, html, simcontent=None ):
-        codec = chardet.detect(html)["encoding"]
-        res = sorted([x[0].decode(codec) for x in re_cont.findall( html )], key=lambda x: len(x.split(" ")), reverse=True)
+        codec = chardet.detect( html )["encoding"]
+        res = sorted( [x[0].decode( codec ) for x in re_cont.findall( html )], key=lambda x: len( x.split( " " ) ), reverse=True )
         return u"" # Naah, this is too random
         if res:
             print res

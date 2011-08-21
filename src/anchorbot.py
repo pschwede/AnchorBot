@@ -56,15 +56,15 @@ class Anchorbot( object ):
             # load config
             try:
                 # Raises Exception if locked
-                self.config = Config( HOME, verbose=self.verbose ) 
+                self.config = Config( HOME, verbose=self.verbose )
             except Exception, e:
-                print str(e)
-                sys.exit(1)
+                print str( e )
+                sys.exit( 1 )
 
             # prepare cached browser
             self.browser = browser.WebkitBrowser( HERE )
             self.browser.set_about_handler( self.__about )
-            
+
             # cache keeps files for 3 days
             self.cache = storage.FileCacher( TEMP, 3 , False )
 
@@ -261,7 +261,7 @@ class Anchorbot( object ):
         for kw in set( keywords ):
             clickedarts = s.query( Article ).filter( Article.keywords.contains( kw ) ).filter( Article.date > time() - 24 * 3600 ).all() #TODO last-visited @UndefinedVariable
             newarts = s.query( Article ).filter( Article.date > time() - 24 * 3600 ).all() #TODO last-visited @UndefinedVariable
-        self.browser.open_articles( sorted( list( set( clickedarts ) | set(newarts) ), key=lambda x: x.date ) )
+        self.browser.open_articles( sorted( list( set( clickedarts ) | set( newarts ) ), key=lambda x: x.date ) )
         s.close()
 
     def show( self, url=None ):
