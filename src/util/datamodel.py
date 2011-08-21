@@ -2,7 +2,7 @@
 
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker, scoped_session
-from sqlalchemy import create_engine, Table, Column, Float, Integer, String, Unicode, ForeignKey
+from sqlalchemy import create_engine, Column, Float, Integer, String, Unicode, ForeignKey
 import Image as PIL
 
 Base = declarative_base()
@@ -20,9 +20,9 @@ class Image( Base ):
         return "<%s%s>" % ( "Image", ( self.ID, self.filename, ) )
 
     def __cmp__( self, other ):
-        im = PIL.open( self.cache[im1] )
+        im = PIL.open( self.cache[self.filename] )
         a1 = int.__mul__( im.size )
-        im = PIL.open( self.cache[im2] )
+        im = PIL.open( self.cache[other.filename] )
         a2 = int.__mul__( im.size )
         if a1 < a2:
             return -1
@@ -166,7 +166,7 @@ if __name__ == "__main__":
         session.commit()
     except IntegrityError, e:
         session.rollback()
-       # print [session.query(Keyword).filter(Keyword.word == kw).first() or Keyword(kw) for kw in ["bla", "foo"]]
+        #print [session.query(Keyword).filter(Keyword.word == kw).first() or Keyword(kw) for kw in ["bla", "foo"]]
         #session.add(a)
         session.add( session.query( Keyword ).filter( Keyword.word == u"bla" ).first() or Keyword( "bla" ) )
         session.add( session.query( Keyword ).filter( Keyword.word == u"foo" ).first() or Keyword( "foo" ) )

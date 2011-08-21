@@ -5,7 +5,6 @@ except ImportError:
     print "No Tweepy installed? Please download Tweepy from http://joshthecoder.github.com/tweepy/ or run 'easy_install tweepy'!"
     TWEEPY = False
 
-from logger import log
 from widgets import tweet_window
 
 class Microblogger( object ):

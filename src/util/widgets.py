@@ -1,8 +1,5 @@
 # -*- coding: iso-8859-15 -*-
-import gtk, pango
-from logger import Logger
-import pprint
-from datamodel import Article, Image, Keyword
+import gtk
 
 """
 This module contains all visual entity classes (Widgets).

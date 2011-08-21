@@ -23,7 +23,7 @@ from util.analyzer import Analyzer
 
 from util.processor import Processor
 from multiprocessing import Lock
-import gobject, gtk, gtk.gdk
+import gobject, gtk.gdk
 
 from time import time, sleep
 
@@ -142,14 +142,14 @@ class Anchorbot( object ):
         """
         title = title or url
         # removes old entry with url and appends a new one
-        gtk.gdk.threads_enter()
+        gtk.gdk.threads_enter() #@UndefinedVariable
         # find title or set title to url
         if url in self.window.treedic.keys():
             self.window.groups.get_model().set( self.window.treedic[url], 0, title, 1, url )
         else:
             self.window.treedic[url] = self.window.groups.get_model().append( self.window.treedic["Feeds"], [title, url] )
         self.window.groups.expand_all()
-        gtk.gdk.threads_leave()
+        gtk.gdk.threads_leave() #@UndefinedVariable
         s = get_session( self.db )
         source = s.query( Source ).filter( Source.link == url ).first()
         source.quickhash = self.get_hash( url )
@@ -260,7 +260,7 @@ class Anchorbot( object ):
         keywords = s.query( Keyword ).order_by( desc( Keyword.clickcount ) ).limit( 10 )
         arts = []
         for kw in set( keywords ):
-            newarts = s.query( Article ).filter( Article.keywords.contains( kw ) ).filter( Article.date > time() - 24 * 3600 ).all() #TODO last-visited
+            newarts = s.query( Article ).filter( Article.keywords.contains( kw ) ).filter( Article.date > time() - 24 * 3600 ).all() #TODO last-visited @UndefinedVariable
             arts.extend( newarts )
         self.browser.open_articles( sorted( list( set( arts ) ), key=lambda x: x.date ) )
         s.close()
@@ -305,7 +305,7 @@ class Anchorbot( object ):
 def main( urls=[], nogui=False, cache_only=False, verbose=False ):
     """The main func which creates Lyrebird
     """
-    gobject.threads_init()
+    gobject.threads_init() #@UndefinedVariable
     l = Anchorbot( nogui, cache_only, verbose )
     gobject.idle_add( l.show )
     for url in urls:

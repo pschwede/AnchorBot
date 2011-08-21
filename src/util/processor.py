@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 
 import Queue, threading
-from multiprocessing import Process, Lock
+from multiprocessing import Process
 
 class Processor( object ):
     def __init__( self, number, fun, callback ):
@@ -13,7 +13,7 @@ class Processor( object ):
         self.number = number
         self.fun = fun
         self.callback = callback
-        for i in range( number ):
+        for _ in range( number ):
             self.__run_daemon( fun, callback )
 
     def __while_running( self, fun, callback=None ):
@@ -58,7 +58,6 @@ class Processor( object ):
         l = len( bunch )
         step = l / n or 1
         if len( bunch ) > step:
-            lock = Lock()
             if single:
                 for i in range( 0, l, step ):
                     p = Process( target=fun, args=( bunch[i:i + step], single, ) )

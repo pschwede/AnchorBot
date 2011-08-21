@@ -1,4 +1,3 @@
-import multiprocessing as mp
 from re import compile, UNICODE as re_u
 
 class Analyzer( object ):
@@ -49,8 +48,8 @@ class Analyzer( object ):
     def get_keywords_of_article( self, entry ):
         self.__filter_keywords()
         keyw = []
-        for word, ( eid, cnt ) in self.entryscore.items():
-            if eid == entry[self.eid]:
+        for word, tupl in self.entryscore.items():
+            if tupl[0] == entry[self.eid]:
                 keyw.append( word )
         return keyw
 

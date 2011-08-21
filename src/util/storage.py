@@ -1,5 +1,4 @@
 import urllib, os, time
-from traceback import print_tb
 try:
     import cPickle as pickle
 except ImportError:
@@ -44,11 +43,9 @@ class FileCacher( object ):
         self.dont_dl = ( ".swf", )
         self.storpath = storpath = os.path.join( self.localdir, "agedic.pkl" )
         self.stor = {}
-        successful = False
         if os.path.exists( storpath ):
             try:
                 self.stor = pickle.load( open( storpath, 'r' ), -1 )
-                successful = True
             except:
                 pass
 
@@ -73,7 +70,7 @@ class FileCacher( object ):
             self.verbose and log( "Ignoring " + url )
             return url
         try:
-            result, tt = self.stor[url]
+            result = self.stor[url]
             if not os.path.exists( result ):
                 raise KeyError()
             self.stor[url] = self.stor[self.stor[url]] = ( self.stor[url][0], time.time() )
@@ -101,7 +98,7 @@ class FileCacher( object ):
             os.remove( self.stor[url][0] )
             del self.stor[url]
             del self.stor[self.__newurl( url )]
-        except KeyError, e:
+        except KeyError:
             pass # Oll Korrect
 
     def __delitem__( self, url ):
@@ -124,7 +121,7 @@ class FileCacher( object ):
                 pass
         self.vacuum( self.max_age_in_days )
 
-    def clear():
+    def clear( self ):
         for url in self.stor.values():
             os.remove( url ) # uh oh
         self.stor = {}

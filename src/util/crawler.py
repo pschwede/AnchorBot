@@ -1,18 +1,15 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 
-import urllib, re, mimetypes, os.path, Image as PIL
+import urllib, re, Image as PIL
 import chardet
 from urlparse import urljoin
 from lxml.cssselect import CSSSelector
-from lxml.html import make_links_absolute, soupparser
-from lxml.etree import tostring as xmltostring, CDATA
-from storage import FileCacher
+from lxml.html import soupparser
+from lxml.etree import tostring as xmltostring
 from logger import log
 from time import mktime, time
 from datamodel import Article, Image, Keyword
-from traceback import print_tb
-import sys
 
 
 """
@@ -198,14 +195,16 @@ class Crawler( object ):
                         html = f.read().decode( encoding ).encode( "utf-8" )
                     else:
                         html = f.read()
-                    try:
-                        images |= self.crawlHTML( 
+                    if html:
+                        try:
+                            images |= self.crawlHTML( 
                                 soupparser.fromstring( html ),
                                 baseurl=link["href"],
                                 )[0]
-                    except ValueError, e:
-                        self.verbose and log( "Wrong %s char? %s" % ( encoding, e, ) )
-                        print "Wrong %s char? %s" % ( encoding, e, )
+                        except ValueError, e:
+                            self.verbose and log( "Wrong %s char? %s" % ( encoding, e, ) )
+                            print "Wrong %s char? %s" % ( encoding, e, )
+
         except KeyError:
             self.verbose and log( "There were no links: %s" % entry )
 
