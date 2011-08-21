@@ -23,7 +23,7 @@ from util.analyzer import Analyzer
 
 from util.processor import Processor
 from multiprocessing import Lock
-import gobject, gtk.gdk
+import gobject, gtk, gtk.gdk #@UnusedImport
 
 from time import time, sleep
 
@@ -258,11 +258,10 @@ class Anchorbot( object ):
         # add articles of most clicked keywords
         s = get_session( self.db )
         keywords = s.query( Keyword ).order_by( desc( Keyword.clickcount ) ).limit( 10 )
-        arts = []
         for kw in set( keywords ):
-            newarts = s.query( Article ).filter( Article.keywords.contains( kw ) ).filter( Article.date > time() - 24 * 3600 ).all() #TODO last-visited @UndefinedVariable
-            arts.extend( newarts )
-        self.browser.open_articles( sorted( list( set( arts ) ), key=lambda x: x.date ) )
+            clickedarts = s.query( Article ).filter( Article.keywords.contains( kw ) ).filter( Article.date > time() - 24 * 3600 ).all() #TODO last-visited @UndefinedVariable
+            newarts = s.query( Article ).filter( Article.date > time() - 24 * 3600 ).all() #TODO last-visited @UndefinedVariable
+        self.browser.open_articles( sorted( list( set( clickedarts ) | set(newarts) ), key=lambda x: x.date ) )
         s.close()
 
     def show( self, url=None ):
