@@ -14,13 +14,21 @@ Main Features
 * Analyze feed entries for repeatations in microblogs or other feeds to merge and sort
 * Focus on readability
 
+How to use
+----------
+* Click the Add-Button to append a rss-url to your list
+* Click the Reload-Button to refresh all feeds
+* Click a feed to read.
+  * Click "Source" to call your web browser to show the complete webpage
+  * Click "Share" to dent the link
+
 Requirements
 ------------
-Ubuntu Requirements:
+*Ubuntu Requirements:*
 
-    sudo apt-get install python-gtk2 python-webkit python-feedparser python-sqlalchemy python-sqlite3 python-setuptools libxml2-dev libxslt2-dev
-    sudo easy_install hyphenator tweepy beautifulsoup lxml
+    sudo apt-get install python-gtk2 python-webkit python-feedparser python-sqlalchemy python-sqlite3 python-setuptools libxml2-dev libxslt2-dev && sudo easy_install hyphenator tweepy beautifulsoup lxml
 
+*Link list:*
 * [PyGTK](http://pygtk.org/)
 * [pyWebkitGTK](https://code.google.com/p/pywebkitgtk/)
 * [feedparser](http://feedparser.org/)
