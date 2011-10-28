@@ -18,8 +18,8 @@ Requirements
 ------------
 Ubuntu Requirements:
 
-    sudo apt-get install python-gtk2 python-webkit python-feedparser python-lxml python-sqlalchemy python-sqlite3 python-setuptools
-    sudo easy_install hyphenator tweepy 
+    sudo apt-get install python-gtk2 python-webkit python-feedparser python-sqlalchemy python-sqlite3 python-setuptools libxml2-dev libxslt2-dev
+    sudo easy_install hyphenator tweepy beautifulsoup lxml
 
 * [PyGTK](http://pygtk.org/)
 * [pyWebkitGTK](https://code.google.com/p/pywebkitgtk/)
