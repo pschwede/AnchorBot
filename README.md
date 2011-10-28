@@ -16,25 +16,19 @@ Main Features
 
 Requirements
 ------------
-* [PyGTK](http://pygtk.org/) python-gtk2
-* [pyWebkitGTK](https://code.google.com/p/pywebkitgtk/) python-webkit
-* [feedparser](http://feedparser.org/) python-feedparser
-* [lxml](http://lxml.de) python-lxml
+Ubuntu Requirements:
 
-Optional:
+    sudo apt-get install python-gtk2 python-webkit python-feedparser python-lxml python-sqlalchemy python-sqlite3 python-setuptools
+    sudo easy_install hyphenator tweepy 
 
-* [hyphenator](https://code.google.com/p/python-hyphenator/) python-hyphenator
-
-        sudo easy_install hyphenator
-
+* [PyGTK](http://pygtk.org/)
+* [pyWebkitGTK](https://code.google.com/p/pywebkitgtk/)
+* [feedparser](http://feedparser.org/)
+* [lxml](http://lxml.de)
+* [hyphenator](https://code.google.com/p/python-hyphenator/)
 * [tweepy](http://joshthecoder.github.com/tweepy/)
-
-        sudo easy_install tweepy
-
-* [sqlalchemy](http://sqlalchemy.org) python-sqlalchemy
-* [sqlite3](http://pysqlite.org) python-sqlite3
-
-To use easy\_install on an Ubuntu/Mint/Debian machine, you need to install python-setuptools, first. If you are root, you won't need to sudo.
+* [sqlalchemy](http://sqlalchemy.org)
+* [sqlite3](http://pysqlite.org)
 
 Related Projects
 ----------------
@@ -42,4 +36,4 @@ Related Projects
 * [Hotot](https://code.google.com/p/hotot)
 * [Google Reader](http://reader.google.com/)
 
-This project was once known as "Lyrebird" and is a tribute to the [bird that retweets](http://youtu.be/7XiQDgNUEMw) the terrifying chainsaws that sew down it's rain forest.
+This project was once known as "Lyrebird" and is still a tribute to the [bird that retweets](http://youtu.be/7XiQDgNUEMw) the terrifying chainsaws that sew down it's rain forest.

@@ -182,7 +182,7 @@ class Anchorbot( object ):
                     s.commit()
                 except IntegrityError:
                     s.rollback()
-                    if article.image in s:
+                    if article.image and article.image in s:
                         s.expunge( article.image )
                     article.image = s.query( Image ).filter( Image.filename == article.image.filename ).first()
                     try:
@@ -190,7 +190,7 @@ class Anchorbot( object ):
                         s.commit()
                     except IntegrityError:
                         s.rollback()
-                        if article.image in s:
+                        if article.image and article.image in s:
                             s.expunge( article.image )
                         article.image = None
                         s.add( article )
