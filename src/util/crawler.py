@@ -42,14 +42,14 @@ class Crawler( object ):
 
     def __content( self, html, simcontent=None ):
         codec = chardet.detect( html )["encoding"]
-        res = sorted( [x[0].decode( codec ) for x in re_cont.findall( html )], key=lambda x: len( x.split( " " ) ), reverse=True )
-        return u"" # Naah, this is too random
+        res = sorted( [x[0].decode( codec ).encode("utf-8") for x in re_cont.findall( html )], key=lambda x: len( x.split( " " ) ), reverse=True )
         if res:
-            print res
             return res[0]
+        else:
+            return ""
 
     def crawlHTML( self, tree, similarcontent=None, depth=0, baseurl=None ):
-        content = self.__content( xmltostring( tree ), similarcontent ) or xmltostring( tree )
+        content = self.__content( xmltostring( tree ), similarcontent )
         imagesel = CSSSelector( "img" )
         images = [urljoin( baseurl, img.get( "src" ) or img.attrib.values()[0] ) for img in imagesel( tree )]
         linksel = CSSSelector( "a" )
@@ -193,24 +193,20 @@ class Crawler( object ):
                 if link["href"]:
                     # check for encoding
                     f = open( self.cache[link["href"]] )
-                    encoding = chardet.detect( f.read() )["encoding"]
-                    f.seek( 0 )
-                    if encoding and encoding is not "utf-8":
-                        # reset the encoding to utf-8
-                        html = f.read().decode( encoding ).encode( "utf-8" )
-                    else:
-                        html = f.read()
+                    html = f.read()
                     if html:
+                        codec = chardet.detect( html )["encoding"]
+                        if codec:
+                            html = html.decode( codec ).encode( "utf-8" )
                         try:
-                            imgs, cont = self.crawlHTML( 
+                            imgs, cont = self.crawlHTML( #@UnusedVariable
                                 soupparser.fromstring( html ),
                                 baseurl=link["href"],
                                 )
                             images |= imgs
-                            content += cont
+                            #content += cont # Ignore more content for now.
                         except ValueError, e:
-                            self.verbose and log( "Wrong %s char? %s" % ( encoding, e, ) )
-                            print "Wrong %s char? %s" % ( encoding, e, )
+                            self.verbose and log( "Wrong char? %s" % e )
 
         except KeyError:
             self.verbose and log( "There were no links: %s" % entry )
