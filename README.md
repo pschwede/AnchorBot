@@ -1,12 +1,12 @@
 AnchorBot
 =========
 
-Version 1.0
-(c) spazzpp2 – Licensed under MIT License
+*Version 1.0
+(c) spazzpp2 – Licensed under MIT License*
 
 It's a news aggregator with the attempt of making you read the most important news first.
 
-Main Features
+Features
 -------------
 
 * Get pictures, videos, audio, etc. out of the feeds or the page they're linking to
@@ -35,8 +35,9 @@ Installation
 
 Related Projects
 ----------------
+This project was once known as "Lyrebird" and is - as before - still a tribute to the [bird that retweets](http://youtu.be/7XiQDgNUEMw) the terrifying chainsaws that sew down it's rain forest.
+
 * [Flipboard](http://flipboard.com/)
 * [Hotot](https://code.google.com/p/hotot)
 * [Google Reader](http://reader.google.com/)
 
-This project was once known as "Lyrebird" and is - as before - still a tribute to the [bird that retweets](http://youtu.be/7XiQDgNUEMw) the terrifying chainsaws that sew down it's rain forest.
