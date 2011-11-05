@@ -1,9 +1,22 @@
 #!/usr/bin/python
-import os
+import os, platform
 from setuptools import setup
 
 def read(fname):
   return open(os.path.join(os.path.dirname(__file__), fname)).read()
+
+install_requires = [
+    "setuptools",
+    #"pywebkitgtk", 
+    "feedparser", 
+    "lxml", 
+    "hyphenator", 
+    "tweepy", 
+    "sqlalchemy", 
+    "pysqlite",
+]
+if platform.system() == "Windows":
+  install_requires.append("pygtk")
 
 setup(
   name = "AnchorBot",
@@ -15,15 +28,6 @@ setup(
   license = "MIT",
   keywords = "rss feed reader twitter identica microblogging",
   install_requires = [
-    'setuptools',
-    "pygtk",
-    "pywebkitgtk", 
-    "feedparser", 
-    "lxml", 
-    "hyphenator", 
-    "tweepy", 
-    "sqlalchemy", 
-    "sqlite3",
     ],
   url = "http://github.com/spazzpp2/AnchorBot",
   packages = ["anchorbot", "tests"],

@@ -22,22 +22,16 @@ How to use
   * Click "Source" to call your web browser to show the complete webpage
   * Click "Share" to dent the link
 
-Requirements
+Installation
 ------------
-*Ubuntu Requirements:*
+*Ubuntu:*
 
-    sudo apt-get install python-gtk2 python-webkit python-feedparser python-sqlalchemy python-sqlite3 python-setuptools libxml2-dev libxslt2-dev && sudo easy_install hyphenator tweepy beautifulsoup lxml
+    sudo setup.ubuntu.sh
+    ./anchorbot.linux
 
-*Link list:*
+*all other:*
 
-* [PyGTK](http://pygtk.org/)
-* [pyWebkitGTK](https://code.google.com/p/pywebkitgtk/)
-* [feedparser](http://feedparser.org/)
-* [lxml](http://lxml.de)
-* [hyphenator](https://code.google.com/p/python-hyphenator/)
-* [tweepy](http://joshthecoder.github.com/tweepy/)
-* [sqlalchemy](http://sqlalchemy.org)
-* [sqlite3](http://pysqlite.org)
+    setup.py install
 
 Related Projects
 ----------------
@@ -45,4 +39,4 @@ Related Projects
 * [Hotot](https://code.google.com/p/hotot)
 * [Google Reader](http://reader.google.com/)
 
-This project was once known as "Lyrebird" and is still a tribute to the [bird that retweets](http://youtu.be/7XiQDgNUEMw) the terrifying chainsaws that sew down it's rain forest.
+This project was once known as "Lyrebird" and is - as before - still a tribute to the [bird that retweets](http://youtu.be/7XiQDgNUEMw) the terrifying chainsaws that sew down it's rain forest.
