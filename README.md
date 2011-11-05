@@ -18,10 +18,13 @@ Features
 How to use
 ----------
 * Click the Add-Button to append a rss-url to your list
-* Click the Reload-Button to refresh all feeds
 * Click a feed to read.
   * Click "Source" to call your web browser to show the complete webpage
   * Click "Share" to dent the link
+* Click a feed again to refresh it.
+* Click the Reload-Button to refresh all feeds
+
+*⚠ Running it the first time may take some minutes even with a fast Internet connections!*
 
 Installation
 ------------
@@ -41,4 +44,4 @@ This project was once known as "Lyrebird" and is - as before - still a tribute t
 * [Flipboard](http://flipboard.com/)
 * [Hotot](https://code.google.com/p/hotot)
 * [Google Reader](http://reader.google.com/)
-
+* [Scrolldit](http://scrolldit.com/)
