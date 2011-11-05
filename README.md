@@ -2,7 +2,8 @@ AnchorBot
 =========
 
 *Version 1.0
-(c) spazzpp2 – Licensed under MIT License*
+
+© spazzpp2 – Licensed under MIT License*
 
 It's a news aggregator with the attempt of making you read the most important news first.
 
