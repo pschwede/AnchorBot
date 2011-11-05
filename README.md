@@ -24,7 +24,7 @@ How to use
 * Click a feed again to refresh it.
 * Click the Reload-Button to refresh all feeds
 
-*⚠ Running it the first time may take some minutes even with a fast Internet connections!*
+*⚠ Running it the first time may take some minutes even with a fast Internet connection!*
 
 Installation
 ------------
