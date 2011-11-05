@@ -17,6 +17,7 @@ install_requires = [
 ]
 if platform.system() == "Windows":
   install_requires.append("pygtk")
+print "Please manually install pywebkitgtk!"
 
 setup(
   name = "AnchorBot",
