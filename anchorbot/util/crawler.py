@@ -134,10 +134,10 @@ class Crawler( object ):
             tree = soupparser.fromstring( htmltext )
             self.recursive_hyph( tree, u"\u00AD" )
             htmltext = xmltostring( tree, encoding="utf8" )
-        tmp = u""
-        while hash( tmp ) != hash( htmltext ):
-            tmp = htmltext
-            htmltext = re_cln.sub( "", htmltext )
+        #tmp = u""
+        #while hash( tmp ) != hash( htmltext ):
+        #    tmp = htmltext
+        #    htmltext = re_cln.sub( "", htmltext )
         return htmltext
 
     def recursive_hyph( self, tree, hyphen ):
@@ -197,7 +197,9 @@ class Crawler( object ):
                     if html:
                         codec = chardet.detect( html )["encoding"]
                         if codec:
-                            html = html.decode( codec ).encode( "utf-8" )
+                            htmlutf8 = html.decode( codec ).encode( "utf-8" )
+                            if htmlutf8:
+                                html = htmlutf8
                         try:
                             imgs, cont = self.crawlHTML( #@UnusedVariable
                                 soupparser.fromstring( html ),
@@ -205,7 +207,7 @@ class Crawler( object ):
                                 )
                             images |= imgs
                             #content += cont # Ignore more content for now.
-                        except ValueError, e:
+                        except Exception, e:
                             self.verbose and log( "Wrong char? %s" % e )
 
         except KeyError:

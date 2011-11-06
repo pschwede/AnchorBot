@@ -3,6 +3,8 @@
 import Queue, threading
 from multiprocessing import Process
 
+# TODO apply actormodel
+
 class Processor( object ):
     def __init__( self, number, fun, callback ):
         """ initializes a list of Download Threads and a Queue.Queue """
@@ -17,8 +19,8 @@ class Processor( object ):
             self.__run_daemon( fun, callback )
 
     def __while_running( self, fun, callback=None ):
-        """Method for download threads"""
-        """Setting self.running to False would stop them all.
+        """Method for download threads
+           Setting self.running to False would stop them all.
         """
         while self.running:
             url = self.queue.get()
@@ -57,25 +59,26 @@ class Processor( object ):
         # split up entries and start processes with a smaller set of entries.
         l = len( bunch )
         step = l / n or 1
-        if len( bunch ) > step:
-            if single:
-                for i in range( 0, l, step ):
-                    p = Process( target=fun, args=( bunch[i:i + step], single, ) )
-                    p.daemon = True
-                    processes.append( p )
-            else:
-                for i in range( n ):
-                    p = Process( target=fun, args=( bunch[i:i + step], ) )
-                    p.daemon = True
-                    processes.append( p )
-        else:
-            if single:
-                p = Process( target=fun, args=( bunch[0], single, ) )
-                p.daemon = True
-                processes.append( p )
-            else:
-                p = Process( target=fun, args=( bunch[0], ) )
-                p.daemon = True
-                processes.append( p )
+        if l:
+                if l > step:
+                    if single:
+                        for i in range( 0, l, step ):
+                            p = Process( target=fun, args=( bunch[i:i + step], single, ) )
+                            p.daemon = True
+                            processes.append( p )
+                    else:
+                        for i in range( n ):
+                            p = Process( target=fun, args=( bunch[i:i + step], ) )
+                            p.daemon = True
+                            processes.append( p )
+                else:
+                    if single:
+                        p = Process( target=fun, args=( bunch[0], single, ) )
+                        p.daemon = True
+                        processes.append( p )
+                    else:
+                        p = Process( target=fun, args=( bunch[0], ) )
+                        p.daemon = True
+                        processes.append( p )
         [p.start() for p in processes]
         [p.join() for p in processes]

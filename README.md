@@ -15,7 +15,7 @@ Features
 * Analyze feed entries for repeatations in microblogs or other feeds to merge and sort
 * Focus on readability
 
-How to use
+How to Use
 ----------
 * Click the Add-Button to append a rss-url to your list
 * Click a feed to read.
@@ -36,6 +36,10 @@ Installation
 *all other:*
 
     setup.py install
+
+*Windows:*
+
+Tell me ;)
 
 Related Projects
 ----------------
