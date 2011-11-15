@@ -1,7 +1,7 @@
 AnchorBot
 =========
 
-*Version 1.0*
+*Version 1.0 beta*
 
 *© spazzpp2 – Licensed under MIT License*
 
