@@ -1,3 +1,3 @@
 #!/bin/bash
 
-python $(dirname "$0")/anchorbot/anchorbot.py ~
+python $(dirname "$0")/anchorbot/anchorbot_server.py ~ $1 $2 $3

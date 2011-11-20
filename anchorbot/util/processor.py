@@ -12,7 +12,6 @@ class Processor( object ):
         self.threads = []
         self.queue = Queue.Queue()
         self.running = True
-        self.number = number
         self.fun = fun
         self.callback = callback
         for _ in range( number ):

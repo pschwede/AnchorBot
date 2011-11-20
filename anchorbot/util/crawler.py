@@ -6,10 +6,14 @@ import chardet
 from urlparse import urljoin
 from lxml.cssselect import CSSSelector
 from lxml.html import soupparser
-from lxml.etree import tostring as xmltostring
+from lxml.etree import tostring as xmltostring, fromstring as xmlfromstring, HTMLParser
 from logger import log
 from time import mktime, time
 from datamodel import Article, Image, Keyword
+from subprocess import check_output
+
+from hyphenator import Hyphenator
+from boilerpipe.extract import Extractor
 
 
 """
@@ -17,12 +21,13 @@ Generic crawler.
 Follows redirections and delivers some useful functions for remote images.
 """
 re_cln = re.compile( '(<img[^>]+>|[\n\r]|<script[^>]*>\s*</script>|<iframe.*</iframe>|</*html>|</*head>|</*div[^>]*>| [ ]+)', re.I )
-re_cont = re.compile( "((<([abip]|li|ul|img|span|strong)[^>]*>.*)+(</([abip]|li|ul|span|strong)>.*)+)+", re.U + re.I )
+re_textual = re.compile( "((<([abip]|li|ul|img|span|strong)[^>]*>.*)+(</([abip]|li|ul|span|strong)>.*)+)+", re.U + re.I )
 
 class Crawler( object ):
     hyph_EN = "/usr/share/liblouis/tables/hyph_en_US.dic"
     hyph_DE = "/usr/share/liblouis/tables/hyph_de_DE.dic"
     hyph_FR = "/usr/share/liblouis/tables/hyph_fr_FR.dic"
+    htmlparser = HTMLParser()
 
     def __init__( self, cacher, analyzer, proxies=None, verbose=False ):
         self.opener = urllib.FancyURLopener( proxies )
@@ -32,31 +37,59 @@ class Crawler( object ):
 
         self.hyphenator = None
         try:
-            from hyphenator import Hyphenator
+            self.hyphenator = Hyphenator( self.hyph_DE )
+        except IOError:
+            self.verbose and log( "Not using hyphenator since %s can not be loaded." % self.hyph_DE )
+
+    def __textual_content( self, url=None, html=None, similarcontent=None ):
+        content = ""
+        if html:
+            # clean up codec
             try:
-                self.hyphenator = Hyphenator( self.hyph_DE )
-            except IOError:
-                self.verbose and log( "Not using hyphenator since %s can not be loaded." % self.hyph_DE )
-        except ImportError:
-            self.verbose and log( "Not using hyphenator since it's not installed." )
+                codec = chardet.detect( html )["encoding"]
+                if codec:
+                    html = html.encode("utf-8", "xmlcharrefreplace")
+            except UnicodeDecodeError, e:
+                print "Unencodable character found.", e
 
-    def __content( self, html, simcontent=None ):
-        codec = chardet.detect( html )["encoding"]
-        res = sorted( [x[0].decode( codec ).encode("utf-8") for x in re_cont.findall( html )], key=lambda x: len( x.split( " " ) ), reverse=True )
-        if res:
-            return res[0]
+            # regex method (not working; wrong re_textual!)
+            #content = sorted( [x[0] for x in re_textual.findall(html)], key=lambda x: len(x.split(" ")), reverse=True)[0]
+
+
+            # naive method
+            content = similarcontent or html
+            if similarcontent:
+                textsel = CSSSelector("div,span,p")
+                for elem in textsel(tree):
+                    if elem.text and similarcontent[:-len( similarcontent)/2] in elem.text:
+                        content = elem.text
         else:
-            return ""
+            if url:
+                #try:
+                # boilerpipe port
+                f = open(url, 'r')
+                text = xmltostring(xmlfromstring(f.read(), self.htmlparser))
+                content = Extractor('DefaultExtractor', url="file://"+url).getText()
+                f.close()
+                #except Exception, e:
+                #self.verbose and log( "Fail @%s, %s"%(url, e))
 
-    def crawlHTML( self, tree, similarcontent=None, depth=0, baseurl=None ):
-        content = self.__content( xmltostring( tree ), similarcontent )
+        return content
+
+    def crawlHTML( self, html, url, similarcontent=None, depth=0, baseurl=None ):
+        self.verbose and log("Crawling url=%s"%url)
+        tree = soupparser.fromstring( html ) 
+
         imagesel = CSSSelector( "img" )
         images = [urljoin( baseurl, img.get( "src" ) or img.attrib.values()[0] ) for img in imagesel( tree )]
+
         linksel = CSSSelector( "a" )
         for elem in linksel( tree ):
             link = urljoin( baseurl, elem.get( "href" ) )
             if link and link[-4:] in ( ".png", ".jpg", ".gif", "jpeg" ):
                 images.append( link )
+
+        content = self.__textual_content( html=xmltostring(tree), similarcontent=similarcontent )
         return ( set( images ), self.clean( content ), )
 
     def unescape( self, text ):
@@ -134,10 +167,10 @@ class Crawler( object ):
             tree = soupparser.fromstring( htmltext )
             self.recursive_hyph( tree, u"\u00AD" )
             htmltext = xmltostring( tree, encoding="utf8" )
-        #tmp = u""
-        #while hash( tmp ) != hash( htmltext ):
-        #    tmp = htmltext
-        #    htmltext = re_cln.sub( "", htmltext )
+        tmp = u""
+        while hash( tmp ) != hash( htmltext ):
+            tmp = htmltext
+            htmltext = re_cln.sub( "", htmltext )
         return htmltext
 
     def recursive_hyph( self, tree, hyphen ):
@@ -164,18 +197,19 @@ class Crawler( object ):
         """Filters out images, adds images from html, cleans up content."""
         image = None
         images = set()
+        url = self.get_link( entry )
         # get more text and images
         try:
-            html = entry["content"][0].value.decode( "utf-8" )
-            images, content = self.crawlHTML( soupparser.fromstring( html ) )
+            html = entry["content"][0].value
+            images, content = self.crawlHTML( html, self.cache[url] )
         except KeyError:
             try:
-                html = entry["summary_detail"].value.decode( "utf-8" )
-                images, content = self.crawlHTML( soupparser.fromstring( html ) )
+                html = entry["summary_detail"].value
+                images, content = self.crawlHTML( html, self.cache[url] )
             except KeyError:
                 try:
-                    html = entry["summary"].value.decode( "utf-8" )
-                    images, content = self.crawlHTML( soupparser.fromstring( html ) )
+                    html = entry["summary"].value
+                    images, content = self.crawlHTML( html, self.cache[url] )
                 except KeyError:
                     content = entry["title"]
 
@@ -197,18 +231,22 @@ class Crawler( object ):
                     if html:
                         codec = chardet.detect( html )["encoding"]
                         if codec:
-                            htmlutf8 = html.decode( codec ).encode( "utf-8" )
+                            htmlutf8 = unicode(html, codec)
                             if htmlutf8:
                                 html = htmlutf8
                         try:
                             imgs, cont = self.crawlHTML( #@UnusedVariable
-                                soupparser.fromstring( html ),
+                                html,
+                                self.cache[link],
                                 baseurl=link["href"],
                                 )
                             images |= imgs
                             #content += cont # Ignore more content for now.
                         except Exception, e:
-                            self.verbose and log( "Wrong char? %s" % e )
+                            if type(e).__name__ == "ValueError":
+                                self.verbose and log( "Wrong char? %s" % e )
+                            else:
+                                self.verbose and log( "%s" % e )
 
         except KeyError:
             self.verbose and log( "There were no links: %s" % entry )
@@ -220,7 +258,6 @@ class Crawler( object ):
             image = self.biggest_image( images )
         #TODO resize image to a prefered size here!
 
-        link = self.get_link( entry )
 
         try:
             date = mktime( entry.updated_parsed )
@@ -231,5 +268,5 @@ class Crawler( object ):
         a = self.analyzer
         a.add( {a.eid: link, a.key: title} )
         keywords = [Keyword( kw ) for kw in a.get_keywords_of_article( {a.eid: link, a.key: title} )]
-        art = Article( date, title, content, link, source, Image( image ) )
+        art = Article( date, title, content, url, source, Image( image ) )
         return art, keywords

@@ -38,13 +38,13 @@ class Config( object ):
     def __init__( self, path, defaults=dict(), defaultabos=set(), verbose=False ):
         self.verbose = verbose
         self.path = os.path.realpath( path )
-        self.lockfile = os.path.join( self.path, "lock" )
+        self.lockfile = os.path.join( self.path, "anchorlock" )
         self.lock = SelfRenewingLock( self.lockfile )
         self.locked = self.lock.locked()
         if self.locked:
-            raise Exception( "It seems as if it's already running."\
+            """raise Exception( "It seems as if it's already running."\
                             " If this is not the case,"\
-                            " please remove '%s' manually." % self.lockfile )
+                            " please remove '%s' manually." % self.lockfile )"""
         if not os.path.isdir( self.path ):
             os.mkdir( self.path )
         self.lock.start()

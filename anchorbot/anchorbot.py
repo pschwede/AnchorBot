@@ -33,7 +33,7 @@ TEMP = os.path.join( HOME, "cache/" )
 HTML = os.path.join( HOME, "index.html" )
 NUMT = 2
 __appname__ = "AnchorBot"
-__version__ = "1.0"
+__version__ = "1.1"
 __author__ = "spazzpp2"
 
 class Anchorbot( object ):
@@ -47,9 +47,10 @@ class Anchorbot( object ):
     * start analysis of the downloaded feeds
     """
 
-    def __init__( self, nogui=False, verbose=False, cache_only=False ):
+    def __init__( self, nogui=False, verbose=False, cache_only=False, update_call=lambda x:x):
         self.verbose = verbose
-        self.l = Logger( verbose, write=os.path.join( HOME, "logger.log" ) )
+        l = Logger( verbose, write=os.path.join( HOME, "logger.log" ) )
+        self.log = l.log
 
         # prepare lock, config, cache and variables
         try:
@@ -61,9 +62,6 @@ class Anchorbot( object ):
                 print str( e )
                 sys.exit( 1 )
 
-            # prepare cached browser
-            self.browser = browser.WebkitBrowser( HERE )
-            self.browser.set_about_handler( self.__about )
 
             # cache keeps files for 3 days
             self.cache = storage.FileCacher( TEMP, 3 , False )
@@ -79,18 +77,28 @@ class Anchorbot( object ):
             self.analyzer = Analyzer( key="title", eid="link" )
             self.crawler = Crawler( self.cache, self.analyzer )
             self.crawler.verbose = self.verbose
-            self.window = main_window( {
-                    "__appname__": __appname__,
-                    "__version__": __version__,
-                    "__author__":  __author__,
+            self.dblock = Lock()
+            if not nogui:
+                # prepare cached browser
+                self.browser = browser.WebkitBrowser( HERE )
+                self.browser.set_about_handler( self.__about )
+                self.window = main_window( {
+                        "__appname__": __appname__,
+                        "__version__": __version__,
+                        "__author__":  __author__,
                 }, self )
 
-            # start daemons that can download
-            self.dblock = Lock()
-            self.downloader = Processor( NUMT, self.download, self.update_feeds_tree )
-            # in background, make daemons download feeds
-            self.running, self.timeout = True, 3000 #TODO load from config
-            self.downloader.run_threaded( self.update_all, self.update_feeds_tree )
+                # start daemons that can download
+                self.downloader = Processor( NUMT, self.download, self.update_feeds_tree )
+                # in background, make daemons download feeds
+                self.running, self.timeout = True, 3000 #TODO load from config
+                self.downloader.run_threaded( self.update_all, self.update_feeds_tree )
+            else:
+                # start daemons that can download
+                self.downloader = Processor( NUMT, self.download, update_call )
+                # in background, make daemons download feeds
+                self.running, self.timeout = True, 3000 #TODO load from config
+                self.downloader.run_threaded( self.update_all, update_call )
         except IOError:
             sys.exit( 1 )
 
@@ -122,7 +130,7 @@ class Anchorbot( object ):
                     if arg.startswith( "text=" ):
                         text = urllib.unquote( arg[5:] )
                 if text or url:
-                    self.l.log( 'Tweet %s %s' % ( text, url, ) )
+                    self.log( 'Tweet %s %s' % ( text, url, ) )
                     self.mblog.send_text( self.window, "%s %s" % ( text, url, ) )
             elif cmd.startswith( "start" ):
                 self.show_start()
@@ -164,7 +172,10 @@ class Anchorbot( object ):
         # quit
         self.cache.quit()
         self.config.quit()
-        gtk.main_quit()
+        try:
+            gtk.main_quit()
+        except:
+            pass
 
     def enrich( self, entries, source ):
         for entry in entries:
@@ -212,17 +223,15 @@ class Anchorbot( object ):
         # make DLer start some processes to enrich entries
         self.downloader.map( self.enrich, feed["entries"], source )
 
-        self.l.log( "Done %i of %i" % ( self.feeds.keys().index( feedurl ) + 1, len( self.feeds ), ) )
+        self.log( "Done %i of %i" % ( self.feeds.keys().index( feedurl ) + 1, len( self.feeds ), ) )
         if callback:
             callback( feedurl, title )
 
     def get_hash( self, feedurl ):
         """Fast value for comparisons without hashing"""
         del self.cache[feedurl]
-        f = open( self.cache[feedurl] )
-        h = hash( f.read() )
-        f.close()
-        return h
+        self.cache[feedurl]
+        return hash(feedurl)
 
     def update_all( self, callback=None ):
         """Puts all feeds into the download queue to be downloaded.
@@ -233,24 +242,24 @@ class Anchorbot( object ):
                 s = get_session( self.db )
                 source = s.query( Source ).filter( Source.link == url ).first()
                 if not source:
-                    self.l.log( "New source: %s" % url )
+                    self.log( "New source: %s" % url )
                     source = Source( url )
                     s.add( source )
                     try:
                         s.commit()
                     except IntegrityError:
                         s.rollback()
-                        self.l.log( "Couldn't store source %s" % source )
+                        self.log( "Couldn't store source %s" % source )
 
                 h = self.get_hash( url )
                 if not source.quickhash or h != source.quickhash:
-                    self.l.log( "Something new: %s" % url )
+                    self.log( "Something new: %s" % url )
                     # throw url before the daemons
                     self.downloader.run_one( url )
                 else:
                     if callback:
                         callback( source.link, source.title )
-                    self.l.log( "Nothing new: %s" % url )
+                    self.log( "Nothing new: %s" % url )
                     s.close()
             sleep( self.timeout )
 
@@ -310,6 +319,7 @@ def main( urls=[], nogui=False, cache_only=False, verbose=False ):
     for url in urls:
         gobject.idle_add( l.add_url, ( url, ) )
     gtk.main()
+
 
 def get_cmd_options():
     usage = "anchorbot.py"

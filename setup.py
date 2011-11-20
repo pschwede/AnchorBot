@@ -7,7 +7,8 @@ def read(fname):
 
 install_requires = [
     "setuptools",
-    #"pywebkitgtk", 
+    "hamlish-jinja",
+    "flask",
     "feedparser", 
     "lxml", 
     "hyphenator", 
