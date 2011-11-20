@@ -58,13 +58,13 @@
   <body>
     <div id="header">
       <a class="title" href="/">AnchorBot</a>
-      <a style="float:right;" class="menu" href="/quit">&#8864;</a>
+      <a style="float:right;" class="menu" href="/quit" title="quits this server">&#8864;</a>
     </div>
     <div id="container">
       <div id="tree">
         <ul>
           {% for src in srclist %}
-          <li><a class="button" href="/feed/id={{ src.ID }}">{{ src.title or src.url }}</a></li>
+          <li><a class="button" href="/feed/id={{ src.ID }}">{{ src.title or src.link }}</a></li>
           {% endfor %}
         </ul>
       </div>
