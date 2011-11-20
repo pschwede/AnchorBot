@@ -1,0 +1,279 @@
+* {
+    border:0 hidden;
+    margin: 0;
+    padding: 0;
+    text-decoration: none;
+    }
+
+html, body {
+    font-family: "minion-pro-1","minion-pro-2",Palatino,Georgia,"Times New Roman",serif;
+    line-height: 133%;
+    font-size: 12pt;
+    color: #000;
+    /*background-color: #bbb;*/
+    }
+
+body {
+    padding-left: 20px;
+    padding-right: 20px;
+    padding-bottom: 50px;
+    margin: 0 auto;
+    }
+
+
+li {
+    margin-left:0;
+    padding-left:0;
+    text-indent: 3em;
+    }
+
+table {
+    font-size: 66%;
+    }
+
+#header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  background-color: #333;
+  display: block;
+  width: 100%;
+  padding: 3pt;
+  font-family: Arial, Sans;
+  z-index: 99;
+  height: 17pt;
+  text-shadow: 1pt 1pt 1pt rgba(0,0,0,.3);
+}
+#header a.title {
+  font-weight: bold;
+  color: #fff;
+}
+#header a.menu {
+  margin: 0;
+  color: #fff;
+  padding: 0 5pt 5pt 0;
+}
+#header a:hover {
+  text-shadow: 1pt 1pt 1pt rgba(0,0,0,.3), 0 0 3pt rgba(255,255,255,.6);
+}
+
+#container {
+  width: 100%;
+}
+
+#tree {
+  position: fixed;
+  left: 0;
+  top: 30pt;
+  width: 60pt;
+  font-family: Arial, Sans;
+  overflow: hidden;
+}
+#tree li {
+  text-indent: 0;
+  padding-left: 0;
+  list-style: none;
+  display: block;
+  font-size: 50%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#tree li .button {
+  width:40pt;
+}
+#content {
+  padding-top: 30pt;
+  padding-left: 60pt;
+}
+
+
+.issue1 {
+    width: 100%;
+    max-width: 600px;
+    margin: 50px auto;
+    padding-top: 30px;
+    padding-bottom: 30px;
+    }
+    .issue1 .small {
+        clear: both;
+        width: 100%;
+        text-align: right;
+        font-size: 50%;
+        }
+        .issue1 .small a:link {
+            font: 10px sans-serif;
+            }
+        .issue1 .small .button {
+            padding: 2px 3px;
+            font-size: 80%;
+            display: inline-block;
+        }
+    .issue1 .issue_content a:link, .issue2 .issue_content a:link {
+        color: #009;
+        font-style: italic;
+        }
+    .issue1 :not(.small) a:hover {
+        color: #009;
+        text-decoration: underline;
+        }
+    .issue1 :not(.small) a:visited {
+        color: #ff9;
+        }
+    .issue1 .image {
+        max-width: 100%;
+        padding: 5px;
+        background: #fff;
+        }
+    .issue1 .image img {
+        border: 3px solid #000;
+        min-width: 50%;
+        max-width: 100%;
+        max-height: 600px;
+        }
+    .issue1:nth-child(even) .image {
+        float: right;
+        }
+    .issue1:nth-child(odd) .image {
+        float: left;
+        }
+    .issue1 .issue_head {
+        text-align: center;
+        width:100%;
+        color: #333;
+        text-shadow: -1px -1px 0px rgba(0,0,0,0.7), 1px 1px 0px rgba(255,255,255,0.7);
+        font-size: 18pt;
+        line-height: 130%;
+        }
+    .issue1 .issue_content {
+        padding-top: 20px;
+        border-top: 1px solid #333;
+        text-align: justify;
+        width: 100%;
+        margin: 0 auto;
+        }
+
+a.button:visited,
+a.button:link,
+.button {
+    white-space: nowrap;
+    font-family: sans-serif;
+    font-weight: bold;
+    padding: 4px 8px;
+    background-color: #eee;
+    border-radius: 16px;
+    border: 1px solid rgba(0,0,0,0.3);
+    box-shadow: 0px 1px 0px rgba(0,0,0,0.2);
+    text-shadow: 1px 1px 0 rgba(255,255,255,0.7);
+    text-align: center;
+    margin: 2px;
+    color: #666;
+}
+    a.button:hover {
+        background-color: #08f;
+        text-shadow: -1px -1px 0 rgba(0,0,0,0.3);
+        box-shadow: inset 0 1pt 0 rgba(255,255,255,0.3), inset 0 -1pt 0 rgba(0,0,0,.2);
+        color: #fff;
+    }
+    a.button:focus {
+        padding: 5px 8px 3px 8px;
+    }
+
+.about_share, .about_source {
+    float: left;
+}
+    .about_share:before {
+        content: "♻  "
+    }
+    .about_source:before {
+        content: "⬈ "
+    }
+
+.issue2 {
+    width: 200px;
+    height: 200px;
+    display: inline-block;
+    vertical-align: top;
+    margin: 2px 0px;
+    overflow: hidden;
+    box-shadow: #000 1px 1px 2px;
+    background-color: #ddd;
+    border: 1px solid #aaa;
+    border-radius: 5px;
+    }
+    .issue2 .image {
+        width:100%;
+        height:100%;
+        background-repeat: no-repeat;
+    }
+    .issue2:nth-child(odd) {
+        background-position: 33% 33%;
+    }
+    .issue2:nth-child(even) {
+        background-position: 66% 66%;
+    }
+    .issue2 .small {
+        width: 190px;
+        font: 10px sans-serif;
+        color: #fff;
+        display: none;
+        padding: 5px;
+        float:left;
+        box-shadow: 0px 5px 5px rgba(0,0,0,0.3);
+        border-radius: 0 0 15px 15px;
+        }
+        .issue2 .small {
+            background-color: rgba(0,0,0,0.6);
+        }
+        .issue2 .small .tags {
+            max-height: 50px;
+            overflow: auto;
+        }
+    .issue2 .button {
+        padding: 2px 3px;
+        font-size: 75%;
+        display: inline-block;
+    }
+    .issue2 .about_share,
+    .issue2 .about_source {
+        font-size: 100%;
+        width: 150px;
+        display: block;
+        float: none;
+        margin: 2px auto;
+    }
+    .issue2:hover {
+        background-image: none;
+    }
+        .issue2:hover .small {
+            display: block;
+            border-bottom: 1px solid #555;
+            }
+        .issue2:hover .issue_head {
+            box-shadow: none;
+            border-bottom: none;
+        }
+    .issue2 .issue_content {
+        display: none;
+        }
+    .issue2 .issue_head {
+        font-family: sans-serif, "Impact";
+        z-index: 5;
+        color:#fff;
+        background: rgba(0,0,0,0.6);
+        text-shadow: 0px 0px 2px #000;
+        font-size: 10px;
+        text-align: center;
+        line-height: 15px;
+        text-transform: uppercase;
+        position: relative;
+        box-shadow: 0px 5px 5px rgba(0,0,0,0.3);
+        border-bottom: 1px solid #555;
+        padding-left: 5px;
+        padding-right: 5px;
+        width: 190px;
+        }
+
+.issue1, .issue2 {
+    clear: both;
+    }
+

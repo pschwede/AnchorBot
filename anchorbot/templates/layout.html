@@ -1,0 +1,84 @@
+{% macro button(service, link, text=None) %}
+  {% if service=="source" %}
+  <a class="about_source button" target="_blank" href="{{ link }}">Source</a>
+  {% elif service=="share" %}
+  <a class="about_share button" target="_blank" href="/share/url={{ link }}&text={{ text }}">Share</a>
+  {% endif %}
+{% endmacro %}
+
+{% macro keyword(key) %}
+  <a class="button" href="/key/id={{ key.ID }}">{{ key.word }}</a>
+{% endmacro %}
+
+{% macro article_gallery(art) %}
+            <div class="issue2" style="background-image:url('{{ art.image.filename }}');">
+                <h2 class="issue_head" title="{{ art.title }}">{{ art.title }}</h2>
+                <div class="small">
+                    <div>{{ art.datestr }}</div>
+                    <div class="tags">
+                    {% for key in art.keywords %}
+                      {{ keyword(key) }}
+                    {% endfor %}
+                    </div>
+                    <div>
+                        {{ button("source", art.link) }}
+                        {{ button("share", art.link, art.title) }}
+                    </div>
+                </div>
+            </div>
+{% endmacro %}
+
+{% macro article_read(art) %}
+            <div class="issue1">
+                <h2 class="issue_head" title="{{ art.title }}">{{ art.title }}</h2>
+                {% if art.image %}
+                  <div class="image"><img src="{{ art.image.filename }}" alt=""/></div>
+                {% endif %}
+                <div class="issue_content">{{ art.content|safe }}</div>
+                <div class="small">
+                    <span class="time">{{ art.datestr }}</span>
+                    <span class="keywords">
+                        {% for key in art.keywords %}
+                          {{ keyword(key) }}
+                        {% endfor %}
+                    </span>
+                    <div>
+                        {{ button("source", art.link) }}
+                        {{ button("share", art.link, art.title) }}
+                    </div>
+                </div>
+            </div>
+{% endmacro %}
+
+<html>
+  <head>
+    <title>Anchorbot {{ title }}</title>
+    <link type="text/css" rel="stylesheet" href="{{ style }}">
+  </head>
+  <body>
+    <div id="header">
+      <a class="title" href="/">AnchorBot</a>
+      <a style="float:right;" class="menu" href="/quit">&#8864;</a>
+    </div>
+    <div id="container">
+      <div id="tree">
+        <ul>
+          {% for src in srclist %}
+          <li><a class="button" href="/feed/id={{ src.ID }}">{{ src.title or src.url }}</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+      <div id="content">
+      {% if mode=="start" %}
+        {% for art in content %}
+        {{ article_gallery(art) }}
+        {% endfor %}
+      {% else %}
+        {% for art in content %}
+        {{ article_read(art) }}
+        {% endfor %}
+      {% endif %}
+      </div>
+    </div>
+  </body>
+</html>
