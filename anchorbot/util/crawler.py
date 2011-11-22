@@ -13,7 +13,7 @@ from datamodel import Article, Image, Keyword
 from subprocess import check_output
 
 from hyphenator import Hyphenator
-from boilerpipe.extract import Extractor
+#from boilerpipe.extract import Extractor
 
 
 """
@@ -69,7 +69,7 @@ class Crawler( object ):
                 # boilerpipe port
                 f = open(url, 'r')
                 text = xmltostring(xmlfromstring(f.read(), self.htmlparser))
-                content = Extractor('DefaultExtractor', url="file://"+url).getText()
+                #content = Extractor('DefaultExtractor', url="file://"+url).getText()
                 f.close()
                 #except Exception, e:
                 #self.verbose and log( "Fail @%s, %s"%(url, e))

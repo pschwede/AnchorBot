@@ -52,7 +52,7 @@ def read_about_key(kwid=None, kwword=None):
     kw.clickcount += 1
     s.merge( kw )
     s.commit()
-    arts = s.query( Article ).join( Article.keywords ).filter( Keyword.ID == kw.ID ).order_by( Article.date ).all()
+    arts = s.query( Article ).join( Article.keywords ).filter( Keyword.ID == kw.ID ).order_by(desc(Article.date)).all()
     srclist = s.query(Source).order_by(Source.title).all()
     content = show("more",srclist,arts)
     s.close()
@@ -70,13 +70,13 @@ def quit():
 
 @app.route("/feed/id=<fid>")
 @app.route("/feed/<url>")
-def reed_feed(fid=None, url=None):
+def read_feed(fid=None, url=None):
     global bot
     s = get_session(bot.db)
     if url:
-        arts = s.query(Article).join(Article.source).filter(Source.link.contains(url)).order_by(Article.date)
+        arts = s.query(Article).join(Article.source).filter(Source.link.contains(url)).order_by(Article.date).all()
     else:
-        arts = s.query(Article).join(Article.source).filter(Source.ID == fid).order_by(Article.date)
+        arts = s.query(Article).join(Article.source).filter(Source.ID == fid).order_by(desc(Article.date)).all()
     srclist = s.query(Source).order_by(Source.title).all()
     content = show("more",srclist,arts)
     s.close()

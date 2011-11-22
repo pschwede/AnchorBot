@@ -28,6 +28,8 @@ How to Use
 
 Installation
 ------------
+Python >= 2.7 needed!
+
 *Ubuntu:*
 
     sudo setup.ubuntu.sh
