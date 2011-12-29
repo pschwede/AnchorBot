@@ -54,7 +54,7 @@ I usually iterated through a mostly static list of bookmarks: news pages, blogs,
 forums, reddit, twitter and even some static html files and checked them for 
 exciting stuff I should read, listen to, watch or bookmark for tomorrow. You 
 may see, that this takes a lot of time and although entertaining here and there, 
-I felt like this was not ompletely worth the efford. Also my observation of
+I felt like this was not completely worth the efford. Also my observation of
 the Internet being used less and less productively didn't lift up my mood.
 
 Usually I've been flooded by tweets & articles that are
@@ -122,7 +122,8 @@ intuitive enough or needs to be "clicked for more"
 
 It's supposed to be customizable, transparent and trustable (therefore open source).
 
-So, this is what I came up with so far. 
+So, this is what I came up with so far.
+Please contact me on github to tell me what you think about it.
 
 Related Projects
 ----------------
