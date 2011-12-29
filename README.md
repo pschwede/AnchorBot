@@ -45,10 +45,9 @@ connection!*
 
 The Idea
 --------
-I had the feeling that I should discribe this more and why I started this.
+I had the feeling that I should discribe this more and also why I started this.
 
-I suppose, you have this situation almost everyday, so I made some review
-about this:
+I suppose, you share my situation almost every day:
 
 Basically I started my browser to see what's going on in the outside world.
 I usually iterated through a mostly static list of bookmarks: news pages, blogs,
@@ -77,9 +76,11 @@ past or future)
 
 So I thought about the problem, with which I heard I am not alone:
 
-On the one hand I could have decided to ignore all the news storm 
+On the one hand I could have decided to ignore all the news storm and just be.
+You can live without all that, if you want. On the other hand, I could try to
+use it for my advance out of this mess.
 
-And I checked existing methods to handle this flood:
+And I checked existing methods to handle this:
 
 * RSS feed readers automatically check pages for news and display them in an
 equal way (Browser extensions like Readability unify, too, but fail some times)
@@ -100,15 +101,16 @@ and idle while showing some text in a browser.
 
 So I came to the idea to write a script that does the main things I needed 
 automatically while browsing or coding. It's loop would be, to pull rss-feeds and 
-other news streams and find out what might the reader interest the most. 
+other news streams, display them in a pleasuring way and find out what might 
+interesting to the reader most likely. 
 
-The importance of news could be detected by:
+The importance of news could be detected by…
 
 * emphasizement: the number sources that posted about the same topic/keyword (including friends)
 * user behavior: the number of readings of articles with the same keyword
 * uniqueness: not contained words that are in almost every article (of the same source)
 
-Also, for more comfort, my reader should:
+Also, for more comfort, the reader should automatically…
 
 * merge articles that share the same story and present them to the user on demand
 * gather images and more text about the story in the case it's not illustrative, 
@@ -118,7 +120,7 @@ intuitive enough or needs to be "clicked for more"
 * (in future) reduce down-traffic by sharing the curation work with friends
 * (in future) build a p2p news network
 
-Its supposed to be customizable, transparent and trustable (therefore open source).
+It's supposed to be customizable, transparent and trustable (therefore open source).
 
 So, this is what I came up with so far. 
 
