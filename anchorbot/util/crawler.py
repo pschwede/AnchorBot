@@ -24,9 +24,9 @@ re_cln = re.compile( '(<img[^>]+>|[\n\r]|<script[^>]*>\s*</script>|<iframe.*</if
 re_textual = re.compile( "((<([abip]|li|ul|img|span|strong)[^>]*>.*)+(</([abip]|li|ul|span|strong)>.*)+)+", re.U + re.I )
 
 class Crawler( object ):
-    hyph_EN = "/usr/share/liblouis/tables/hyph_en_US.dic"
-    hyph_DE = "/usr/share/liblouis/tables/hyph_de_DE.dic"
-    hyph_FR = "/usr/share/liblouis/tables/hyph_fr_FR.dic"
+    hyph_EN = "/usr/share/hyphen/hyph_en_US.dic"
+    hyph_DE = "/usr/share/hyphen/hyph_de_DE.dic"
+    hyph_FR = "/usr/share/hyphen/hyph_fr_FR.dic"
     htmlparser = HTMLParser()
 
     def __init__( self, cacher, analyzer, proxies=None, verbose=False ):

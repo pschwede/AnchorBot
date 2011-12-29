@@ -67,7 +67,7 @@ class main_window( gtk.Window ):
         self.ctrl = controller
         self.info = info
         self.set_title( self.info["__appname__"] + " " + self.info["__version__"] )
-        self.connect( "destroy", self.ctrl.quit )
+        self.connect( "destroy", self.ctrl.shutdown )
 
         vbox = gtk.VBox()
 
@@ -98,7 +98,7 @@ class main_window( gtk.Window ):
         toolbar.add( sep_tool )
 
         quit_tool = gtk.ToolButton( gtk.STOCK_QUIT )
-        quit_tool.connect( "clicked", self.ctrl.quit )
+        quit_tool.connect( "clicked", self.ctrl.shutdown )
         toolbar.add( quit_tool )
 
         # END toolbar

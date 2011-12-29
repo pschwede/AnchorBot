@@ -111,7 +111,7 @@ class FileCacher( object ):
         except ImportError:
             print( self.stor )
 
-    def quit( self ):
+    def shutdown( self ):
         done = False
         while not done:
             try:

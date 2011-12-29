@@ -31,7 +31,7 @@ class SelfRenewingLock( threading.Thread ):
         else:
             return False
 
-    def quit( self ):
+    def shutdown( self ):
         os.remove( self.lockfile )
 
 class Config( object ):
@@ -108,11 +108,11 @@ class Config( object ):
             f.write( "%s\n" % abo )
         f.close()
 
-    def quit( self ):
+    def shutdown( self ):
         if not self.locked:
             self.write_abos()
             self.write_config()
-            self.lock.quit()
+            self.lock.shutdown()
 
 if __name__ == "__main__":
     s = SelfRenewingLock( "/tmp/testlock", 1 )
