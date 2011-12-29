@@ -100,8 +100,8 @@ together. Additionally I thought about the majority of personal computers that r
 and idle while showing some text in a browser.
 
 So I came to the idea to write a script that does the main things I needed 
-automatically while browsing or coding. It's loop would be, to pull rss-feeds and 
-other news streams, display them in a pleasuring way and find out what might 
+automatically while browsing or coding. It's loop would be, to download news streams 
+like rss and twitter, display them in a pleasuring way and find out what might 
 interesting to the reader most likely. 
 
 The importance of news could be detected by…
