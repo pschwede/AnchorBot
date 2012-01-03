@@ -2,7 +2,7 @@
 # -*- encoding: utf-8 -*-
 
 """
-This is the main file of AnchorBot, the feed reader that makes you read
+This is the main class of AnchorBot, the feed reader that makes you read
 the important news first.
 
 For further reading, see README.md
@@ -41,7 +41,6 @@ NUMT = 2
 __appname__ = "AnchorBot"
 __version__ = "1.1"
 __author__ = "spazzpp2"
-
 
 class Anchorbot(object):
     """ The most main Class
@@ -98,13 +97,15 @@ class Anchorbot(object):
                 # start daemons that can download
                 self.downloader = Processor(NUMT, self.download, self.update_feeds_tree)
                 # in background, make daemons download feeds
-                self.running, self.timeout = True, 3000 #TODO load from config
+                #TODO load from config
+                self.running, self.timeout = True, 3000
                 self.downloader.run_threaded(self.update_all, self.update_feeds_tree)
             else:
                 # start daemons that can download
                 self.downloader = Processor(NUMT, self.download, update_call)
                 # in background, make daemons download feeds
-                self.running, self.timeout = True, 3000 #TODO load from config
+                #TODO load from config
+                self.running, self.timeout = True, 3000
                 self.downloader.run_threaded(self.update_all, update_call)
         except IOError:
             sys.exit(1)

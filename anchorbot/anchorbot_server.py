@@ -6,8 +6,7 @@ from sqlalchemy.sql.expression import desc
 from time import time, localtime, strftime
 from flask import Flask, render_template, url_for, request
 app = Flask(__name__)
-bot = None
-
+bot = None # yet
 
 def update_event(x, y):
     print "update!", x, y
@@ -15,12 +14,12 @@ def update_event(x, y):
 
 def show(mode, srclist, content):
     return render_template(
-        "layout.html",
-        style=url_for("static", filename="default.css"),
-        srclist=srclist,
-        mode=mode,
-        content=content
-       )
+            "layout.html",
+            style=url_for("static", filename="default.css"),
+            srclist=srclist,
+            mode=mode,
+            content=content
+        )
 
 
 @app.route("/")
@@ -32,9 +31,11 @@ def start():
     for kw in set(keywords):
         clickedarts = s.query(Article).filter(Article.keywords.contains(kw))
         clickedarts = clickedarts.filter(Article.date > time() - 24 * 3600)
-        clickedarts = clickedarts.all()  # TODO last-visited @UndefinedVariable
+        # TODO last-visited
+        clickedarts = clickedarts.all()  
         newarts = s.query(Article).filter(Article.date > time() - 24 * 3600)
-        newarts = newarts.all()  # TODO last-visited @UndefinedVariable
+        # TODO last-visited @UndefinedVariable 
+        newarts = newarts.all() 
     articles = list(set(clickedarts) | set(newarts))
     articles = sorted(articles, key=lambda x: x.date)
     for art in articles:
@@ -110,9 +111,9 @@ def get_cmd_options():
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
-        if len(sys.argv) > 1:
-            main(sys.argv[1:] if "-a" in sys.argv else [],
-                    "-v" in sys.argv,  # verbose option
-                    "-c" in sys.argv)  # print cache only
+        main(
+                sys.argv[1:] if "-a" in sys.argv else [],
+                "-v" in sys.argv,  # verbose option
+                "-c" in sys.argv)  # print cache only
     else:
         main()
