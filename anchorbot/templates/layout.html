@@ -1,29 +1,37 @@
+{% macro redirect(aid) %}
+/redirect/{{ aid }}
+{% endmacro %}
+
 {% macro button(service, link, text=None) %}
   {% if service=="source" %}
   <a class="about_source button" target="_blank" href="{{ link }}">Source</a>
   {% elif service=="share" %}
-  <a class="about_share button" target="_blank" href="/share/url={{ link }}&text={{ text }}">Share</a>
+  <a class="about_share button" target="_blank" href="/share/{{ link }}">Share</a>
   {% endif %}
 {% endmacro %}
 
-{% macro keyword(key) %}
-  <a class="button" href="/key/id={{ key.ID }}">{{ key.word }}</a>
+{% macro keyword(key, rated=false) %}
+    {% if rated %}
+    <a id="{{ key.ID }}" class="like button">+</a><a class="button" href="/key/id/{{ key.ID }}">{{ key.word }}</a><a id="{{ key.ID }}" class="hate button">-</a>
+    {% else %}
+    <a class="button" href="/key/id/{{ key.ID }}">{{ key.word }}</a>
+    {% endif %}
 {% endmacro %}
 
 {% macro article_gallery(art) %}
             <div class="issue2" style="background-image:url('{{ art.image.filename }}');">
                 <h2 class="issue_head" title="{{ art.title }}">{{ art.title }}</h2>
                 <div class="small">
-                    <div>{{ art.datestr }}</div>
+                    <div>Why do you want to read this?</div>
                     <div class="tags">
                     {% for key in art.keywords %}
-                      {{ keyword(key) }}
+                        {{ keyword(key) }}
                     {% endfor %}
                     </div>
-                    <div>
-                        {{ button("source", art.link) }}
-                        {{ button("share", art.link, art.title) }}
-                    </div>
+                    <!--<div>
+                        {{ button("source", redirect(art.ID)) }}
+                        {{ button("share", art.aid) }}
+                    </div>//-->
                 </div>
             </div>
 {% endmacro %}
@@ -42,10 +50,10 @@
                           {{ keyword(key) }}
                         {% endfor %}
                     </span>
-                    <div>
-                        {{ button("source", art.link) }}
-                        {{ button("share", art.link, art.title) }}
-                    </div>
+                    <span>
+                        {{ button("source", redirect(art.ID)) }}
+                        {{ button("share", art.link, text=art.title) }}
+                    </span>
                 </div>
             </div>
 {% endmacro %}
@@ -54,6 +62,8 @@
   <head>
     <title>Anchorbot {{ title }}</title>
     <link type="text/css" rel="stylesheet" href="{{ style }}">
+    <script type="text/javascript" src="{{ url_for('static', filename='jquery.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='anim.js') }}"></script>
   </head>
   <body>
     <div id="header">
@@ -64,9 +74,11 @@
       <div id="tree">
         <ul>
           {% for src in srclist %}
-          <li><a class="button" href="/feed/id={{ src.ID }}">{{ src.title or src.link }}</a></li>
+          <li><a class="button" href="/feed/id/{{ src.ID }}">{{ src.title or src.link }}</a></li>
           {% endfor %}
         </ul>
+      </div>
+      <div id="next">
       </div>
       <div id="content">
       {% if mode=="start" %}

@@ -1,4 +1,6 @@
-import urllib, os, time
+import urllib
+import os
+import time
 try:
     import cPickle as pickle
 except ImportError:
@@ -31,8 +33,8 @@ class Cacher( object ):
     def clear( self ):
         self.dic = {}
 
-class FileCacher( object ):
-    def __init__( self, localdir="/tmp/lyrebird/", max_age_in_days= -1, verbose=False ):
+class FileCacher( dict ):
+    def __init__( self, localdir="/tmp/lyrebird/", max_age_in_days= -1, verbose=False, dont_dl=(".swf",) ):
         self.verbose = verbose
         self.max_age_in_days = max_age_in_days
         self.localdir = os.path.realpath( os.path.dirname( localdir ) )
@@ -40,23 +42,23 @@ class FileCacher( object ):
             os.mkdir( localdir )
         self.dloader = urllib.FancyURLopener()
         self.exp = -1
-        self.dont_dl = ( ".swf", )
-        self.storpath = storpath = os.path.join( self.localdir, "agedic.pkl" )
-        self.stor = {}
-        if os.path.exists( storpath ):
+        self.dont_dl = dont_dl
+        self.url_last_used_path = url_last_used_path = os.path.join( self.localdir, "agedic.pkl" )
+        self.url_last_used = {}
+        if os.path.exists( url_last_used_path ):
             try:
-                self.stor = pickle.load( open( storpath, 'r' ), -1 )
+                self.url_last_used = pickle.load( open( url_last_used_path, 'r' ), -1 )
             except:
                 pass
 
     def vacuum( self, max_age_in_days ):
         # first search for really existing && unrotten files,
         # then burn the rest.
-        keep = set( [self.storpath] )
+        keep = set( [self.url_last_used_path] )
         then = time.time() - max_age_in_days * 24 * 60 * 60
-        for url, ( newurl, creation ) in self.stor.items():
+        for url, ( newurl, creation ) in self.url_last_used.items():
             if creation < then:
-                self.__remove_item( url )
+                self.__delitem__( url )
             else:
                 keep.add( newurl )
 
@@ -70,10 +72,10 @@ class FileCacher( object ):
             self.verbose and log( "Ignoring " + url )
             return url
         try:
-            result = self.stor[url][0]
+            result = self.url_last_used[url][0]
             if not os.path.exists( result ):
                 raise KeyError()
-            self.stor[url] = self.stor[self.stor[url]] = ( self.stor[url][0], time.time() )
+            self.url_last_used[url] = self.url_last_used[self.url_last_used[url]] = ( self.url_last_used[url][0], time.time() )
             self.verbose and log( "Getting %s from cache." % url )
             return result
         except KeyError:
@@ -86,45 +88,48 @@ class FileCacher( object ):
                     except UnicodeError:
                         self.dloader.retrieve( urllib.quote_plus( url.encode( "utf-8" ) ), newurl )
                 self.verbose and log( "Cached %s to %s." % ( url, newurl, ) )
-                self.stor[url] = self.stor[newurl] = ( newurl, time.time() )
+                self.url_last_used[url] = self.url_last_used[newurl] = ( newurl, time.time() )
             except IOError, e:
                 if not url.endswith( "gif" ): #TODO WHY CAN'T IT HANDLE GIF FILES?
                     self.verbose and log( "IOError: %s (Filename too long? len=%i), %s" % ( e.message, len( url ), url ) )
                 return url
             return newurl
 
-    def __remove_item( self, url ):
+    def __delitem__( self, url ):
         try:
-            os.remove( self.stor[url][0] )
-            del self.stor[url]
-            del self.stor[self.__newurl( url )]
+            try:
+                os.remove( self.url_last_used[url][0] )
+            except OSError,e:
+                if e.errno == 2:
+                    pass
+                else:
+                    print e.message
+            del self.url_last_used[url]
+            del self.url_last_used[self.__newurl( url )]
         except KeyError:
             pass # Oll Korrect
-
-    def __delitem__( self, url ):
-        self.__remove_item( url )
 
     def pprint( self ):
         try:
             import pprint as p
-            p.pprint( self.stor, indent=2, width=50 )
+            p.pprint( self.url_last_used, indent=2, width=50 )
         except ImportError:
-            print( self.stor )
+            print( self.url_last_used )
 
     def shutdown( self ):
         done = False
         while not done:
             try:
-                pickle.dump( self.stor, open( self.storpath, 'w' ), -1 )
+                pickle.dump( self.url_last_used, open( self.url_last_used_path, 'w' ), -1 )
                 done = True
             except RuntimeError:
                 pass
         self.vacuum( self.max_age_in_days )
 
     def clear( self ):
-        for url in self.stor.values():
+        for url in self.url_last_used.values():
             os.remove( url ) # uh oh
-        self.stor = {}
+        self.url_last_used = {}
 
 if __name__ == "__main__":
     c = Cacher()
