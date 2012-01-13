@@ -5,17 +5,17 @@ AnchorBot
 
 *© spazzpp2 – Licensed under MIT License*
 
-It's a news aggregator with the attempt of making you read the most important
+It's a client-side hosted news feed reader with the attempt of making you read the most important
 news first.
 
 Features
 --------
-* Get pictures, videos, audio, etc. out of the feeds or the page they're
+* gets pictures, videos, audio, etc. out of the feeds and the page they're
   linking to
-* Microblogging support
-* Analyze feed entries for repeatations in microblogs or other feeds to merge
+* analyzes feed entries for repeatations in microblogs or other feeds to merge
   and sort
-* Focus on readability
+* focus on readability
+* locally hosted webinterface to make your browser extensions available
 
 Installation
 ------------
@@ -33,15 +33,6 @@ Python >= 2.7 needed!
 *Windows:*
 
 Tell me ;)
-
-How to Use
-----------
-* Click the Add-Button to append a rss-url to your list
-* Click a feed to read.
-  * Click "Source" to call your web browser to show the complete webpage
-  * Click "Share" to dent the link
-* Click a feed again to refresh it.
-* Click the Reload-Button to refresh all feeds
 
 *⚠ Running it the first time may take some minutes even with a fast Internet
 connection!*
