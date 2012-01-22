@@ -3,17 +3,17 @@ AnchorBot
 
 ![AnchorBot as seen in a Firefox with Pentadactyl Extension on Xubuntu 11.10 with Awesome WM](https://github.com/spazzpp2/AnchorBot/raw/master/screenshot.png)
 
-It's a client-side hosted news feed reader with the attempt of making you read the most important
+It's a news feed reader with the attempt of making you read the most important
 news first.
 
 Features
 --------
-* gets pictures, videos, audio, etc. out of the feeds and the page they're
+* gets pictures, videos, audio, etc. out of the RSS feeds and the page they're
   linking to
 * analyzes feed entries for repeatations in microblogs or other feeds to merge
   and sort
 * focus on readability
-* locally hosted webinterface to make your browser extensions available
+* locally hosted webinterface to run inside your browser
 
 Installation
 ------------
