@@ -34,13 +34,15 @@ def start():
             join(Kw2art).join(Keyword).\
             filter(Keyword.clickcount > 0).\
             order_by(desc(Keyword.clickcount)).\
-            limit(100))
+            filter(Article.date < time()-3000).\
+            all())
     articles += list(s.query(Article).filter(Article.timesread == 0).\
             join(Kw2art).join(Keyword).\
             filter(Keyword.clickcount == 0).\
             order_by(desc(Article.date)).\
             group_by(Article.ID).\
-            limit(100))
+            filter(Article.date < time()-3000).\
+            all())
     for art in articles:
         art.datestr = strftime(u"%X %x", localtime(art.date))
     content = show("start", articles)

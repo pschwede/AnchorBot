@@ -20,6 +20,7 @@ Generic crawler.
 Follows redirections and delivers some useful functions for remote images.
 """
 re_cln = re.compile('(<img[^>]+>|[\n\r]|<script[^>]*>\s*</script>|<iframe.*</iframe>|</*html>|</*head>|</*div[^>]*>| [ ]+)', re.I)
+re_img = re.compile('(?<=src=").*(?=")', re.I)
 
 class Crawler(object):
     htmlparser = HTMLParser()
@@ -77,7 +78,6 @@ class Crawler(object):
                 images.append(link)
 
         content = self.__textual_content(html=xmltostring(tree), similarcontent=similarcontent)
-        #content = self.__textual_content(url=url, similarcontent=similarcontent)
         return (set(images), self.clean(content),)
 
     def unescape(self, text):
@@ -211,7 +211,6 @@ class Crawler(object):
         if not image:
             image = self.biggest_image(images)
         #TODO resize image to a prefered size here!
-
 
         try:
             date = mktime(entry.updated_parsed)

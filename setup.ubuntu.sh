@@ -6,6 +6,4 @@
 apt-get install python-feedparser python-sqlite python-setuptools libxml2-dev libxslt1-dev python2.7-dev hyphen-de &&
 
 # this will download newest packages and install them
-easy_install hyphenator tweepy beautifulsoup lxml sqlalchemy
-
-#TODO ask for hyphen language!
+easy_install tweepy beautifulsoup lxml sqlalchemy

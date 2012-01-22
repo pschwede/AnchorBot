@@ -2,11 +2,11 @@
 /redirect/{{ aid }}
 {% endmacro %}
 
-{% macro button(service, link, text=None) %}
+{% macro button(service, arg, text=None) %}
   {% if service=="source" %}
-  <a class="about_source button" target="_blank" href="{{ link }}">Source</a>
+  <a class="about_source button" target="_blank" href="{{ arg }}">Source</a>
   {% elif service=="share" %}
-  <a class="about_share button" target="_blank" href="/share/{{ link }}">Share</a>
+  <a class="about_share button" target="_blank" href="/share/{{ arg }}">Share</a>
   {% endif %}
 {% endmacro %}
 
@@ -48,7 +48,7 @@
                     </span>
                     <span>
                         {{ button("source", redirect(art.ID)) }}
-                        {{ button("share", art.link, text=art.title) }}
+                        {{ button("share", art.id, text=art.title) }}
                     </span>
                 </div>
             </div>

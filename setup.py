@@ -11,7 +11,6 @@ install_requires = [
     "flask",
     "feedparser", 
     "lxml", 
-    "hyphenator", 
     "tweepy", 
     "sqlalchemy", 
     "pysqlite",
