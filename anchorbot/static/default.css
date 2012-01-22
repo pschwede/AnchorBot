@@ -3,89 +3,90 @@
     margin: 0;
     padding: 0;
     text-decoration: none;
-    }
+}
 
 html, body {
-    font-family: Georgia,"Times New Roman",serif;
+    font-family: Georgia,"Times New Roman",Times,serif;
     line-height: 133%;
     font-size: 12pt;
     color: #000;
-    /*background-color: #bbb;*/
-    }
-
-body {
-    padding-left: 20pt;
-    padding-right: 20pt;
-    padding-bottom: 50pt;
-    margin: 0 auto;
-    }
-
+}
 
 li {
     margin-left:0;
     padding-left:0;
-    text-indent: 3em;
-    }
+    text-indent: 1em;
+    list-style-position: inside;
+}
 
 table {
     font-size: 66%;
-    }
+}
 
 #header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  background-color: #333;
-  display: block;
-  width: 100%;
-  padding: 3pt;
-  font-family: Arial, Sans;
-  z-index: 99;
-  height: 17pt;
-  text-shadow: 1pt 1pt 1pt rgba(0,0,0,.3);
+    position: fixed;
+    top: 0;
+    left: 0;
+    background-color: #333;
+    display: block;
+    width: 100%;
+    padding: 3pt;
+    font-family: Arial, Sans;
+    z-index: 99;
+    height: 17pt;
+    text-shadow: 1pt 1pt 1pt rgba(0,0,0,.3);
 }
 #header a.title {
-  font-weight: bold;
-  color: #fff;
+    font-weight: bold;
+    color: #fff;
+    padding-right: 5pt;
+}
+#header a.title:hover {
+    text-shadow: 1pt 1pt 1pt rgba(0,0,0,.3), 0 0 3pt rgba(255,255,255,.6);
 }
 #header a.menu {
-  margin: 0;
-  color: #fff;
-  padding: 0 5pt 5pt 0;
+    margin: 0;
+    color: #fff;
+    padding: 5pt;
+    height: 100%;
+    border-right: 1px solid transparent;
 }
-#header a:hover {
-  text-shadow: 1pt 1pt 1pt rgba(0,0,0,.3), 0 0 3pt rgba(255,255,255,.6);
+#header a.menu:focus,
+#header a.menu:hover {
+    color: #aaa;
+    background-color: #222;
+    box-shadow: inset 0 10pt 10pt #000;
+    padding-top: 4pt;
+    border-top: 1pt solid #c00;
 }
+
+#popup {
+    background-color: #fff;
+    padding: 5pt;
+    border: 3pt solid #333;
+    box-shadow: 0 0 10pt #333;
+    width:100%;
+    z-index: 9;
+    position: fixed;
+    top: 23pt;
+    left: 0;
+    display: none;
+}
+    #popup_content {
+        margin: 0;
+    }
+    #popup_content div.list {
+        width: 33%;
+        display: inline-block;
+    }
 
 #container {
-  width: 100%;
+    width: 100%;
 }
 
-#tree {
-  position: fixed;
-  left: 0;
-  top: 30pt;
-  width: 60pt;
-  font-family: Arial, Sans;
-  overflow: hidden;
-}
-#tree li {
-  text-indent: 0;
-  padding-left: 0;
-  list-style: none;
-  display: block;
-  font-size: 50%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-#tree li .button {
-  width:40pt;
-}
 #content {
-  padding-top: 30pt;
-  padding-left: 60pt;
+    padding: 30pt 5pt 5pt 5pt;
 }
-
 
 .issue1 {
     width: 100%;
@@ -93,71 +94,75 @@ table {
     margin: 50pt auto;
     padding-top: 30pt;
     padding-bottom: 30pt;
-    }
-    .issue1 .small {
-        clear: both;
-        width: 100%;
-        text-align: right;
-        font-size: 50%;
-        }
-        .issue1 .small a:link {
-            font: 10pt sans-serif;
-            }
-        .issue1 .small .button {
-            padding: 2pt 3pt;
-            font-size: 80%;
-            display: inline-block;
-        }
-    .issue1 .issue_content a:link, .issue2 .issue_content a:link {
-        color: #009;
-        font-style: italic;
-        }
-    .issue1 div:not(.small) a:hover {
-        color: #009;
-        text-decoration: underline;
-        }
-    .issue1 div:not(.small) a:visited {
-        color: #ff9;
-        }
-    .issue1 .image {
-        max-width: 100%;
-        padding: 5pt;
-        background: #fff;
-        }
-    .issue1 .image img {
-        border: 3pt solid #000;
-        min-width: 50%;
-        max-width: 100%;
-        max-height: 600pt;
-        }
-    .issue1:nth-child(even) .image {
-        float: right;
-        }
-    .issue1:nth-child(odd) .image {
-        float: left;
-        }
-    .issue1 .issue_head {
-        text-align: center;
-        width:100%;
-        color: #333;
-        text-shadow: 1pt 1pt 1pt #ccc;
-        font-size: 18pt;
-        line-height: 130%;
-        }
-    .issue1 .issue_content {
-        padding-top: 20pt;
-        border-top: 1pt solid #333;
-        text-align: justify;
-        width: 100%;
-        margin: 0 auto;
-        }
+}
+.issue1 .small {
+    clear: both;
+    width: 100%;
+    text-align: right;
+}
+.issue1 .small a:link {
+    font: 10pt sans-serif;
+}
+.issue1 .small .button {
+    padding: 2pt 3pt;
+    display: inline-block;
+}
+.issue1 .issue_content a:link, .issue2 .issue_content a:link {
+    color: #009;
+    font-style: italic;
+}
+.issue1 div:not(.small) a:hover {
+    color: #009;
+    text-decoration: underline;
+}
+.issue1 div:not(.small) a:visited {
+    color: #049;
+}
+.issue1 .image {
+    max-width: 100%;
+    padding: 5pt;
+    background: #fff;
+}
+.issue1 .image img {
+    border: 3pt solid #000;
+    min-width: 50%;
+    max-width: 100%;
+    max-height: 600pt;
+}
+/*    float: right;
+}*/
+.issue1:nth-child(even) .image,
+.issue1:nth-child(odd) .image {
+    float: left;
+}
+.issue1 .issue_head {
+    text-align: center;
+    width:100%;
+    color: #333;
+    text-shadow: 1pt 1pt 1pt #ccc;
+    font-size: 18pt;
+    line-height: 130%;
+    font-variant: small-caps;
+}
+.issue1 .issue_content {
+    padding-top: 20pt;
+    border-top: 1pt solid #333;
+    text-align: left; /*justify;*/
+    width: 100%;
+    margin: 0 auto;
+}
 
-a.button:visited,
-a.button:link,
-.button {
+#popup_content .list a:visited,
+#popup_content .list a:link,
+#popup_content .list .button,
+#popup .button,
+.small a.button:visited,
+.small a.button:link,
+.small .button {
     white-space: nowrap;
     font-family: sans-serif;
     font-weight: bold;
+    font-size: 50%;
     padding: 2.5pt 5pt;
     background-color: #eee;
     border-radius: 10pt;
@@ -165,41 +170,24 @@ a.button:link,
     box-shadow: 0pt 1pt 0pt rgba(0,0,0,0.2);
     text-shadow: 1pt 1pt 0 rgba(255,255,255,0.7);
     text-align: center;
-    margin: 2pt;
     color: #666;
 }
-    a.button:hover {
-        background-color: #08f;
-        text-shadow: -1pt -1pt 0 rgba(0,0,0,0.3);
-        box-shadow: inset 0 1pt 0 rgba(255,255,255,0.3), inset 0 -1pt 0 rgba(0,0,0,.2);
-        color: #fff;
-    }
-    a.button:focus {
-        padding: 5pt 8pt 3pt 8pt;
-    }
+#popup_content .list a.button:hover,
+.small a.button:hover {
+    background-color: #08f;
+    text-shadow: -1pt -1pt 0 rgba(0,0,0,0.3);
+    box-shadow: inset 0 1pt 0 rgba(255,255,255,0.3), inset 0 -1pt 0 rgba(0,0,0,.2);
+    color: #fff;
+}
 
 .about_share, .about_source {
     float: left;
 }
-    .about_share:before {
-        content: "♻  "
-    }
-    .about_source:before {
-        content: "⬈ "
-    }
-
-#next {
-    height:80%;
-    width: 30pt;
-    border-radius: 5pt;
-    background-color:#eee;
-    position: fixed;
-    right: 5pt;
-    top: 25pt;
-    padding: 10pt;
+.about_share:before {
+    content: "♻  "
 }
-#next:hover {
-    background-color:#ccc;
+.about_source:before {
+    content: "⬈ "
 }
 
 .issue2 {
@@ -207,95 +195,91 @@ a.button:link,
     height: 170pt;
     display: inline-block;
     vertical-align: top;
-    margin: 2pt 0pt;
+    /*margin: 2pt 0pt;*/
     overflow: auto;
-    box-shadow: #000 1pt 1pt 2pt;
     background-color: #ddd;
     border: 1pt solid #aaa;
-    border-radius: 5pt;
-    }
-    .issue2 .image {
-        width:100%;
-        height:100%;
-        background-repeat: no-repeat;
-    }
-    .issue2:nth-child(odd) {
-        background-position: 33% 33%;
-    }
-    .issue2:nth-child(even) {
-        background-position: 66% 66%;
-    }
-    .issue2 .small {
-        /*width: 150pt;*/
-        font: 10pt sans-serif;
-        color: #fff;
-        display: none;
-        padding: 5pt;
-        float:left;
-        box-shadow: 0pt 5pt 5pt rgba(0,0,0,0.3);
-        border-radius: 0 0 15pt 15pt;
-        }
-        .issue2 .small {
-            background-color: rgba(0,0,0,0.6);
-            border-bottom: 1pt solid #555;
-        }
-        .issue2 .small .tags {
-            max-height: 100pt;
-            overflow: auto;
-        }
-    .issue2 a.button {
-        padding: 2pt 0pt 2pt 0;
-        font-size: 75%;
-        display: inline-block;
-        border-radius: 0 0 0 0;
-    }
-    .issue2 a.button .like {
-        padding: 2pt 0 0 0;
-        border-left-radius: 5pt;
-        background-color:#0f0;
-        border-radius: 5pt 0 0 5pt;
-    }
-    .issue2 a.button .hate {
-        padding: 0 0 2pt 0pt;
-        background-color:#f00;
-        border-radius: 0 5pt 5pt 0;
-    }
-    .issue2 .about_share,
-    .issue2 .about_source {
-        font-size: 100%;
-        width: 100pt;
-        display: block;
-        float: none;
-        margin: 2pt auto;
-    }
-    .issue2:hover {
-        background-image: none;
-    }
-        .issue2:hover .issue_head {
-            box-shadow: none;
-            border-bottom: none;
-        }
-    .issue2 .issue_content {
-        display: none;
-        }
-    .issue2 .issue_head {
-        font-family: sans-serif, "Impact";
-        z-index: 5;
-        color:#fff;
-        background: rgba(0,0,0,0.6);
-        text-shadow: 0pt 0pt 2pt #000;
-        font-size: 10pt;
-        text-align: center;
-        line-height: 15pt;
-        text-transform: uppercase;
-        position: relative;
-        box-shadow: 0pt 5pt 5pt rgba(0,0,0,0.3);
-        border-bottom: 1pt solid #555;
-        padding-left: 5pt;
-        padding-right: 5pt;
-        }
+}
+.issue2 .image {
+    width:100%;
+    height:100%;
+    background-repeat: no-repeat;
+}
+.issue2:nth-child(odd) {
+    background-position: 33% 33%;
+}
+.issue2:nth-child(even) {
+    background-position: 66% 66%;
+}
+.issue2 .small {
+    width: 160pt;
+    font: 10pt sans-serif;
+    color: #fff;
+    display: none;
+    padding: 5pt;
+    float:left;
+}
+.issue2 .small {
+    background-color: rgba(0,0,0,0.6);
+    border-bottom: 1pt solid #555;
+}
+.issue2 .small .tags {
+    max-height: 100pt;
+    overflow: auto;
+}
+.issue2 a.button {
+    padding: 1pt 2pt;
+    display: inline-block;
+}
+.issue2 a.button .like {
+    padding: 2pt 0 0 0;
+    border-left-radius: 5pt;
+    background-color:#0f0;
+    border-radius: 5pt 0 0 5pt;
+}
+.issue2 a.button .hate {
+    padding: 0 0 2pt 0pt;
+    background-color:#f00;
+    border-radius: 0 5pt 5pt 0;
+}
+.issue2 .about_share,
+.issue2 .about_source {
+    font-size: 100%;
+    width: 100pt;
+    display: block;
+    float: none;
+    margin: 2pt auto;
+}
+.issue2:hover {
+    background-image: none;
+}
+.issue2:hover .issue_head {
+    box-shadow: none;
+    border-bottom: none;
+}
+.issue2:hover .small {
+    display: block;
+}
+.issue2 .issue_content {
+    display: none;
+}
+.issue2 .issue_head {
+    font-family: sans-serif, "Impact";
+    z-index: 5;
+    color:#fff;
+    background: rgba(0,0,0,0.6);
+    text-shadow: 0pt 0pt 2pt #000;
+    font-size: 10pt;
+    font-variant: small-caps;
+    text-align: center;
+    line-height: 15pt;
+    position: relative;
+    border-bottom: 1pt solid #555;
+    padding-left: 5pt;
+    padding-right: 5pt;
+}
 
 .issue1, .issue2 {
     clear: both;
-    }
+}
 

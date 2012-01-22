@@ -5,12 +5,12 @@ except ImportError:
     import pickle
 
 class SelfRenewingLock( threading.Thread ):
-    def __init__( self, lockfile, dtime=130 ):
+    def __init__( self, lockfile, dtime=5 ):
         super( SelfRenewingLock, self ).__init__()
         self.lockfile = lockfile
         self.__locked = False
         self.DTIME = dtime
-        self.daemon = True
+        #self.daemon = True
 
     def run( self ):
         while( True ):
@@ -26,13 +26,14 @@ class SelfRenewingLock( threading.Thread ):
             return True
         if os.path.exists( self.lockfile ):
             old = pickle.load( open( self.lockfile, 'r' ) )
-            self.__locked = time.time() - old <= self.DTIME
+            self.__locked = ((time.time() - old) <= self.DTIME)
             return self.__locked
         else:
             return False
 
-    def shutdown( self ):
-        os.remove( self.lockfile )
+    def free( self ):
+        while os.path.exists( self.lockfile ):
+            os.remove( self.lockfile )
 
 class Config( object ):
     def __init__( self, path, defaults=dict(), defaultabos=set(), verbose=False ):
@@ -42,9 +43,7 @@ class Config( object ):
         self.lock = SelfRenewingLock( self.lockfile )
         self.locked = self.lock.locked()
         if self.locked:
-            """raise Exception( "It seems as if it's already running."\
-                            " If this is not the case,"\
-                            " please remove '%s' manually." % self.lockfile )"""
+            raise Exception("%s detected." % self.lockfile )
         if not os.path.isdir( self.path ):
             os.mkdir( self.path )
         self.lock.start()
@@ -112,7 +111,7 @@ class Config( object ):
         if not self.locked:
             self.write_abos()
             self.write_config()
-            self.lock.shutdown()
+            self.lock.free()
 
 if __name__ == "__main__":
     s = SelfRenewingLock( "/tmp/testlock", 1 )

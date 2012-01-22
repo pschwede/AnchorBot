@@ -75,20 +75,24 @@ class Article( Base ):
     image = relationship( "Image", backref="article_br" )
     page_id = Column( Integer, ForeignKey( "pages.ID" ) )
     page = relationship( "Page", backref="article_br", lazy="dynamic" )
-    keywords = relationship( "Keyword", backref="article_br", lazy="dynamic",
-            secondary="kw2arts" )
+    keywords = relationship( "Keyword", backref="article_br", lazy="dynamic", secondary="kw2arts" )
     entryhash = Column( Integer, default=None )
 
     def __init__( self, date, title, content, link, source, image, keywords=None, ehash=None ):
         self.date = date
-        self.title = title.decode( "utf-8" )
-        self.content = content.decode( "utf-8" )
-        self.link = link.decode( "utf-8" )
+        self.title = self.__unicodify(title)
+        self.content = self.__unicodify(content)
+        self.link = self.__unicodify(link)
         self.source = source
         self.image = image
         if keywords:
             self.set_keywords( keywords )
         self.ehash = ehash
+    
+    def __unicodify(self, s):
+        if isinstance(s, str):
+            return s.decode("utf-8")
+        return s
 
     def set_keywords( self, keywords ):
         for kw in keywords:
@@ -98,8 +102,6 @@ class Article( Base ):
         """Has to be called when article has been read to update statistics."""
         self.lastread = date
         self.timesread += 1
-
-
 
     def __repr__( self ):
         return "<%s(%s)>" % ( "Article", """
@@ -119,7 +121,10 @@ class Keyword( Base ):
     articles = relationship( "Article", backref="keywords_br", secondary="kw2arts" )
 
     def __init__( self, word, clickcount=0 ):
-        self.word = word.decode( "utf-8" )
+        if isinstance(word, str):
+            self.word = word.decode( "utf-8" )
+        else:
+            self.word = word
         self.clickcount = clickcount
 
     def __repr__( self ):
@@ -150,6 +155,9 @@ def get_session( engine ):
     session = scoped_session( sessionmaker() )
     session.configure( bind=engine )
     return session
+
+def get_session_from_new_engine(path):
+    return get_session(get_engine(path))
 
 if __name__ == "__main__":
     from sqlalchemy.exc import IntegrityError

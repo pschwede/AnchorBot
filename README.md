@@ -47,6 +47,7 @@ Related Projects
 * [Starberryj.am](http://strawberryj.am/)
 * [Vienna RSS](http://www.vienna-rss.org/)
 * [Refynr](http://refynr.com/)
+* [Summify](http://summify.com/)
 
 This project was once known as "Lyrebird" and is - as before - still a tribute
 to the [bird that retweets](http://youtu.be/7XiQDgNUEMw) the terrifying

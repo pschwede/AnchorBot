@@ -6,9 +6,10 @@ import webbrowser
 from sqlalchemy.sql.expression import desc
 from time import time, localtime, strftime
 from flask import Flask, render_template, url_for, request, redirect, jsonify
+from threading import Thread
 
-from util.anchorbot import Anchorbot
-from util.datamodel import get_session, Source, Article, Image, Keyword
+from util.anchorbot import Anchorbot, DBPATH
+from util.datamodel import get_session_from_new_engine, Source, Article, Image, Keyword, Kw2art
 
 app = Flask(__name__)
 bot = None # yet
@@ -17,38 +18,32 @@ def update_event(x, y):
     print "update!", x, y
 
 
-def show(mode, srclist, content):
+def show(mode, content):
     return render_template(
             "layout.html",
             style=url_for("static", filename="default.css"),
-            srclist=srclist,
             mode=mode,
             content=content
         )
 
-
 @app.route("/")
 def start():
     global bot
-    articles = ""
-    s = get_session(bot.db)
-    keywords = s.query(Keyword).order_by(desc(Keyword.clickcount)).limit(10)
-    for kw in set(keywords):
-        clickedarts = s.query(Article).filter(Article.keywords.contains(kw))
-        clickedarts = clickedarts.filter(Article.date > time() - 24 * 3600)
-        # TODO last-visited
-        clickedarts = clickedarts.filter(Article.timesread < 1)
-        clickedarts = clickedarts.all()  
-        newarts = s.query(Article).filter(Article.date > time() - 24 * 3600)
-        # TODO last-visited @UndefinedVariable 
-        newarts = newarts.filter(Article.timesread < 1)
-        newarts = newarts.all() 
-    articles = list(set(clickedarts) | set(newarts))
-    articles = sorted(articles, key=lambda x: x.date)
-    for art in articles[:8]:
+    s = get_session_from_new_engine(DBPATH)
+    articles = list(s.query(Article).filter(Article.timesread == 0).\
+            join(Kw2art).join(Keyword).\
+            filter(Keyword.clickcount > 0).\
+            order_by(desc(Keyword.clickcount)).\
+            limit(100))
+    articles += list(s.query(Article).filter(Article.timesread == 0).\
+            join(Kw2art).join(Keyword).\
+            filter(Keyword.clickcount == 0).\
+            order_by(desc(Article.date)).\
+            group_by(Article.ID).\
+            limit(100))
+    for art in articles:
         art.datestr = strftime(u"%X %x", localtime(art.date))
-    srclist = s.query(Source).order_by(Source.title).all()
-    content = show("start", srclist, articles[:8])
+    content = show("start", articles)
     s.close()
     return content
 
@@ -64,7 +59,7 @@ def like_key(keyword_id, keyword):
 
 def change_key(change, keyword_id=None, keyword=None):
     global bot
-    s = get_session(bot.db)
+    s = get_session_from_new_engine(DBPATH)
     if keyword and not keyword_id:
         kw = s.query(Keyword).filter(Keyword.word == keyword).first()
     else:
@@ -77,12 +72,11 @@ def change_key(change, keyword_id=None, keyword=None):
     s.close()
     return "ignored %s" % keyword
 
-
 @app.route("/key/id/<keyword_id>")
 @app.route("/key/<keyword>")
 def read_about_key(keyword_id=None, keyword=None):
     global bot
-    s = get_session(bot.db)
+    s = get_session_from_new_engine(DBPATH)
     if keyword and not keyword_id:
         kw = s.query(Keyword).filter(Keyword.word == keyword).first()
     else:
@@ -95,7 +89,7 @@ def read_about_key(keyword_id=None, keyword=None):
     arts = s.query(Article).join(Article.keywords).filter(Keyword.ID == kw.ID)
     arts = arts.order_by(desc(Article.date)).all()
     srclist = s.query(Source).order_by(Source.title).all()
-    content = show("more", srclist, arts)
+    content = show("more", arts)
     for art in arts:
         art.timesread+=1
         s.merge(art)
@@ -104,21 +98,37 @@ def read_about_key(keyword_id=None, keyword=None):
     return content
 
 
-@app.route("/shutdown")
+@app.route("/quit")
 def shutdown():
+    global bot
     try:
         request.environ.get("werkzeug.server.shutdown")()
     except:
         print "Not using werkzeug engine."
-    bot.quit()
+    if bot:
+        bot.quit()
     return "bye"
 
+@app.route("/_feeds")
+def get_feeds():
+    s = get_session_from_new_engine(DBPATH)
+    sources = s.query(Source).order_by(Source.title).all()
+    content = render_template("feeds.html", sources=sources)
+    s.close()
+    return content
+
+@app.route("/_keywords")
+def get_keywords():
+    s = get_session_from_new_engine(DBPATH)
+    keywords = s.query(Keyword).order_by(desc(Keyword.clickcount)).limit(30)
+    content = render_template("keywords.html", keywords=keywords)
+    s.close()
+    return content
 
 @app.route("/feed/id/<fid>")
 @app.route("/feed/<url>")
 def read_feed(fid=None, url=None):
-    global bot
-    s = get_session(bot.db)
+    s = get_session_from_new_engine(DBPATH)
     if url:
         arts = s.query(Article).join(Article.source)
         arts = arts.filter(Source.link.contains(url)).order_by(Article.date)
@@ -127,42 +137,61 @@ def read_feed(fid=None, url=None):
         arts = s.query(Article).join(Article.source)
         arts = arts.filter(Source.ID == fid).order_by(desc(Article.date)).all()
     srclist = s.query(Source).order_by(Source.title).all()
-    content = show("more", srclist, arts)
+    content = show("more", arts)
     s.close()
     return content
 
 @app.route("/redirect/<aid>")
 def redirect_source(aid=None, url=None):
     global bot
-    s = get_session(bot.db)
+    s = get_session_from_new_engine(DBPATH)
     art = s.query(Article).filter(Article.ID == aid).one()
     url = art.link
     s.close()
     return redirect(url)
 
+@app.route("/add/<path:url>")
+def add_feed(url=None):
+    global bot
+    if not url:
+        return "nok"
+    bot.add_feed(url)
+    return "ok"
+
 @app.route("/read/<aid>")
 def read_article(aid=None):
     global bot
-    s = get_session(bot.db)
+    s = get_session_from_new_engine(DBPATH)
     arts = s.query(Article).filter(Article.ID == aid).all()
     for art in arts:
         art.timesread += 1
         s.merge(art)
     s.commit()
     srclist = s.query(Source).order_by(Source.title).all()
-    content = show("more", srclist, arts)
+    content = show("more", arts)
     s.close()
+
+def setup_anchorbot(urls, cache_only, verbose, update_event):
+    global bot
+    bot = bot or Anchorbot(cache_only, verbose, update_event)
+    if urls:
+        map(bot.add_url, urls)
 
 def main(urls=[], cache_only=False, verbose=False, open_browser=False):
     """The main func which creates an AnchorBot
     """
-    global bot, app
-    bot = bot or Anchorbot(cache_only, verbose, update_event)
-    map(bot.add_url, urls)
-    app.run(debug=True)
+    global app
+    threads = []
+    c = Thread(target=setup_anchorbot, args=(urls, cache_only, verbose, update_event))
+    c.daemon = True
+    threads.append(c)
+    #setup_anchorbot(urls, cache_only, verbose, update_event)
     if open_browser:
-        webbrowser.open("localhost:5000")
-
+        print "opening localhost:5000 in browser"
+        b = Thread(target=webbrowser.open, args=("localhost:5000",))
+        threads.append(b)
+    [t.start() for t in threads]
+    app.run(debug=True)
 
 def get_cmd_options():
     usage = __file__

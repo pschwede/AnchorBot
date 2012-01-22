@@ -1,14 +1,16 @@
 from re import compile, UNICODE as re_u
+from datamodel import get_session_from_new_engine, Keyword
 
 class Analyzer( object ):
     r_crop = compile( "\W", re_u )
-    def __init__( self, key="content", eid="link", rarity=( 0.001, 1. ) ):
+    def __init__( self, key="content", eid="link", rarity=( 0.001, 1. ), dbpath=None ):
         self.entryscore = {} # {word: (eid, cnt)}
         self.key, self.eid = key, eid
         self.keywords = {} # {word: score}
         self.popularity = {}
         self.num_entries = 0
         self.rarity = rarity
+        self.dbpath = dbpath
 
     def __crop( self, word ):
         return u"".join( self.r_crop.split( word ) )
@@ -19,13 +21,13 @@ class Analyzer( object ):
         """
         word = self.__crop( word )
         try:
-            # only add words that don't occure too often
+            #only add words that don't occure too often
             #if float(self.keywords[word][0]+cnt)/(len(self.keywords)+1) < self.rarity[1]:
-                self.keywords[word] = ( 
-                        self.keywords[word][0] + cnt,
-                        self.keywords[word][1] + [entry[self.eid]],
-                        )
-                self.popularity[self.keywords[word][0]] = entry[self.eid]
+            self.keywords[word] = ( 
+                    self.keywords[word][0] + cnt,
+                    self.keywords[word][1] + [entry[self.eid]],
+                    )
+            self.popularity[self.keywords[word][0]] = entry[self.eid]
         except KeyError:
             self.keywords[word] = ( cnt, [entry[self.eid]], )
 
@@ -35,7 +37,13 @@ class Analyzer( object ):
         """
         for word, score in self.keywords.items():
             if score[0] / len( self.keywords ) < self.rarity[0]:
-                del self.keywords[word]
+                if self.dbpath:
+                    s = get_session_from_new_engine(self.dbpath)
+                    count = s.query(Keyword).filter(Keyword.clickcount > 0)
+                    count = count.filter(Keyword.word == word).count()
+                    s.close()
+                if not count:
+                    del self.keywords[word]
 
     def __climb_escore( self, cnt, word, step, entry ):
         try:

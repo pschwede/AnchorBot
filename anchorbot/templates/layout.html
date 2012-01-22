@@ -11,18 +11,14 @@
 {% endmacro %}
 
 {% macro keyword(key, rated=false) %}
-    {% if rated %}
-    <a id="{{ key.ID }}" class="like button">+</a><a class="button" href="/key/id/{{ key.ID }}">{{ key.word }}</a><a id="{{ key.ID }}" class="hate button">-</a>
-    {% else %}
     <a class="button" href="/key/id/{{ key.ID }}">{{ key.word }}</a>
-    {% endif %}
 {% endmacro %}
 
 {% macro article_gallery(art) %}
-            <div class="issue2" style="background-image:url('{{ art.image.filename }}');">
+<div id="aid{{ art.ID }}" class="issue2" style="background-image:url('{{ art.image.filename }}');">
                 <h2 class="issue_head" title="{{ art.title }}">{{ art.title }}</h2>
                 <div class="small">
-                    <div>Why do you want to read this?</div>
+                    <div>Choose: Why do you want to read this?</div>
                     <div class="tags">
                     {% for key in art.keywords %}
                         {{ keyword(key) }}
@@ -37,7 +33,7 @@
 {% endmacro %}
 
 {% macro article_read(art) %}
-            <div class="issue1">
+        <div id="aid{{art.ID}}" class="issue1">
                 <h2 class="issue_head" title="{{ art.title }}">{{ art.title }}</h2>
                 {% if art.image %}
                   <div class="image"><img src="{{ art.image.filename }}" alt=""/></div>
@@ -60,7 +56,7 @@
 
 <html>
   <head>
-    <title>Anchorbot {{ title }}</title>
+    <title>Anchorbot {{ title }} {{mode}}</title>
     <link type="text/css" rel="stylesheet" href="{{ style }}">
     <script type="text/javascript" src="{{ url_for('static', filename='jquery.js') }}"></script>
     <script type="text/javascript" src="{{ url_for('static', filename='anim.js') }}"></script>
@@ -68,18 +64,14 @@
   <body>
     <div id="header">
       <a class="title" href="/">AnchorBot</a>
-      <a style="float:right;" class="menu" href="/quit" title="quits this server">&#8864;</a>
+      <a class="menu" id="feeds" href="#">Feeds</a>
+      <a class="menu" id="keywords" href="#">Keys</a>
+      <a class="menu" href="/quit" title="Shuts down this server">Quit</a>
+    </div>
+    <div id="popup">
+        <div id="popup_content"></div>
     </div>
     <div id="container">
-      <div id="tree">
-        <ul>
-          {% for src in srclist %}
-          <li><a class="button" href="/feed/id/{{ src.ID }}">{{ src.title or src.link }}</a></li>
-          {% endfor %}
-        </ul>
-      </div>
-      <div id="next">
-      </div>
       <div id="content">
       {% if mode=="start" %}
         {% for art in content %}

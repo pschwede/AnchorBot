@@ -1,20 +1,28 @@
-show_start = function() {
+function getURL() {
+    var pos = window.location.href.indexOf(window.location.host);
+    return window.location.href.substring(0, pos+window.location.host.length);
 }
 
-
 $('document').ready(function() {
-    $('.issue2').hover(
+    $('#feeds').focusin(function() {
+        $("#popup_content").load(
+            getURL()+"/_feeds", 
             function() {
-                $(this).find('.small').slideDown('fast', function() {
-                });
-            },
-            function() {
-                $(this).find('.small').slideUp('fast', function() {});
+                $("#popup").slideDown("medium", function() {});
             }
         );
-    $('.issue2').click(
+    }).focusout(function() {
+        $("#popup").slideUp('fast');
+    });
+
+    $('#keywords').focusin(function() {
+        $("#popup_content").load(
+            getURL()+"/_keywords", 
             function() {
-                $(this).fadeOut('fast');
+                $("#popup").slideDown("medium", function() {});
             }
         );
+    }).focusout(function() {
+        $("#popup").slideUp('fast');
+    });
 });

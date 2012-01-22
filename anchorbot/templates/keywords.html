@@ -1,0 +1,3 @@
+{% for kw in keywords %}
+<div class="list"><a class="button" href="{{ url_for('read_about_key', keyword_id=kw.ID) }}">{{ kw.word }} ({{ kw.clickcount }})</a></div>
+{% endfor %}
