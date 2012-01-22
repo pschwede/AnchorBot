@@ -15,6 +15,8 @@ Features
 * focus on readability
 * locally hosted webinterface to run inside your browser
 
+For more information, please read the [Wiki](http://github.com/spazzpp2/AnchorBot/wiki).
+
 Installation
 ------------
 
