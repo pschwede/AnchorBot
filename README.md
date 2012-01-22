@@ -1,11 +1,8 @@
 AnchorBot
 =========
 
-*Version 1.0 beta*
+![AnchorBot as seen in a Firefox with Pentadactyl Extension on Xubuntu 11.10 with Awesome WM](https://github.com/spazzpp2/AnchorBot/raw/master/screenshot.png)
 
-*© spazzpp2 – Licensed under MIT License*
-
-![Screenshot](screenshot.png)
 It's a client-side hosted news feed reader with the attempt of making you read the most important
 news first.
 
@@ -49,6 +46,10 @@ Related Projects
 * [Vienna RSS](http://www.vienna-rss.org/)
 * [Refynr](http://refynr.com/)
 * [Summify](http://summify.com/)
+
+*Version 1.0 beta*
+
+*© spazzpp2 – Licensed under MIT License*
 
 This project was once known as "Lyrebird" and is - as before - still a tribute
 to the [bird that retweets](http://youtu.be/7XiQDgNUEMw) the terrifying
