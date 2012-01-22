@@ -5,6 +5,7 @@ AnchorBot
 
 *© spazzpp2 – Licensed under MIT License*
 
+![Screenshot](screenshot.png)
 It's a client-side hosted news feed reader with the attempt of making you read the most important
 news first.
 
