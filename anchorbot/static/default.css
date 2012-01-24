@@ -1,141 +1,153 @@
 * {
-    border:0 hidden;
-    margin: 0;
-    padding: 0;
-    text-decoration: none;
+  border:0 hidden;
+  margin: 0;
+  padding: 0;
+  text-decoration: none;
 }
 
 html, body {
-    font-family: Georgia,"Times New Roman",Times,serif;
-    line-height: 133%;
-    font-size: 12pt;
-    color: #000;
+  font-family: Georgia,"Times New Roman",Times,serif;
+  line-height: 133%;
+  font-size: 12pt;
+  color: #000;
 }
 
 li {
-    margin-left:0;
-    padding-left:0;
-    text-indent: 1em;
-    list-style-position: inside;
+  margin-left:0;
+  padding-left:0;
+  text-indent: 1em;
+  list-style-position: inside;
 }
 
 table {
-    font-size: 66%;
+  font-size: 66%;
 }
 
 #header {
-    position: fixed;
-    top: 0;
-    left: 0;
-    background-color: #333;
-    display: block;
-    width: 100%;
-    padding: 3pt;
-    font-family: Arial, Sans;
-    z-index: 99;
-    height: 17pt;
-    text-shadow: 1pt 1pt 1pt rgba(0,0,0,.3);
+  position: fixed;
+  top: 0;
+  left: 0;
+  background-color: #333;
+  display: block;
+  width: 100%;
+  padding: 3pt;
+  font-family: Arial, Sans;
+  z-index: 99;
+  height: 17pt;
+  text-shadow: 1pt 1pt 1pt rgba(0,0,0,.3);
 }
 #header a.title {
-    font-weight: bold;
-    color: #fff;
-    padding-right: 5pt;
+  font-weight: bold;
+  color: #fff;
+  padding-right: 5pt;
 }
 #header a.title:hover {
-    text-shadow: 1pt 1pt 1pt rgba(0,0,0,.3), 0 0 3pt rgba(255,255,255,.6);
+  text-shadow: 1pt 1pt 1pt rgba(0,0,0,.3), 0 0 3pt rgba(255,255,255,.6);
 }
 #header a.menu {
-    margin: 0;
-    color: #fff;
-    padding: 5pt;
-    height: 100%;
-    border-right: 1px solid transparent;
+  margin: 0;
+  color: #fff;
+  padding: 5pt;
+  height: 100%;
+  border-right: 1px solid transparent;
 }
 #header a.menu:focus,
 #header a.menu:hover {
-    color: #aaa;
-    background-color: #222;
-    box-shadow: inset 0 10pt 10pt #000;
-    padding-top: 4pt;
-    border-top: 1pt solid #c00;
+  color: #aaa;
+  background-color: #222;
+  box-shadow: inset 0 10pt 10pt #000;
+  padding-top: 4pt;
+  border-top: 1pt solid #c00;
 }
 
 #popup {
-    background-color: #fff;
-    padding: 5pt;
-    border: 3pt solid #333;
-    box-shadow: 0 0 10pt #333;
-    width:100%;
-    z-index: 9;
-    position: fixed;
-    top: 23pt;
-    left: 0;
-    display: none;
+  background-color: #fff;
+  padding: 5pt;
+  border: 3pt solid #333;
+  box-shadow: 0 0 10pt #333;
+  width:100%;
+  z-index: 9;
+  position: fixed;
+  top: 23pt;
+  left: 0;
+  display: none;
 }
-    #popup_content {
-        margin: 0;
-    }
-    #popup_content div.list {
-        width: 33%;
-        display: inline-block;
-    }
+#popup_content {
+  margin: 0;
+  width: 100%;
+}
+#popup_content div.list {
+  width: 19%;
+  display: inline-block;
+}
 
 #container {
-    width: 100%;
+  width: 100%;
 }
 
 #content {
-    padding: 30pt 5pt 5pt 5pt;
+  padding: 30pt 5pt 5pt 5pt;
+}
+#content h1,
+#content h2,
+#content h3,
+#content h4 {
+  padding-top: 20pt;
+  padding-bottom: 5pt;
+}
+#content p {
+  padding-top: 5pt;
+  padding-bottom: 5pt;
 }
 
 .issue1 {
-    width: 100%;
-    max-width: 600pt;
-    margin: 50pt auto;
-    padding-top: 30pt;
-    padding-bottom: 30pt;
+  width: 100%;
+  max-width: 600pt;
+  margin: 50pt auto;
+  padding-top: 30pt;
+  padding-bottom: 30pt;
 }
 .issue1 .small {
-    clear: both;
-    width: 100%;
-    text-align: right;
+  clear: both;
+  width: 100%;
+  text-align: right;
 }
 .issue1 .small a:link {
-    font: 10pt sans-serif;
+  font: 10pt sans-serif;
 }
 .issue1 .small .button {
-    padding: 2pt 3pt;
-    display: inline-block;
+  padding: 2pt 3pt;
+  display: inline-block;
 }
 .issue1 .issue_content a:link, .issue2 .issue_content a:link {
-    color: #009;
-    font-style: italic;
+  color: #009;
+  font-style: italic;
 }
 .issue1 div:not(.small) a:hover {
-    color: #009;
-    text-decoration: underline;
+  color: #009;
+  text-decoration: underline;
 }
 .issue1 div:not(.small) a:visited {
-    color: #049;
+  color: #049;
 }
 .issue1 .image {
-    max-width: 100%;
-    padding: 5pt;
-    background: #fff;
+  max-width: 100%;
+  padding: 5pt;
+  background: #fff;
 }
 .issue1 .image img {
-    border: 3pt solid #000;
-    min-width: 50%;
-    max-width: 100%;
-    max-height: 600pt;
+  border: 3pt solid #000;
+  min-width: 50%;
+  max-width: 100%;
+  max-height: 600pt;
 }
 /*    float: right;
 }*/
-.issue1:nth-child(even) .image,
-.issue1:nth-child(odd) .image {
+  .issue1:nth-child(even) .image,
+  .issue1:nth-child(odd) .image {
     float: left;
-}
-.issue1 .issue_head {
+  }
+  .issue1 .issue_head {
     text-align: center;
     width:100%;
     color: #333;
@@ -143,22 +155,22 @@ table {
     font-size: 18pt;
     line-height: 130%;
     font-variant: small-caps;
-}
-.issue1 .issue_content {
+  }
+  .issue1 .issue_content {
     padding-top: 20pt;
     border-top: 1pt solid #333;
     text-align: left; /*justify;*/
     width: 100%;
     margin: 0 auto;
-}
+  }
 
-#popup_content .list a:visited,
-#popup_content .list a:link,
-#popup_content .list .button,
-#popup .button,
-.small a.button:visited,
-.small a.button:link,
-.small .button {
+  #popup_content .list a:visited,
+  #popup_content .list a:link,
+  #popup_content .list .button,
+  #popup .button,
+  .small a.button:visited,
+  .small a.button:link,
+  .small .button {
     white-space: nowrap;
     font-family: sans-serif;
     font-weight: bold;
@@ -171,99 +183,97 @@ table {
     text-shadow: 1pt 1pt 0 rgba(255,255,255,0.7);
     text-align: center;
     color: #666;
-}
-#popup_content .list a.button:hover,
-.small a.button:hover {
+  }
+  #popup_content .list a.button:hover,
+  .small a.button:hover {
     background-color: #08f;
     text-shadow: -1pt -1pt 0 rgba(0,0,0,0.3);
     box-shadow: inset 0 1pt 0 rgba(255,255,255,0.3), inset 0 -1pt 0 rgba(0,0,0,.2);
     color: #fff;
-}
+  }
 
-.about_share, .about_source {
+  .about_share, .about_source {
     float: left;
-}
-.about_share:before {
+  }
+  .about_share:before {
     content: "♻  "
-}
-.about_source:before {
+  }
+  .about_source:before {
     content: "⬈ "
-}
+  }
 
-.issue2 {
+  .issue2 {
     width: 170pt;
     height: 170pt;
     display: inline-block;
     vertical-align: top;
-    /*margin: 2pt 0pt;*/
+    margin: 2pt 0pt;
     overflow: auto;
     background-color: #ddd;
     border: 1pt solid #aaa;
-}
-.issue2 .image {
+  }
+  .issue2 .image {
     width:100%;
     height:100%;
     background-repeat: no-repeat;
-}
-.issue2:nth-child(odd) {
+  }
+  .issue2:nth-child(odd) {
     background-position: 33% 33%;
-}
-.issue2:nth-child(even) {
+  }
+  .issue2:nth-child(even) {
     background-position: 66% 66%;
-}
-.issue2 .small {
+  }
+  .issue2 .small {
     width: 160pt;
     font: 10pt sans-serif;
     color: #fff;
     display: none;
     padding: 5pt;
     float:left;
-}
-.issue2 .small {
     background-color: rgba(0,0,0,0.6);
     border-bottom: 1pt solid #555;
-}
-.issue2 .small .tags {
+  }
+  .issue2 .small .tags {
     max-height: 100pt;
     overflow: auto;
-}
-.issue2 a.button {
+  }
+  .issue2 a.button {
     padding: 1pt 2pt;
     display: inline-block;
-}
-.issue2 a.button .like {
+  }
+  .issue2 a.button .like {
     padding: 2pt 0 0 0;
     border-left-radius: 5pt;
     background-color:#0f0;
     border-radius: 5pt 0 0 5pt;
-}
-.issue2 a.button .hate {
+  }
+  .issue2 a.button .hate {
     padding: 0 0 2pt 0pt;
     background-color:#f00;
     border-radius: 0 5pt 5pt 0;
-}
-.issue2 .about_share,
-.issue2 .about_source {
+  }
+  .issue2 .about_share,
+  .issue2 .about_source {
     font-size: 100%;
     width: 100pt;
     display: block;
     float: none;
     margin: 2pt auto;
-}
-.issue2:hover {
+  }
+  .issue2:hover {
     background-image: none;
-}
-.issue2:hover .issue_head {
+  }
+  .issue2:hover .issue_head {
     box-shadow: none;
     border-bottom: none;
-}
-.issue2:hover .small {
+  }
+  .issue2:hover .small {
     display: block;
-}
-.issue2 .issue_content {
+  }
+  .issue2 .issue_content {
     display: none;
-}
-.issue2 .issue_head {
+  }
+  .issue2 .issue_head {
     font-family: sans-serif, "Impact";
     z-index: 5;
     color:#fff;
@@ -277,9 +287,9 @@ table {
     border-bottom: 1pt solid #555;
     padding-left: 5pt;
     padding-right: 5pt;
-}
+  }
 
-.issue1, .issue2 {
+  .issue1, .issue2 {
     clear: both;
-}
+  }
 

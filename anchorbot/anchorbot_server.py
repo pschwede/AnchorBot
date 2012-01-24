@@ -29,22 +29,20 @@ def show(mode, content):
 @app.route("/")
 def start():
     global bot
+    now = time()
     s = get_session_from_new_engine(DBPATH)
     articles = list(s.query(Article).filter(Article.timesread == 0).\
             join(Kw2art).join(Keyword).\
             filter(Keyword.clickcount > 0).\
             order_by(desc(Keyword.clickcount)).\
-            filter(Article.date < time()-3000).\
-            all())
-    articles += list(s.query(Article).filter(Article.timesread == 0).\
+            group_by(Keyword.ID).\
+            limit(8))
+    articles += [a for a in list(s.query(Article).filter(Article.timesread == 0).\
             join(Kw2art).join(Keyword).\
             filter(Keyword.clickcount == 0).\
             order_by(desc(Article.date)).\
-            group_by(Article.ID).\
-            filter(Article.date < time()-3000).\
-            all())
-    for art in articles:
-        art.datestr = strftime(u"%X %x", localtime(art.date))
+            filter(Article.date > now-7*24*60*60).\
+            all()) if a not in articles]
     content = show("start", articles)
     s.close()
     return content

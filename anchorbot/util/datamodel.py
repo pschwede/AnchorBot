@@ -96,7 +96,7 @@ class Article( Base ):
 
     def set_keywords( self, keywords ):
         for kw in keywords:
-            self.keywords.append( kw )
+            self.keywords.append( kw.lower() )
 
     def finished( self, date ):
         """Has to be called when article has been read to update statistics."""
