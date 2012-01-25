@@ -146,16 +146,17 @@ class Anchorbot(object):
             title = source.title = feed["feed"]["title"]
         except KeyError:
             title = source.title = feedurl
+        old_quickhash = source.quickhash
         new_quickhash = self.get_quickhash(source.link)
-        if source.quickhash != new_quickhash:
-            source.quickhash = self.get_quickhash(source.link)
+        if old_quickhash != new_quickhash:
+            source.quickhash = new_quickhash
             s.commit()
             s.close()
             for entry in feed["entries"]:
                 self.add_entry(entry, source)
             self.log("Done %i of %i: %s" % (len(self.feeds),len(self.config.get_abos()),feedurl,))
         else:
-            self.log("Nothing new in %i of %i: %s" % (len(self.feeds),len(self.config.get_abos()),feedurl,))
+            self.log("Nothing new in %i of %i: %s (%s == %s)" % (len(self.feeds),len(self.config.get_abos()),feedurl,old_quickhash,new_quickhash))
             s.close()
 
         #self.feeds[feedurl] = feedurl
@@ -166,6 +167,8 @@ class Anchorbot(object):
         """Fast value for comparisons without hashing"""
         while True:
             try:
+                #f = self.feeds[feedurl] = feedparser.parse(self.cache[feedurl])
+                #h = f["headers"]["date"]
                 h = hash(open(self.cache[feedurl]).read())
                 return h
             except:

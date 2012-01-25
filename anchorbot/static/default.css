@@ -88,17 +88,6 @@ table {
 #content {
   padding: 30pt 5pt 5pt 5pt;
 }
-#content h1,
-#content h2,
-#content h3,
-#content h4 {
-  padding-top: 20pt;
-  padding-bottom: 5pt;
-}
-#content p {
-  padding-top: 5pt;
-  padding-bottom: 5pt;
-}
 
 .issue1 {
   width: 100%;
@@ -107,6 +96,18 @@ table {
   padding-top: 30pt;
   padding-bottom: 30pt;
 }
+.issue1 .issue_content h1,
+.issue1 .issue_content h2,
+.issue1 .issue_content h3,
+.issue1 .issue_content h4 {
+  padding-top: 20pt;
+  padding-bottom: 5pt;
+}
+.issue1 .issue_content p {
+  padding-top: 5pt;
+  padding-bottom: 5pt;
+}
+
 .issue1 .small {
   clear: both;
   width: 100%;

@@ -20,7 +20,6 @@ Generic crawler.
 Follows redirections and delivers some useful functions for remote images.
 """
 re_cln = re.compile('(<img[^>]+>|[\n\r]|<script[^>]*>\s*</script>|<iframe.*</iframe>|</*html>|</*head>|</*div[^>]*>| [ ]+)', re.I)
-re_img = re.compile('(?<=src=").*(?=")', re.I)
 
 class Crawler(object):
     htmlparser = HTMLParser()
@@ -176,24 +175,20 @@ class Crawler(object):
         url = self.get_link(entry)
         print "enriching", url
         # get more text and images
+        cached_url = self.cache[url]
         try:
-            cached_url = self.cache[url]
-        except:
-            cached_url = ""
-        if cached_url:
+            html = entry["content"][0].value
+            images, content = self.crawlHTML(html, cached_url, baseurl=url)
+        except KeyError:
             try:
-                html = entry["content"][0].value
+                html = entry["summary_detail"].value
                 images, content = self.crawlHTML(html, cached_url, baseurl=url)
             except KeyError:
                 try:
-                    html = entry["summary_detail"].value
+                    html = entry["summary"].value
                     images, content = self.crawlHTML(html, cached_url, baseurl=url)
                 except KeyError:
-                    try:
-                        html = entry["summary"].value
-                        images, content = self.crawlHTML(html, cached_url, baseurl=url)
-                    except KeyError:
-                        content = entry["title"]
+                    content = entry["title"]
 
         # get images from entry itself
         for key in ("links", "enclosures"):
@@ -204,6 +199,12 @@ class Crawler(object):
                 pass
 
         #TODO get even more images from links in entry
+        html = open(self.cache[url],'r').read()
+        new_images, more_content = self.crawlHTML(html, url, baseurl=url)
+        images |= new_images
+        #content = len(more_content)>len(content) and more_content or content
+
+        #print content[:100]
 
         # filter out some images
         # give the images to the entry finally
@@ -211,6 +212,7 @@ class Crawler(object):
         if not image:
             image = self.biggest_image(images)
         #TODO resize image to a prefered size here!
+        print image
 
         try:
             date = mktime(entry.updated_parsed)

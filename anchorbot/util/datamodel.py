@@ -96,7 +96,7 @@ class Article( Base ):
 
     def set_keywords( self, keywords ):
         for kw in keywords:
-            self.keywords.append( kw.lower() )
+            self.keywords.append( kw )
 
     def finished( self, date ):
         """Has to be called when article has been read to update statistics."""
@@ -122,9 +122,9 @@ class Keyword( Base ):
 
     def __init__( self, word, clickcount=0 ):
         if isinstance(word, str):
-            self.word = word.decode( "utf-8" )
+            self.word = word.decode( "utf-8" ).lower()
         else:
-            self.word = word
+            self.word = word.lower()
         self.clickcount = clickcount
 
     def __repr__( self ):
