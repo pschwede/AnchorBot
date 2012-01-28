@@ -17,9 +17,18 @@ Features
 
 For more information, please read the [Wiki](http://github.com/spazzpp2/AnchorBot/wiki).
 
+Usage
+-----
+Call
+    anchorbot.linux -o
+to open your browser with anchorbot's front page.
+
+To add rss/atom feeds (adding not fully implemented yet), please open 
+    http://localhost:5000/add/<your feed url>/
+from your browser's adressbar.
+
 Installation
 ------------
-
 Python >= 2.7 needed!
 
 *Ubuntu:*
