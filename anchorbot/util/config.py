@@ -4,6 +4,8 @@ try:
 except ImportError:
     import pickle
 
+from logger import log
+
 class SelfRenewingLock( threading.Thread ):
     def __init__( self, lockfile, dtime=5 ):
         super( SelfRenewingLock, self ).__init__()
@@ -51,9 +53,9 @@ class Config( object ):
         self.abofile = os.path.join( self.path, "abos" )
         if os.path.exists( self.abofile ):
             f = open( self.abofile, 'r' )
-            self.abos = set( filter( lambda x: len( x ) > 0, f.read().split( "\n" ) ) )
+            self.abos = filter(lambda x:len(x), f.read().split("\n"))
             if self.verbose:
-                print "Abos: %s" % self.abos
+                log(self.abos)
             f.close()
         else:
             self.abos = defaultabos

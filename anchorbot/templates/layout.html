@@ -35,7 +35,7 @@
 {% macro article_read(art) %}
         <div id="aid{{art.ID}}" class="issue1">
                 <h2 class="issue_head" title="{{ art.title }}">{{ art.title }}</h2>
-                {% if art.image %}
+                {% if art.image.filename %}
                   <div class="image"><img src="{{ art.image.filename }}" alt=""/></div>
                 {% endif %}
                 <div class="issue_content">{{ art.content|safe }}</div>

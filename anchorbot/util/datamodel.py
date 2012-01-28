@@ -12,9 +12,11 @@ class Image( Base ):
 
     ID = Column( Integer, primary_key=True, autoincrement=True )
     filename = Column( String, unique=True )
+    cachename = Column( String )
 
-    def __init__( self, filename ):
+    def __init__( self, filename, cachename=None ):
         self.filename = filename
+        self.cachename = cachename
 
     def __repr__( self ):
         return "<%s%s>" % ( "Image", ( self.ID, self.filename, ) )
@@ -78,7 +80,7 @@ class Article( Base ):
     keywords = relationship( "Keyword", backref="article_br", lazy="dynamic", secondary="kw2arts" )
     entryhash = Column( Integer, default=None )
 
-    def __init__( self, date, title, content, link, source, image, keywords=None, ehash=None ):
+    def __init__( self, date, title, content, link, source, image=None, keywords=None, ehash=None ):
         self.date = date
         self.title = self.__unicodify(title)
         self.content = self.__unicodify(content)
@@ -97,6 +99,9 @@ class Article( Base ):
     def set_keywords( self, keywords ):
         for kw in keywords:
             self.keywords.append( kw )
+
+    def set_image( self, image ):
+        self.image = image
 
     def finished( self, date ):
         """Has to be called when article has been read to update statistics."""

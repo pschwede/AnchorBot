@@ -48,8 +48,7 @@ class Anchorbot(object):
 
     def __init__(self, verbose=False, cache_only=False, update_call=lambda x:x):
         self.verbose = verbose
-        l = Logger(verbose, write=os.path.join(HOME, "logger.log"))
-        self.log = l.log
+        self.log = Logger(verbose, write=os.path.join(HOME, "logger.log")).log
 
         # print out cache and exit
         if cache_only:
@@ -104,41 +103,38 @@ class Anchorbot(object):
         s = get_session(self.db)
         try:
             if s.query(Article).filter(Article.link == url).count():
+                s.close()
                 return
         except DatabaseError:
             self.log("Database error: %s" % url)
-        s.close()
+            s.close()
 
-        article, keywords = self.crawler.enrich(entry, source)
+        article, keywords, image_url = self.crawler.enrich(entry, source)
         s = get_session(self.db)
-        if keywords:
-            article.set_keywords([(s.query(Keyword).filter(Keyword.word == kw.word).first() or kw) for kw in keywords])
+        s.add(article)
+        s.commit()
+        for kw in set(keywords):
             try:
-                s.add(article)
-                s.commit()
-            except IntegrityError: # try without known image
+                if s.query(Keyword).filter(Keyword.word == kw).count():
+                    article.keywords.append(s.query(Keyword).filter(Keyword.word == kw).first())
+                else:
+                    article.keywords.append(Keyword(kw))
+                s.merge(article)
+                s.flush()
+            except IntegrityError, e:
                 s.rollback()
-                if article.image and article.image in s:
-                    s.expunge(article.image)
-                article.image = s.query(Image).filter(Image.filename == article.image.filename).first()
-                try:
-                    s.add(article)
-                    s.commit()
-                except IntegrityError: # try without images
-                    s.rollback()
-                    if article.image and article.image in s:
-                        s.expunge(article.image)
-                    article.image = None
-                    s.add(article)
-                    try:
-                        s.commit()
-                    except:
-                        pass
+                self.log("Keyword '%s' ignored: %s" % (kw,e))
+        if s.query(Image).filter(Image.filename == image_url).count():
+            article.image = s.query(Image).filter(Image.filename == image_url).first()
+        else:
+            article.image = Image(image_url, self.cache[image_url])
+        s.merge(article)
+        s.commit()
         s.close()
 
     def download_feed(self, feedurl, callback=None):
         """Download procedure"""
-        del self.cache[feedurl] # make sure, you got the newest
+        del self.cache[feedurl] # make sure, you get the newest
         feed = self.feeds[feedurl] = feedparser.parse(self.cache[feedurl])
         s = get_session(self.db)
         source = s.query(Source).filter(Source.link == feedurl).first()
@@ -167,7 +163,7 @@ class Anchorbot(object):
         """Fast value for comparisons without hashing"""
         while True:
             try:
-                #f = self.feeds[feedurl] = feedparser.parse(self.cache[feedurl])
+                #f = self.feeds[feedurl] = feedparser.parse(self.cache.open(feedurl, 'r'))
                 #h = f["headers"]["date"]
                 h = hash(open(self.cache[feedurl]).read())
                 return h
@@ -179,7 +175,9 @@ class Anchorbot(object):
         Needs some DLers in downloaders list
         """
         while self.running:
-            for url in self.config.get_abos():
+            urls = self.config.get_abos()
+            self.cache.get_all(urls, delete=True)
+            for url in urls:
                 s = get_session(self.db)
                 source = s.query(Source).filter(Source.link == url).first()
                 if not source:
@@ -187,12 +185,12 @@ class Anchorbot(object):
                     source = Source(url)
                     s.add(source)
                     try:
-                        s.commit()
+                        s.flush()
                     except IntegrityError:
                         s.rollback()
                         self.log("Couldn't store source %s" % source)
                         continue
-
+                s.commit()
                 s.close()
 
                 self.download_feed(url)

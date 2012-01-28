@@ -27,23 +27,29 @@ def show(mode, content):
         )
 
 @app.route("/")
-def start():
+@app.route("/offset/<offset>")
+@app.route("/offset/<offset>/number/<number>")
+def start(offset=0, number=30):
     global bot
+    offset, number = int(offset), int(number)
     now = time()
     s = get_session_from_new_engine(DBPATH)
-    articles = list(s.query(Article).filter(Article.timesread == 0).\
-            join(Kw2art).join(Keyword).\
-            filter(Keyword.clickcount > 0).\
-            order_by(desc(Keyword.clickcount)).\
-            group_by(Keyword.ID).\
-            limit(8))
-    articles += [a for a in list(s.query(Article).filter(Article.timesread == 0).\
+    articles = []
+    if offset == 0:
+        articles = list(s.query(Article).filter(Article.timesread == 0).\
+                join(Kw2art).join(Keyword).\
+                filter(Keyword.clickcount > 0).\
+                order_by(desc(Keyword.clickcount)).\
+                #group_by(Keyword.ID).\
+                limit(8))
+    articles += list(s.query(Article).filter(Article.timesread == 0).\
+            filter(Article.date > now-7*24*60*60).\
             join(Kw2art).join(Keyword).\
             filter(Keyword.clickcount == 0).\
             order_by(desc(Article.date)).\
-            filter(Article.date > now-7*24*60*60).\
-            all()) if a not in articles]
-    content = show("start", articles)
+            all())
+    print len(articles)
+    content = show("start", articles[offset:(offset+number)])
     s.close()
     return content
 
@@ -81,8 +87,6 @@ def read_about_key(keyword_id=None, keyword=None):
         kw = s.query(Keyword).filter(Keyword.word == keyword).first()
     else:
         kw = s.query(Keyword).filter(Keyword.ID == keyword_id).first()
-    if not kw:
-        return "None found."
     kw.clickcount += 1
     s.merge(kw)
     s.commit()
@@ -96,7 +100,6 @@ def read_about_key(keyword_id=None, keyword=None):
     s.commit()
     s.close()
     return content
-
 
 @app.route("/quit")
 def shutdown():
@@ -191,7 +194,7 @@ def main(urls=[], cache_only=False, verbose=False, open_browser=False):
         b = Thread(target=webbrowser.open, args=("localhost:5000",))
         threads.append(b)
     [t.start() for t in threads]
-    app.run(debug=True)
+    app.run(debug=False) # never ever switch debug to True! (data corruption)
 
 def get_cmd_options():
     usage = __file__

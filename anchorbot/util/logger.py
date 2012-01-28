@@ -28,7 +28,10 @@ class Logger( object ):
             self.log = self.__log_nonverbose
 
     def __log_verbose( self, obj ):
-        self.pp.pprint( obj )
+        if isinstance(obj, str):
+            print obj
+        else:
+            self.pp.pprint( obj )
         f = open( self.write, "a" )
         f.write( str( obj ) + "\n" )
         f.close()
@@ -39,7 +42,10 @@ class Logger( object ):
         f.close()
 
     def __log_verbose_write( self, obj ):
-        self.pp.pprint( obj )
+        if isinstance(obj, str):
+            print obj
+        else:
+            self.pp.pprint( obj )
         f = open( self.write, "a" )
         f.write( str( obj ) + "\n" )
         f.close()
@@ -48,8 +54,11 @@ class Logger( object ):
         pass
 
 def log( obj ):
-    pp = pprint.PrettyPrinter( indent=4 )
-    pp.pprint( obj )
+    if isinstance(obj, str):
+        print obj
+    else:
+        pp = pprint.PrettyPrinter( indent=4 )
+        pp.pprint( obj )
     f = open( "/tmp/lyrebird.log", "a" )
     f.write( str( obj ) + "\n" )
     f.close()

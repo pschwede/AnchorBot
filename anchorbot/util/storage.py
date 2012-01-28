@@ -55,12 +55,8 @@ class FileCacher(dict):
         self.url_last_used_path = url_last_used_path = os.path.join(self.localdir, "agedic.pkl")
         self.url_last_used = {}
 
-        self.dlpipes = []
-        self.dlqueue = Queue()
         self.dloader = urllib.FancyURLopener()
-        for i in range(dlnum):
-            self.dlpipes.append(DownloadPipe(self.__retrieve, self.dlqueue, name="DownloadPipe %i" % i))
-        [t.start() for t in self.dlpipes]
+        self.dlqueue = Queue()
         
         if os.path.exists(url_last_used_path):
             try:
@@ -90,10 +86,29 @@ class FileCacher(dict):
             try:
                 self.dloader.retrieve(url, newurl)
                 done = True
-            except IOError:
-                log("IOError (404?) %s to %s\n" % (url, newurl,))
+            except IOError, e:
+                log("IOError during retrieving %s" % url)
+    
+    def __queued_retrieve(self):
+        while not self.dlqueue.empty():
+            self.__getitem__(self.dlqueue.get())
+            self.dlqueue.task_done()
+
+    def get_all(self, urls, delete=False):
+        if delete:
+            for url in urls:
+                self.__delitem__(url)
+        for url in urls:
+            self.dlqueue.put(url)
+        for i in range(min(10, len(urls))):
+            t = Thread(target=self.__queued_retrieve)
+            t.start()
+        self.dlqueue.join()
+        return [self.__getitem__(url) for url in urls]
 
     def __getitem__(self, url):
+        if not url:
+            return None
         if url == u"None":
             return None
         if isinstance(url, unicode):
@@ -111,16 +126,11 @@ class FileCacher(dict):
             newurl = self.__newurl(url)
             try:
                 if not os.path.exists(newurl):
-                    #t = Thread(target=self.__retrieve, args=(url, newurl))
-                    #t.start()
-                    self.dlqueue.put((url, newurl,))
-                if self.dlqueue.qsize() > len(self.dlpipes):
-                    self.dlqueue.join()
-                #self.verbose and log("Cached %s to %s." % (url, newurl,))
+                    self.__retrieve(url, newurl)
+                    #self.verbose and log("Cached %s to %s." % (url, newurl,))
                 self.url_last_used[url] = self.url_last_used[newurl] = (newurl, time.time())
             except IOError, e:
-                if not url.endswith("gif"): #TODO WHY CAN'T IT HANDLE GIF FILES?
-                    self.verbose and log("IOError: %s (Filename too long? len=%i), %s" % (e.message, len(url), url))
+                self.verbose and log("IOError during download of %s" % url)
                 return url
             return newurl
 
@@ -153,6 +163,7 @@ class FileCacher(dict):
                 done = True
             except RuntimeError:
                 pass
+        self.dloader.urlcleanup()
         self.vacuum(self.max_age_in_days)
 
     def clear(self):

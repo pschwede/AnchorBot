@@ -20,6 +20,10 @@ Generic crawler.
 Follows redirections and delivers some useful functions for remote images.
 """
 re_cln = re.compile('(<img[^>]+>|[\n\r]|<script[^>]*>\s*</script>|<iframe.*</iframe>|</*html>|</*head>|</*div[^>]*>| [ ]+)', re.I)
+re_splitter = re.compile("\W", re.UNICODE)
+css_textsel = CSSSelector("div,span,p")
+css_imagesel = CSSSelector("img")
+css_linksel = CSSSelector("a")
 
 class Crawler(object):
     htmlparser = HTMLParser()
@@ -48,9 +52,9 @@ class Crawler(object):
             # naive method
             content = similarcontent or html
             if similarcontent:
-                textsel = CSSSelector("div,span,p")
-                for elem in textsel(tree):
-                    if elem.text and similarcontent[:-len(similarcontent)/2] in elem.text:
+                length = len(similarcontent)/2
+                for elem in css_textsel(tree):
+                    if elem.text and similarcontent[0:length] in elem.text:
                         content += elem.text
         else:
             if url:
@@ -65,18 +69,22 @@ class Crawler(object):
 
     def crawlHTML(self, html, url, similarcontent=None, depth=0, baseurl=None):
         self.verbose and log("Crawling url=%s"%url)
-        tree = soupparser.fromstring(html) 
+        content = ""
+        images = []
+        if html:
+            try:
+                tree = soupparser.fromstring(html) 
+                content = self.__textual_content(html=xmltostring(tree), similarcontent=similarcontent)
 
-        imagesel = CSSSelector("img")
-        images = [urljoin(baseurl, img.get("src") or img.attrib.values()[0]) for img in imagesel(tree)]
-
-        linksel = CSSSelector("a")
-        for elem in linksel(tree):
-            link = urljoin(baseurl, elem.get("href"))
-            if link and link[-4:] in (".png", ".jpg", ".gif", "jpeg"):
-                images.append(link)
-
-        content = self.__textual_content(html=xmltostring(tree), similarcontent=similarcontent)
+                images = [urljoin(baseurl, img.get("src") or img.attrib.values()[0]) \
+                        for img in css_imagesel(tree)]
+                images + [urljoin(baseurl, elem.get("href")) \
+                        for elem in css_linksel(tree) \
+                            if elem is not None and elem.get("href") is not None \
+                                and elem.get("href")[-4:] not in \
+                                    (".png", ".jpg", ".gif", "jpeg")]
+            except ValueError, e:
+                log(e.message)
         return (set(images), self.clean(content),)
 
     def unescape(self, text):
@@ -101,7 +109,6 @@ class Crawler(object):
         biggest = ""
         imagelist = list(set(imagelist))
         x, y = 0, 0
-        errors = []
         for imgurl in imagelist:
             try:
                 im = PIL.open(self.cache[imgurl])
@@ -109,15 +116,13 @@ class Crawler(object):
                     x, y = im.size
                     biggest = imgurl
             except IOError:
-                errors.append(imgurl)
-        if errors:
-            self.verbose and log("PIL: " + str(errors))
+                pass
         return biggest
 
     def closest_image(self, imagelist, x, y):
         closest = None
+        imagelist = list(set(imagelist))
         dx, dy = 10 ** 10, 10 ** 10
-        errors = []
         for imgurl in imagelist:
             try:
                 im = PIL.open(self.cache[imgurl])
@@ -125,9 +130,7 @@ class Crawler(object):
                     dx, dy = abs(im.size[0] - x), abs(im.size[1] - y)
                     closest = imgurl
             except IOError:
-                errors.append(self.cache[imgurl])
-        if errors and self.verbose:
-            self.verbose and log("PIL: " + str(errors))
+                pass
         return closest
 
     def filter_images(self, images, minimum=None, maximum=None):
@@ -137,6 +140,7 @@ class Crawler(object):
             minimum = minimum or (0, 0,)
             maximum = maximum or (9999, 9999,)
 
+        images = list(set(images))
         result = []
         for imgurl in images:
             try:
@@ -145,7 +149,7 @@ class Crawler(object):
                      im.size[0] <= maximum[0] and im.size[1] <= maximum[1]:
                         result.append(imgurl)
             except Exception, e:
-                self.verbose and log("Can't open that file: %s; %s" % (self.cache[imgurl], e))
+                pass
         return result
 
     def clean(self, htmltext):
@@ -177,15 +181,15 @@ class Crawler(object):
         # get more text and images
         cached_url = self.cache[url]
         try:
-            html = entry["content"][0].value
+            html = entry["content"][0]["value"]
             images, content = self.crawlHTML(html, cached_url, baseurl=url)
         except KeyError:
             try:
-                html = entry["summary_detail"].value
+                html = entry["summary_detail"]["value"]
                 images, content = self.crawlHTML(html, cached_url, baseurl=url)
             except KeyError:
                 try:
-                    html = entry["summary"].value
+                    html = entry["summary"]["value"]
                     images, content = self.crawlHTML(html, cached_url, baseurl=url)
                 except KeyError:
                     content = entry["title"]
@@ -198,13 +202,16 @@ class Crawler(object):
             except KeyError:
                 pass
 
-        #TODO get even more images from links in entry
-        html = open(self.cache[url],'r').read()
+        # get even more images from links in entry
+        f = open(self.cache[url], 'r')
+        html = f.read()
+        codec = chardet.detect(html)["encoding"]
+        if codec:
+            html = html.decode(codec)
         new_images, more_content = self.crawlHTML(html, url, baseurl=url)
         images |= new_images
+        done = False
         #content = len(more_content)>len(content) and more_content or content
-
-        #print content[:100]
 
         # filter out some images
         # give the images to the entry finally
@@ -212,7 +219,6 @@ class Crawler(object):
         if not image:
             image = self.biggest_image(images)
         #TODO resize image to a prefered size here!
-        print image
 
         try:
             date = mktime(entry.updated_parsed)
@@ -220,7 +226,6 @@ class Crawler(object):
             date = time()
 
         title = entry["title"]
-        splitter = re.compile("\W", re.UNICODE)
-        keywords = [Keyword(kw) for kw in splitter.split(title)]
-        art = Article(date, title, content, url, source, Image(image))
-        return art, keywords
+        keywords = [unicode(kw.lower()) for kw in re_splitter.split(title) if len(kw)>2]
+        art = Article(date, title, content, url, source,)
+        return art, list(set(keywords)), image
