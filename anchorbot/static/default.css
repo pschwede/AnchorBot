@@ -119,6 +119,7 @@ table {
 }
 .issue1 .small .button {
   padding: 2pt 3pt;
+  margin: 3pt;
   display: inline-block;
 }
 .issue1 .issue_content a:link, .issue2 .issue_content a:link {
@@ -141,10 +142,7 @@ table {
   border: 3pt solid #000;
   min-width: 50%;
   max-width: 100%;
-  max-height: 600pt;
 }
-/*    float: right;
-}*/
   .issue1:nth-child(even) .image,
   .issue1:nth-child(odd) .image {
     float: left;
