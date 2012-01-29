@@ -27,9 +27,13 @@ def show(mode, content):
         )
 
 @app.route("/")
+def start():
+    global bot
+    return show("start", [])
+
 @app.route("/offset/<offset>")
 @app.route("/offset/<offset>/number/<number>")
-def start(offset=0, number=30):
+def gallery(offset=0, number=30):
     global bot
     offset, number = int(offset), int(number)
     now = time()
@@ -41,15 +45,14 @@ def start(offset=0, number=30):
                 filter(Keyword.clickcount > 0).\
                 order_by(desc(Keyword.clickcount)).\
                 #group_by(Keyword.ID).\
-                limit(8))
+                all())
     articles += list(s.query(Article).filter(Article.timesread == 0).\
             filter(Article.date > now-7*24*60*60).\
             join(Kw2art).join(Keyword).\
             filter(Keyword.clickcount == 0).\
             order_by(desc(Article.date)).\
             all())
-    print len(articles)
-    content = show("start", articles[offset:(offset+number)])
+    content = render_template("galery.html", articles=articles[offset*number:offset*number+number])
     s.close()
     return content
 

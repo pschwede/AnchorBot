@@ -132,7 +132,7 @@ class Anchorbot(object):
         s.commit()
         s.close()
 
-    def download_feed(self, feedurl, callback=None):
+    def download_feed(self, feedurl, i=0, callback=None):
         """Download procedure"""
         del self.cache[feedurl] # make sure, you get the newest
         feed = self.feeds[feedurl] = feedparser.parse(self.cache[feedurl])
@@ -150,9 +150,9 @@ class Anchorbot(object):
             s.close()
             for entry in feed["entries"]:
                 self.add_entry(entry, source)
-            self.log("Done %i of %i: %s" % (len(self.feeds),len(self.config.get_abos()),feedurl,))
+            self.log("Done %i of %i: %s" % (i,len(self.config.get_abos()),feedurl,))
         else:
-            self.log("Nothing new in %i of %i: %s (%s == %s)" % (len(self.feeds),len(self.config.get_abos()),feedurl,old_quickhash,new_quickhash))
+            self.log("Nothing new in %i of %i: %s (%s == %s)" % (i,len(self.config.get_abos()),feedurl,old_quickhash,new_quickhash))
             s.close()
 
         #self.feeds[feedurl] = feedurl
@@ -163,8 +163,6 @@ class Anchorbot(object):
         """Fast value for comparisons without hashing"""
         while True:
             try:
-                #f = self.feeds[feedurl] = feedparser.parse(self.cache.open(feedurl, 'r'))
-                #h = f["headers"]["date"]
                 h = hash(open(self.cache[feedurl]).read())
                 return h
             except:
@@ -177,7 +175,7 @@ class Anchorbot(object):
         while self.running:
             urls = self.config.get_abos()
             self.cache.get_all(urls, delete=True)
-            for url in urls:
+            for i,url in zip(range(len(urls),urls):
                 s = get_session(self.db)
                 source = s.query(Source).filter(Source.link == url).first()
                 if not source:
@@ -193,7 +191,7 @@ class Anchorbot(object):
                 s.commit()
                 s.close()
 
-                self.download_feed(url)
+                self.download_feed(url,i=i)
                 callback and callback(source.link, source.title)
             last_time = time()
             while last_time > time() - self.timeout:

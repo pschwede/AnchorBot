@@ -1,0 +1,17 @@
+{% macro keyword(key, rated=false) %}
+    <a class="button" href="/key/id/{{ key.ID }}">{{ key.word }}</a>
+{% endmacro %}
+
+{% for art in articles %}
+<div id="aid{{ art.ID }}" class="issue2" style="background-image:url('{{ art.image.filename }}');">
+                <h2 class="issue_head" title="{{ art.title }}">{{ art.title }}</h2>
+                <div class="small">
+                    <div>Choose: Why do you want to read this?</div>
+                    <div class="tags">
+                    {% for key in art.keywords %}
+                        {{ keyword(key) }}
+                    {% endfor %}
+                    </div>
+                </div>
+            </div>
+{% endfor %}

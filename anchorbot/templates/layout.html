@@ -14,24 +14,6 @@
     <a class="button" href="/key/id/{{ key.ID }}">{{ key.word }}</a>
 {% endmacro %}
 
-{% macro article_gallery(art) %}
-<div id="aid{{ art.ID }}" class="issue2" style="background-image:url('{{ art.image.filename }}');">
-                <h2 class="issue_head" title="{{ art.title }}">{{ art.title }}</h2>
-                <div class="small">
-                    <div>Choose: Why do you want to read this?</div>
-                    <div class="tags">
-                    {% for key in art.keywords %}
-                        {{ keyword(key) }}
-                    {% endfor %}
-                    </div>
-                    <!--<div>
-                        {{ button("source", redirect(art.ID)) }}
-                        {{ button("share", art.aid) }}
-                    </div>//-->
-                </div>
-            </div>
-{% endmacro %}
-
 {% macro article_read(art) %}
         <div id="aid{{art.ID}}" class="issue1">
                 <h2 class="issue_head" title="{{ art.title }}">{{ art.title }}</h2>
@@ -72,17 +54,16 @@
         <div id="popup_content"></div>
     </div>
     <div id="container">
-      <div id="content">
-      {% if mode=="start" %}
-        {% for art in content %}
-        {{ article_gallery(art) }}
-        {% endfor %}
-      {% else %}
+      {% if mode=="more" %}
+        <div id="content">
         {% for art in content %}
         {{ article_read(art) }}
         {% endfor %}
-      {% endif %}
+        </div>
+      {% else %}
+      <div id="galery">
       </div>
+      {% endif %}
     </div>
   </body>
 </html>
