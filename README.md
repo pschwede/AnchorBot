@@ -29,7 +29,7 @@ from your browser's adressbar.
 
 Installation
 ------------
-Python >= 2.7 needed!
+Python >= 2.6 needed!
 
 *Ubuntu:*
 

@@ -6,8 +6,6 @@ try:
 except ImportError:
     import pickle
 from logger import log #TODO use Logger here
-from processor import Thread as DownloadPipe
-from multiprocessing import Process
 from threading import Thread
 from Queue import Queue
 

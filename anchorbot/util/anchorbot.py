@@ -21,10 +21,6 @@ from config import Config
 from crawler import Crawler
 from datamodel import (get_session,
                                 get_engine, Source, Article, Image, Keyword)
-from analyzer import Analyzer
-
-from multiprocessing import Lock
-
 from time import time, sleep
 
 HOME = os.path.join(os.path.expanduser("~"), ".anchorbot")
@@ -64,8 +60,7 @@ class Anchorbot(object):
             # prepare variables and lists,...
             self.feeds = {}
             self.watched = None
-            self.analyzer = Analyzer(key="title", eid="link", dbpath=DBPATH)
-            self.crawler = Crawler(self.cache, self.analyzer)
+            self.crawler = Crawler(self.cache)
             self.crawler.verbose = self.verbose and False
             #TODO load from config
         except IOError, e:
@@ -175,7 +170,7 @@ class Anchorbot(object):
         while self.running:
             urls = self.config.get_abos()
             self.cache.get_all(urls, delete=True)
-            for i,url in zip(range(len(urls),urls):
+            for i,url in zip(range(len(urls)),urls):
                 s = get_session(self.db)
                 source = s.query(Source).filter(Source.link == url).first()
                 if not source:

@@ -10,7 +10,6 @@ from lxml.etree import tostring as xmltostring, fromstring as xmlfromstring, HTM
 from logger import log
 from time import mktime, time
 from datamodel import Article, Image, Keyword
-from subprocess import check_output
 
 #from boilerpipe.extract import Extractor
 
@@ -28,11 +27,10 @@ css_linksel = CSSSelector("a")
 class Crawler(object):
     htmlparser = HTMLParser()
 
-    def __init__(self, cacher, analyzer, proxies=None, verbose=False):
+    def __init__(self, cacher, proxies=None, verbose=False):
         self.opener = urllib.FancyURLopener(proxies)
         self.cache = cacher # for not retrieving things twice!
         self.verbose = verbose
-        self.analyzer = analyzer
 
     def __textual_content(self, url=None, html=None, similarcontent=None):
         content = ""
