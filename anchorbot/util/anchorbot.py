@@ -170,7 +170,7 @@ class Anchorbot(object):
         while self.running:
             urls = self.config.get_abos()
             self.cache.get_all(urls, delete=True)
-            for i,url in zip(range(len(urls)),urls):
+            for i,url in zip(range(1, len(urls)+1),urls):
                 s = get_session(self.db)
                 source = s.query(Source).filter(Source.link == url).first()
                 if not source:

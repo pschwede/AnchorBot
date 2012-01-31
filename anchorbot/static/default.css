@@ -53,7 +53,8 @@ table {
 }
 #header a.menu:focus,
 #header a.menu:hover {
-  color: #aaa;
+  color: #fff;
+  text-shadow: 0 3pt 3pt #000;
   background-color: #222;
   box-shadow: inset 0 10pt 10pt #000;
   padding-top: 4pt;
@@ -151,7 +152,6 @@ table {
     text-align: center;
     width:100%;
     color: #333;
-    text-shadow: 1pt 1pt 1pt #ccc;
     font-size: 18pt;
     line-height: 130%;
     font-variant: small-caps;

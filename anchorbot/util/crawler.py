@@ -81,7 +81,7 @@ class Crawler(object):
                             if elem is not None and elem.get("href") is not None \
                                 and elem.get("href")[-4:] not in \
                                     (".png", ".jpg", ".gif", "jpeg")]
-            except ValueError, e:
+            except Exception, e:
                 log(e.message)
         return (set(images), self.clean(content),)
 
