@@ -33,7 +33,7 @@ from your browser's adressbar.
 
 Installation
 ------------
-Python >= 2.6 needed!
+Python >= 2.6 needed! No Apache.
 
 *Ubuntu:*
 
