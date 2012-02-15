@@ -3,6 +3,7 @@
   margin: 0;
   padding: 0;
   text-decoration: none;
+  font-family: sans-serif;
 }
 
 html, body {
@@ -27,14 +28,14 @@ table {
   position: fixed;
   top: 0;
   left: 0;
-  background-color: #333;
+  background-color: #000;
   display: block;
   width: 100%;
   padding: 3pt;
   font-family: Arial, Sans;
   z-index: 99;
   height: 17pt;
-  text-shadow: 1pt 1pt 1pt rgba(0,0,0,.3);
+  border-bottom: 1pt solid #fff;
 }
 #header a.title {
   font-weight: bold;
@@ -42,23 +43,18 @@ table {
   padding-right: 5pt;
 }
 #header a.title:hover {
-  text-shadow: 1pt 1pt 1pt rgba(0,0,0,.3), 0 0 3pt rgba(255,255,255,.6);
+  text-shadow: 0 0 3pt rgba(255,255,255,.6);
 }
 #header a.menu {
   margin: 0;
   color: #fff;
   padding: 5pt;
   height: 100%;
-  border-right: 1px solid transparent;
 }
 #header a.menu:focus,
 #header a.menu:hover {
-  color: #fff;
-  text-shadow: 0 3pt 3pt #000;
-  background-color: #222;
-  box-shadow: inset 0 10pt 10pt #000;
-  padding-top: 4pt;
-  border-top: 1pt solid #c00;
+  color: #000;
+  background-color: #fff;
 }
 
 #popup {
@@ -83,13 +79,40 @@ table {
 }
 
 #container {
-  width: 100%;
+  padding-top: 30pt;
 }
 
 #galery,
 #content {
-  padding: 30pt 5pt 5pt 5pt;
+  padding: 5pt;
 }
+
+.gallery {
+  /*width: 173pt;*/
+  overflow: auto;
+  border: 1px solid #000;
+  margin: 1.5pt;
+  float: left;
+}
+    .gallery h1 {
+      background-color: #000;
+      color: #fff;
+    }
+    .gallery a h1 {
+      height:11pt;
+      line-height:9pt;
+      color: #fff;
+      z-index: 999;
+      font-size: 9pt;
+      vertical-align: center;
+      text-align: center;
+      padding: 2pt;
+    }
+    .gallery:hover a h1,
+    .gallery a:hover h1 {
+      color: #000;
+      background-color:#fff;
+    }
 
 .issue1 {
   width: 100%;
@@ -230,7 +253,7 @@ table {
     display: none;
     padding: 5pt;
     float:left;
-    background-color: rgba(0,0,0,0.6);
+    background: rgba(0,0,0,0.6);
     border-bottom: 1pt solid #555;
   }
   .issue2 .small .tags {
@@ -260,12 +283,8 @@ table {
     float: none;
     margin: 2pt auto;
   }
-  .issue2:hover {
-    background-image: none;
-  }
   .issue2:hover .issue_head {
-    box-shadow: none;
-    border-bottom: none;
+    display: none;
   }
   .issue2:hover .small {
     display: block;
@@ -274,7 +293,6 @@ table {
     display: none;
   }
   .issue2 .issue_head {
-    font-family: sans-serif, "Impact";
     z-index: 5;
     color:#fff;
     background: rgba(0,0,0,0.6);

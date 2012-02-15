@@ -22,6 +22,7 @@ from crawler import Crawler
 from datamodel import (get_session,
                                 get_engine, Source, Article, Image, Keyword)
 from time import time, sleep
+from threading import Timer
 
 HOME = os.path.join(os.path.expanduser("~"), ".anchorbot")
 DBPATH = os.path.join(HOME, "database.sqlite")
@@ -76,7 +77,8 @@ class Anchorbot(object):
             sys.exit(1)
 
         self.running, self.timeout = True, 3000
-        self.update_all()
+        self.updater = Timer(0., self.update_all)
+        self.updater.start()
 
     def __print_cache_and_exit(self):
         """ well, prints cache and exits """
@@ -90,6 +92,7 @@ class Anchorbot(object):
         # shutdown
         self.cache.shutdown()
         self.config.shutdown()
+        self.updater.cancel()
         self.running = False
 
     def add_entry(self, entry, source):
@@ -163,43 +166,44 @@ class Anchorbot(object):
             except:
                 sleep(1)
 
-    def update_all(self, callback=None):
+    def update_all(self):
         """Puts all feeds into the download queue to be downloaded.
         Needs some DLers in downloaders list
         """
-        while self.running:
-            urls = self.config.get_abos()
-            self.cache.get_all(urls, delete=True)
-            for i,url in zip(range(1, len(urls)+1),urls):
-                s = get_session(self.db)
-                source = s.query(Source).filter(Source.link == url).first()
-                if not source:
-                    self.log("New source: %s" % url)
-                    source = Source(url)
-                    s.add(source)
-                    try:
-                        s.flush()
-                    except IntegrityError:
-                        s.rollback()
-                        self.log("Couldn't store source %s" % source)
-                        continue
-                s.commit()
-                s.close()
+        urls = self.config.get_abos()
+        self.cache.get_all(urls, delete=True)
+        for i,url in zip(range(1, len(urls)+1),urls):
+            s = get_session(self.db)
+            source = s.query(Source).filter(Source.link == url).first()
+            if not source:
+                self.log("New source: %s" % url)
+                source = Source(url)
+                s.add(source)
+                try:
+                    s.flush()
+                except IntegrityError:
+                    s.rollback()
+                    self.log("Couldn't store source %s" % source)
+                    continue
+            s.commit()
+            s.close()
 
-                self.download_feed(url,i=i)
-                callback and callback(source.link, source.title)
-            last_time = time()
-            while last_time > time() - self.timeout:
-                sleep(3)
+            self.download_feed(url,i=i)
+        last_time = time()
+        self.updater = Timer(self.timeout, self.update_all)
+        self.updater.start()
 
     def add_url(self, url):
         """Adds a feed url to the abos
         """
-        self.config.add_abo(url)
-        s = get_session(self.db)
-        source = Source(url, None)
-        s.add(source)
-        s.commit()
+        try:
+            self.config.add_abo(url)
+            s = get_session(self.db)
+            source = Source(url, None)
+            s.add(source)
+            s.commit()
+        except Exception, e:
+            print str(e)
 
     def remove_url(self, url):
         """Removes a feed url from the abos

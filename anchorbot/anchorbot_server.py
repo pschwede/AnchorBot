@@ -14,9 +14,13 @@ from util.datamodel import get_session_from_new_engine, Source, Article, Image, 
 app = Flask(__name__)
 bot = None # yet
 
+class dlist(list):
+    def __init__(self, arg):
+        list.__init__(self, arg)
+        self.word = None
+
 def update_event(x, y):
     print "update!", x, y
-
 
 def show(mode, content):
     return render_template(
@@ -31,28 +35,60 @@ def start():
     global bot
     return show("start", [])
 
+@app.route("/gallery/key/offset/<offx>,<offy>")
+@app.route("/gallery/key/offset/<offx>,<offy>/number/<numx>,<numy>")
+def kwgallery(offx, offy, numx=5, numy=5):
+    global bot
+    offx, offy, numx, numy = map(int, [offx,offy,numx,numy])
+    s = get_session_from_new_engine(DBPATH)
+    keywords = list(s.query(Keyword).\
+            order_by(desc(Keyword.clickcount)).\
+            limit(numx).offset(offx+offx*numx))
+    kwdic = list()
+    for kw in keywords:
+        arts = dlist(s.query(Article).\
+                join(Article.keywords).\
+                filter(Article.timesread == 0).\
+                filter(Keyword.ID == kw.ID).\
+                order_by(desc(Article.date)).\
+                limit(numy).offset(offy*numy))
+        if kw.clickcount:
+            arts.word = kw
+        else:
+            kw = None
+        kwdic.append(arts)
+    if kwdic[0].word:
+        content = render_template("kwgallery.html", kwdic=kwdic)
+    else:
+        content = render_template("galery.html", articles=set(kwdic))
+    s.close()
+    return content
+
 @app.route("/offset/<offset>")
 @app.route("/offset/<offset>/number/<number>")
 def gallery(offset=0, number=30):
     global bot
     offset, number = int(offset), int(number)
+    ratio = 3
     now = time()
     s = get_session_from_new_engine(DBPATH)
     articles = []
     if offset == 0:
         articles = list(s.query(Article).filter(Article.timesread == 0).\
-                join(Kw2art).join(Keyword).\
+                group_by(Article.title).\
+                join(Article.keywords).\
                 filter(Keyword.clickcount > 0).\
                 order_by(desc(Keyword.clickcount)).\
                 #group_by(Keyword.ID).\
-                all())
+                limit(number).offset(offset*number))
     articles += list(s.query(Article).filter(Article.timesread == 0).\
             filter(Article.date > now-7*24*60*60).\
-            join(Kw2art).join(Keyword).\
+            group_by(Article.title).\
+            join(Article.keywords).\
             filter(Keyword.clickcount == 0).\
             order_by(desc(Article.date)).\
-            all())
-    content = render_template("galery.html", articles=articles[offset*number:offset*number+number])
+            limit(number - len(articles)).offset(offset*number))
+    content = render_template("galery.html", articles=articles)
     s.close()
     return content
 
@@ -95,7 +131,6 @@ def read_about_key(keyword_id=None, keyword=None):
     s.commit()
     arts = s.query(Article).join(Article.keywords).filter(Keyword.ID == kw.ID)
     arts = arts.order_by(desc(Article.date)).all()
-    srclist = s.query(Source).order_by(Source.title).all()
     content = show("more", arts)
     for art in arts:
         art.timesread+=1
@@ -111,8 +146,7 @@ def shutdown():
         request.environ.get("werkzeug.server.shutdown")()
     except:
         print "Not using werkzeug engine."
-    if bot:
-        bot.quit()
+    bot.quit()
     return "bye"
 
 @app.route("/_feeds")
@@ -159,10 +193,13 @@ def redirect_source(aid=None, url=None):
 @app.route("/add/<path:url>")
 def add_feed(url=None):
     global bot
-    if not url:
-        return "nok"
-    bot.add_feed(url)
-    return "ok"
+    try:
+        if not url:
+            return "nok"
+        bot.add_feed(url)
+        return "ok"
+    except Exception, e:
+        print str(e)
 
 @app.route("/read/<aid>")
 def read_article(aid=None):
@@ -187,16 +224,13 @@ def main(urls=[], cache_only=False, verbose=False, open_browser=False):
     """The main func which creates an AnchorBot
     """
     global app
+    global bot
     threads = []
-    c = Thread(target=setup_anchorbot, args=(urls, cache_only, verbose, update_event))
-    c.daemon = True
-    threads.append(c)
-    #setup_anchorbot(urls, cache_only, verbose, update_event)
+    setup_anchorbot(urls, cache_only, verbose, update_event)
     if open_browser:
         print "opening localhost:5000 in browser"
         b = Thread(target=webbrowser.open, args=("localhost:5000",))
-        threads.append(b)
-    [t.start() for t in threads]
+        b.start()
     app.run(debug=False) # never ever switch debug to True! (data corruption)
 
 def get_cmd_options():

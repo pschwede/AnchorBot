@@ -55,15 +55,14 @@
     </div>
     <div id="container">
       {% if mode=="more" %}
-        <div id="content">
+      <div id="content">
         {% for art in content %}
         {{ article_read(art) }}
         {% endfor %}
-        </div>
+      </div>
       {% else %}
-      <div id="galery">
+      <div class="content">
       </div>
       {% endif %}
-    </div>
   </body>
 </html>

@@ -3,7 +3,10 @@ function getURL() {
   return window.location.href.substring(0, pos+window.location.host.length);
 }
 
+var otheroff = 0;
 var offset = 0;
+var offx = 0;
+var offy = 0;
 
 $('document').ready(function() {
   $('#feeds').focusin(function() {
@@ -28,20 +31,27 @@ $('document').ready(function() {
     $("#popup").slideUp('fast');
   });
 
-  $('#galery').load(
-      getURL()+"/offset/0",
+  $('.content').load(
+      getURL()+"/gallery/key/offset/0,0",
       function() {
-        $("#content").fadeIn("slow");
       }
+      ).fadeIn('slow');
+
+    if($(window).scrollTop() >= $(document).height() - $(window).height() - 40) {
+      offset+=1;
+      $('#container').append('<div class="content"></div>');
+      $('.content:last').load(
+        getURL()+"/gallery/key/offset/"+offset+",0"
       );
+    }
 
   $(window).scroll(function() {
     if($(window).scrollTop() >= $(document).height() - $(window).height() - 40) {
       offset+=1;
-      $('#galery').append('<div id="galery'+offset+'"></div>');
-      $('#galery'+offset).load(
-        getURL()+"/offset/"+offset
+      $('#container').append('<div class="content"></div>');
+      $('.content:last').load(
+        getURL()+"/gallery/key/offset/"+offset+",0"
       );
     }
-  })
+  });
 });
