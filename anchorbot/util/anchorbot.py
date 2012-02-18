@@ -76,8 +76,10 @@ class Anchorbot(object):
             self.log(str(e))
             sys.exit(1)
 
+    def run(self):
         self.running, self.timeout = True, 3000
-        self.updater = Timer(0., self.update_all)
+        self.updater = Timer(0, self.update_all)
+        self.updater.daemon = True
         self.updater.start()
 
     def __print_cache_and_exit(self):
@@ -90,6 +92,7 @@ class Anchorbot(object):
         """Does a save shutdown"""
         # stop downloading
         # shutdown
+        print "Shutting down..."
         self.cache.shutdown()
         self.config.shutdown()
         self.updater.cancel()
@@ -147,6 +150,8 @@ class Anchorbot(object):
             s.commit()
             s.close()
             for entry in feed["entries"]:
+                if not self.running:
+                    break
                 self.add_entry(entry, source)
             self.log("Done %i of %i: %s" % (i,len(self.config.get_abos()),feedurl,))
         else:
@@ -172,7 +177,9 @@ class Anchorbot(object):
         """
         urls = self.config.get_abos()
         self.cache.get_all(urls, delete=True)
-        for i,url in zip(range(1, len(urls)+1),urls):
+        for i,url in zip(range(1, 1+len(urls)), urls):
+            if not self.running:
+                break
             s = get_session(self.db)
             source = s.query(Source).filter(Source.link == url).first()
             if not source:
@@ -190,8 +197,9 @@ class Anchorbot(object):
 
             self.download_feed(url,i=i)
         last_time = time()
-        self.updater = Timer(self.timeout, self.update_all)
-        self.updater.start()
+        if self.running:
+            self.updater = Timer(self.timeout, self.update_all)
+            self.updater.start()
 
     def add_url(self, url):
         """Adds a feed url to the abos

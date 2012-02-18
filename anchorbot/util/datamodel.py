@@ -32,6 +32,12 @@ class Image( Base ):
             return 0
         return 1
 
+    def dictionary(self):
+        return {"ID": self.ID,
+                "filename": self.filename,
+                "cachename": self.cachename,
+                }
+
 class Source( Base ):
     __tablename__ = "sources"
 
@@ -49,6 +55,15 @@ class Source( Base ):
 
     def __repr__( self ):
         return "<%s%s>" % ( type( self ), ( self.link, self.image ) )
+
+    def dictionary(self):
+        return {"ID": self.ID,
+                "link": self.link,
+                "title": self.title,
+                "image_id": self.image_id,
+                "image": self.mage.dictionary(),
+                "quickhash": self.quickhash,
+                }
 
 class Page( Base ):
     __tablename__ = "pages"
@@ -92,7 +107,7 @@ class Article( Base ):
         self.ehash = ehash
     
     def __unicodify(self, s):
-        if isinstance(s, str):
+        if not isinstance(s, unicode):
             return s.decode("utf-8")
         return s
 
@@ -115,7 +130,15 @@ class Article( Base ):
         link=%s,
         img=%s,
         keys=%s
-        """ % ( self.ID, self.title, self.link, self.image, [kw.word for kw in self.keywords] ) )
+        """ % ( self.ID, self.title, self.link, self.image, [kw.word for kw in sorted(self.keywords, key=lambda kw: kw.clickcount)]))
+    
+    def dictionary(self):
+        return {"ID": self.ID,
+                "title": self.title, 
+                "link": self.link, 
+                "image": self.image.dictionary(), 
+                "keywords": [kw.dictionary() for kw in sorted(self.keywords, key=lambda kw: kw.clickcount)],
+                }
 
 class Keyword( Base ):
     __tablename__ = "keywords"
@@ -135,6 +158,12 @@ class Keyword( Base ):
     def __repr__( self ):
         return "<%s%s>" % ( "Keyword", ( self.ID, self.word ) )
 
+    def dictionary(self):
+        return {"ID": self.ID,
+                "word": self.word,
+                "clickcounts": self.clickcount,
+                }
+
 class Kw2art( Base ):
     __tablename__ = "kw2arts"
 
@@ -146,6 +175,13 @@ class Kw2art( Base ):
     def __init__( self, kw, art ):
         self.kw = kw
         self.art = art
+
+    def dictionary(self):
+        return {"kw_id": self.kw_id,
+                "kw": self.kw.dictionary(),
+                "art_id": self.art_id,
+                "art": self.art.dictionary(),
+                }
 
 def get_engine( filename=':memory:' ):
     """Initializes the engine, etc.

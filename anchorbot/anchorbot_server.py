@@ -14,11 +14,6 @@ from util.datamodel import get_session_from_new_engine, Source, Article, Image, 
 app = Flask(__name__)
 bot = None # yet
 
-class dlist(list):
-    def __init__(self, arg):
-        list.__init__(self, arg)
-        self.word = None
-
 def update_event(x, y):
     print "update!", x, y
 
@@ -37,30 +32,27 @@ def start():
 
 @app.route("/gallery/key/offset/<offx>,<offy>")
 @app.route("/gallery/key/offset/<offx>,<offy>/number/<numx>,<numy>")
-def kwgallery(offx, offy, numx=5, numy=5):
+def kwgallery(offx, offy, numx=10, numy=10):
     global bot
     offx, offy, numx, numy = map(int, [offx,offy,numx,numy])
     s = get_session_from_new_engine(DBPATH)
     keywords = list(s.query(Keyword).\
+            join(Keyword.articles).\
+            filter(Article.timesread == 0).\
             order_by(desc(Keyword.clickcount)).\
             limit(numx).offset(offx+offx*numx))
-    kwdic = list()
+    articles = list()
     for kw in keywords:
-        arts = dlist(s.query(Article).\
+        articles += list(s.query(Article).\
                 join(Article.keywords).\
                 filter(Article.timesread == 0).\
                 filter(Keyword.ID == kw.ID).\
                 order_by(desc(Article.date)).\
+                group_by(Article.ID).\
                 limit(numy).offset(offy*numy))
-        if kw.clickcount:
-            arts.word = kw
-        else:
-            kw = None
-        kwdic.append(arts)
-    if kwdic[0].word:
-        content = render_template("kwgallery.html", kwdic=kwdic)
-    else:
-        content = render_template("galery.html", articles=set(kwdic))
+    content = jsonify(
+            keywords=[kw.dictionary() for kw in keywords], 
+            articles=[art.dictionary() for art in articles])
     s.close()
     return content
 
@@ -146,7 +138,7 @@ def shutdown():
         request.environ.get("werkzeug.server.shutdown")()
     except:
         print "Not using werkzeug engine."
-    bot.quit()
+    bot.shutdown()
     return "bye"
 
 @app.route("/_feeds")
@@ -219,19 +211,22 @@ def setup_anchorbot(urls, cache_only, verbose, update_event):
     bot = bot or Anchorbot(cache_only, verbose, update_event)
     if urls:
         map(bot.add_url, urls)
+    return bot
 
 def main(urls=[], cache_only=False, verbose=False, open_browser=False):
     """The main func which creates an AnchorBot
     """
     global app
     global bot
-    threads = []
-    setup_anchorbot(urls, cache_only, verbose, update_event)
     if open_browser:
-        print "opening localhost:5000 in browser"
+        print "Opening localhost:5000 in browser..."
         b = Thread(target=webbrowser.open, args=("localhost:5000",))
         b.start()
-    app.run(debug=False) # never ever switch debug to True! (data corruption)
+    bot = setup_anchorbot(urls, cache_only, verbose, update_event)
+    print "Running bot..."
+    bot.run()
+    print "Running app..."
+    app.run(debug=True, use_reloader=False)
 
 def get_cmd_options():
     usage = __file__

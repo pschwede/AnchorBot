@@ -1,0 +1,22 @@
+{% for arts in kwdic %}
+    {% if arts %}
+    <div class="gallery" id="{{ arts.word.word }}">
+        <a href="/key/id/{{arts.word.ID}}"><h1 class="keyword">{{arts.word.word}}</h1></a>
+        {% for art in arts %}
+        <div id="aid{{ art.ID }}" class="issue2" style="background-image:url('{{ art.image.filename }}');">
+            <h2 class="issue_head" title="{{ art.title }}">{{ art.title }}</h2>
+            <div class="small">
+                <div>Choose: Why do you want to read this?</div>
+                <div class="tags">
+                {% for key in art.keywords %}
+                    <a class="button" href="/key/id/{{ key.ID }}">{{ key.word }}</a>
+                {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+  </div><div class="gallery panorama"></div>
+    {% endif %}
+{% endfor %}

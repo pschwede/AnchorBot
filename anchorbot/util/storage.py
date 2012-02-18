@@ -161,7 +161,7 @@ class FileCacher(dict):
                 done = True
             except RuntimeError:
                 pass
-        self.dloader.urlcleanup()
+        #self.dloader.urlcleanup()
         self.vacuum(self.max_age_in_days)
 
     def clear(self):
