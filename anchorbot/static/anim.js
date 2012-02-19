@@ -16,7 +16,7 @@ function load_gallery(offset) {
                     'class': "gallery",
                     id: k.word,
                     html: '<a href="/key/'+k.word+'"><h1>'+k.word+'</h1></a>'
-                }).appendTo("#container").fadeIn();
+                }).appendTo("#container");
             }
         });
         $.each(data.articles, function(i, a) {
@@ -33,7 +33,7 @@ function load_gallery(offset) {
                         style: "background-image: url("+a.image.filename+");",
                         html: '<h2 class="issue_head">'+a.title+'</h2>'
                     }).append('<div class="small"><div class="tags">'+buttons.join(" ")+'</div></div>').appendTo("#container #"+k.word);
-                    $("#"+k.word);
+                    $("#"+k.word).fadeIn();
                 }
             });
         });
