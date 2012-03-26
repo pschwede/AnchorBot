@@ -8,10 +8,8 @@ news first.
 
 Features
 --------
-* gets pictures, videos, audio, etc. out of the RSS feeds and the page they're
-  linking to
-* analyzes feed entries for repeatations in microblogs or other feeds to merge
-  and sort
+* gets pictures out of the RSS feeds and the page they're linking to
+* analyzes feed entries for repeatations in microblogs or other feeds to merge and sort
 * focus on readability
 * locally hosted webinterface to run inside your browser
 
