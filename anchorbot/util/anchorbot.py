@@ -93,10 +93,10 @@ class Anchorbot(object):
         # stop downloading
         # shutdown
         print "Shutting down..."
+        self.running = False
         self.cache.shutdown()
         self.config.shutdown()
         self.updater.cancel()
-        self.running = False
 
     def add_entry(self, entry, source):
         url = self.crawler.get_link(entry)
@@ -200,6 +200,8 @@ class Anchorbot(object):
         if self.running:
             self.updater = Timer(self.timeout, self.update_all)
             self.updater.start()
+        else:
+            self.updater.cancel()
 
     def add_url(self, url):
         """Adds a feed url to the abos

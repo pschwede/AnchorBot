@@ -11,6 +11,8 @@ from threading import Thread
 from util.anchorbot import Anchorbot, DBPATH
 from util.datamodel import get_session_from_new_engine, Source, Article, Image, Keyword, Kw2art
 
+host = "0.0.0.0"
+port = 8000
 app = Flask(__name__)
 bot = None # yet
 
@@ -30,38 +32,49 @@ def start():
     global bot
     return show("start", [])
 
-@app.route("/gallery/key/offset/<offx>,<offy>")
-@app.route("/gallery/key/offset/<offx>,<offy>/number/<numx>,<numy>")
-def kwgallery(offx, offy, numx=10, numy=10):
+@app.route("/gallery/key/top/<top>")
+@app.route("/gallery/key/top/<top>/<number>")
+@app.route("/gallery/key/top/<top>/<number>/<since>")
+def top_keywords(top, number=5, since=3*24*60*60):
     global bot
-    offx, offy, numx, numy = map(int, [offx,offy,numx,numy])
+    top, number, since = map(int, [top, number, since])
     s = get_session_from_new_engine(DBPATH)
     keywords = list(s.query(Keyword).\
             join(Keyword.articles).\
             filter(Article.timesread == 0).\
+            filter(Article.date > time()-since).\
             order_by(desc(Keyword.clickcount)).\
-            limit(numx).offset(offx+offx*numx))
-    articles = list()
-    for kw in keywords:
-        articles += list(s.query(Article).\
-                join(Article.keywords).\
-                filter(Article.timesread == 0).\
-                filter(Keyword.ID == kw.ID).\
-                order_by(desc(Article.date)).\
-                group_by(Article.ID).\
-                limit(numy).offset(offy*numy))
-    content = jsonify(
-            keywords=[kw.dictionary() for kw in keywords], 
-            articles=[art.dictionary() for art in articles])
+            group_by(Keyword.ID).\
+            offset(top*number).limit(number))
+    content = jsonify(keywords=[kw.dictionary() for kw in keywords])
     s.close()
     return content
 
+@app.route("/gallery/art/top/<key>/<top>")
+@app.route("/gallery/art/top/<key>/<top>/<number>")
+@app.route("/gallery/art/top/<key>/<top>/<number>/<since>")
+def top_articles(key, top, number=5, since=3*24*60*60):
+    global bot
+    key, top, number, since = map(int, [key, top, number, since])
+    s = get_session_from_new_engine(DBPATH)
+    articles = list(s.query(Article).\
+            join(Article.keywords).\
+            filter(Keyword.ID == key).\
+            filter(Article.timesread == 0).\
+            #filter(Article.date > time()-since).\
+            order_by(desc(Article.date)).\
+            group_by(Article.ID).\
+            offset(top*number).limit(number))
+    content = jsonify(articles=[art.dictionary() for art in articles])
+    s.close()
+    return content
+
+
 @app.route("/offset/<offset>")
-@app.route("/offset/<offset>/number/<number>")
+@app.route("/offset/<offset>/<number>")
 def gallery(offset=0, number=30):
     global bot
     offset, number = int(offset), int(number)
-    ratio = 3
     now = time()
     s = get_session_from_new_engine(DBPATH)
     articles = []
@@ -111,8 +124,11 @@ def change_key(change, keyword_id=None, keyword=None):
 
 @app.route("/key/id/<keyword_id>")
 @app.route("/key/<keyword>")
-def read_about_key(keyword_id=None, keyword=None):
+@app.route("/key/<keyword>/<offset>")
+@app.route("/key/<keyword>/<offset>/<limit>")
+def read_about_key(keyword_id=None, keyword=None, offset=0, limit=10):
     global bot
+    offset, limit = map(int, [offset, limit])
     s = get_session_from_new_engine(DBPATH)
     if keyword and not keyword_id:
         kw = s.query(Keyword).filter(Keyword.word == keyword).first()
@@ -122,7 +138,7 @@ def read_about_key(keyword_id=None, keyword=None):
     s.merge(kw)
     s.commit()
     arts = s.query(Article).join(Article.keywords).filter(Keyword.ID == kw.ID)
-    arts = arts.order_by(desc(Article.date)).all()
+    arts = arts.order_by(desc(Article.date)).limit(limit).offset(offset*limit)
     content = show("more", arts)
     for art in arts:
         art.timesread+=1
@@ -216,6 +232,8 @@ def setup_anchorbot(urls, cache_only, verbose, update_event):
 def main(urls=[], cache_only=False, verbose=False, open_browser=False):
     """The main func which creates an AnchorBot
     """
+    global host
+    global port
     global app
     global bot
     if open_browser:
@@ -226,7 +244,7 @@ def main(urls=[], cache_only=False, verbose=False, open_browser=False):
     print "Running bot..."
     bot.run()
     print "Running app..."
-    app.run(debug=True, use_reloader=False)
+    app.run(host=host, port=port, debug=True, use_reloader=False)
 
 def get_cmd_options():
     usage = __file__

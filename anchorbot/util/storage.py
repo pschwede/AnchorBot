@@ -8,6 +8,7 @@ except ImportError:
 from logger import log #TODO use Logger here
 from threading import Thread
 from Queue import Queue
+from StringIO import StringIO
 
 class Cacher(object):
     """
@@ -92,17 +93,28 @@ class FileCacher(dict):
             self.__getitem__(self.dlqueue.get())
             self.dlqueue.task_done()
 
+    def chunk(self, url):
+        """Returns only the first 512 Bytes. Can be used to get image size with PIL"""
+        if url[-4:] in self.dont_dl:
+            raise Exception("Not downloading %s" % url)
+        f = urllib.urlopen(url)
+        s = StringIO(f.read(512))
+        return s
+    
     def get_all(self, urls, delete=False):
         if delete:
             for url in urls:
                 self.__delitem__(url)
+        valid_urls = []
         for url in urls:
-            self.dlqueue.put(url)
+            if url[-4:] not in self.dont_dl:
+                self.dlqueue.put(url)
+                valid_urls.append(url)
         for i in range(min(10, len(urls))):
             t = Thread(target=self.__queued_retrieve)
             t.start()
         self.dlqueue.join()
-        return [self.__getitem__(url) for url in urls]
+        return [self.__getitem__(url) for url in valid_urls]
 
     def __getitem__(self, url):
         if not url:

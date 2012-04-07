@@ -92,7 +92,7 @@ table {
 .gallery {
   /*width: 173pt;*/
   overflow: auto;
-  margin: 1.5pt;
+  margin-left: 1.5pt;
   float: left;
   display: none;
 }
@@ -108,12 +108,14 @@ table {
       vertical-align: center;
       text-align: center;
       padding: 2pt;
-      border-bottom: 1pt solid transparent;
+      border-top: 1pt solid transparent;
+      border-left: 1pt solid transparent;
+      border-right: 1pt solid transparent;
     }
     .gallery:hover a h1,
     .gallery a:hover h1 {
       color: #000;
-      border-bottom-color: #000;
+      border-color: #000;
     }
 
 .issue1 {

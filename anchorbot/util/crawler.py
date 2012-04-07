@@ -92,17 +92,6 @@ class Crawler(object):
         text = text.replace("&gt;", ">")
         return text
 
-    def compare_image(self, im1, im2):
-        im = PIL.open(self.cache[im1])
-        x1, y1 = im.size
-        im = PIL.open(self.cache[im2])
-        x2, y2 = im.size
-        if x1 * y1 < x2 * y2:
-            return -1
-        elif x1 * y1 == x2 * y2:
-            return 0
-        return 1
-
     def biggest_image(self, imagelist):
         biggest = ""
         imagelist = list(set(imagelist))
@@ -116,20 +105,6 @@ class Crawler(object):
             except IOError:
                 pass
         return biggest
-
-    def closest_image(self, imagelist, x, y):
-        closest = None
-        imagelist = list(set(imagelist))
-        dx, dy = 10 ** 10, 10 ** 10
-        for imgurl in imagelist:
-            try:
-                im = PIL.open(self.cache[imgurl])
-                if dx / dy > abs(im.size[0] - x) / abs(im.size[1] - y):
-                    dx, dy = abs(im.size[0] - x), abs(im.size[1] - y)
-                    closest = imgurl
-            except IOError:
-                pass
-        return closest
 
     def filter_images(self, images, minimum=None, maximum=None):
         if not minimum and not maximum:
@@ -178,42 +153,44 @@ class Crawler(object):
         print "enriching", url
         # get more text and images
         cached_url = self.cache[url]
-        try:
-            html = entry["content"][0]["value"]
-            images, content = self.crawlHTML(html, cached_url, baseurl=url)
-        except KeyError:
+        if cached_url:
             try:
-                html = entry["summary_detail"]["value"]
+                html = entry["content"][0]["value"]
                 images, content = self.crawlHTML(html, cached_url, baseurl=url)
             except KeyError:
                 try:
-                    html = entry["summary"]["value"]
+                    html = entry["summary_detail"]["value"]
                     images, content = self.crawlHTML(html, cached_url, baseurl=url)
                 except KeyError:
-                    content = entry["title"]
+                    try:
+                        html = entry["summary"]["value"]
+                        images, content = self.crawlHTML(html, cached_url, baseurl=url)
+                    except KeyError:
+                        content = entry["title"]
 
-        # get images from entry itself
-        for key in ("links", "enclosures"):
-            try:
-                i = filter(lambda x: x["type"].startswith("image"), entry[key])
-                images |= set([item.href.decode("utf-8") for item in i])
-            except KeyError:
-                pass
+            # get images from entry itself
+            for key in ("links", "enclosures"):
+                try:
+                    i = filter(lambda x: x["type"].startswith("image"), entry[key])
+                    images |= set([item.href.decode("utf-8") for item in i])
+                except KeyError:
+                    pass
 
-        # get even more images from links in entry
-        f = open(self.cache[url], 'r')
-        html = f.read()
-        codec = chardet.detect(html)["encoding"]
-        if codec:
-            html = html.decode(codec)
-        new_images, more_content = self.crawlHTML(html, url, baseurl=url)
-        images |= new_images
-        done = False
-        #content = len(more_content)>len(content) and more_content or content
+            # get even more images from links in entry
+            f = open(cached_url, 'r')
+            html = f.read()
+            codec = chardet.detect(html)["encoding"]
+            if codec:
+                html = html.decode(codec)
+            new_images, more_content = self.crawlHTML(html, url, baseurl=url)
+            images |= new_images
+            #content = len(more_content)>len(content) and more_content or content
 
         # filter out some images
         # give the images to the entry finally
+        self.cache.get_all(images)
         images = self.filter_images(images, minimum=(40, 40,))
+        #print images
         if not image:
             image = self.biggest_image(images)
         #TODO resize image to a prefered size here!

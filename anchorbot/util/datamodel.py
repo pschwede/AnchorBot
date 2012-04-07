@@ -86,6 +86,8 @@ class Article( Base ):
     link = Column( String, unique=True )
     lastread = Column( Float, default= -1 )
     timesread = Column( Integer, default=0 )
+    skipcount = Column( Integer, default=0 )
+    lastskip = Column( Float, default= -1)
     source_id = Column( Integer, ForeignKey( "sources.ID" ), nullable=False )
     source = relationship( "Source", backref="article_br" )
     image_id = Column( Integer, ForeignKey( "images.ID" ), nullable=True )
@@ -122,6 +124,10 @@ class Article( Base ):
         """Has to be called when article has been read to update statistics."""
         self.lastread = date
         self.timesread += 1
+
+    def skipped( self, date ):
+        self.lastskip = date
+        self.skipcount += 1
 
     def __repr__( self ):
         return "<%s(%s)>" % ( "Article", """
