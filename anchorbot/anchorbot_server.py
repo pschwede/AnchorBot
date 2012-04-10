@@ -19,22 +19,31 @@ bot = None # yet
 def update_event(x, y):
     print "update!", x, y
 
-def show(mode, content):
+def show(mode, content, data=''):
     return render_template(
             "layout.html",
             style=url_for("static", filename="default.css"),
             mode=mode,
-            content=content
+            content=content,
+            data=data
         )
 
 @app.route("/")
 def start():
     global bot
-    return show("start", [])
+    return show("gallery", [])
 
-@app.route("/gallery/key/top/<top>")
-@app.route("/gallery/key/top/<top>/<number>")
-@app.route("/gallery/key/top/<top>/<number>/<since>")
+@app.route("/key/<keyword>")
+def keyword(keyword):
+    if keyword:
+        s = get_session_from_new_engine(DBPATH)
+        kw = s.query(Keyword).filter(Keyword.word == keyword).first()
+        s.close()
+        return show("key", [], data=kw)
+
+@app.route("/json/top/key/<top>")
+@app.route("/json/top/key/<top>/<number>")
+@app.route("/json/top/key/<top>/<number>/<since>")
 def top_keywords(top, number=5, since=3*24*60*60):
     global bot
     top, number, since = map(int, [top, number, since])
@@ -50,18 +59,18 @@ def top_keywords(top, number=5, since=3*24*60*60):
     s.close()
     return content
 
-@app.route("/gallery/art/top/<key>/<top>")
-@app.route("/gallery/art/top/<key>/<top>/<number>")
-@app.route("/gallery/art/top/<key>/<top>/<number>/<since>")
-def top_articles(key, top, number=5, since=3*24*60*60):
+@app.route("/json/top/art/<key>")
+@app.route("/json/top/art/<key>/<top>")
+@app.route("/json/top/art/<key>/<top>/<number>")
+@app.route("/json/top/art/<key>/<top>/<number>/<since>")
+def top_articles(key, top=0, number=5, since=3*24*60*60):
     global bot
-    key, top, number, since = map(int, [key, top, number, since])
+    kid, top, number, since = map(int, [key, top, number, since])
     s = get_session_from_new_engine(DBPATH)
     articles = list(s.query(Article).\
             join(Article.keywords).\
-            filter(Keyword.ID == key).\
+            filter(Keyword.ID == kid).\
             filter(Article.timesread == 0).\
-            #filter(Article.date > time()-since).\
             order_by(desc(Article.date)).\
             group_by(Article.ID).\
             offset(top*number).limit(number))
@@ -69,6 +78,28 @@ def top_articles(key, top, number=5, since=3*24*60*60):
     s.close()
     return content
 
+@app.route("/json/art/<key>")
+@app.route("/json/art/<key>/<top>")
+@app.route("/json/art/<key>/<top>/<number>")
+@app.route("/json/art/<key>/<top>/<number>/<since>")
+def articles(key, top=0, number=5, since=3*24*60*60):
+    global bot
+    kid, top, number, since = map(int, [key, top, number, since])
+    s = get_session_from_new_engine(DBPATH)
+    articles = list(s.query(Article).\
+            join(Article.keywords).\
+            filter(Keyword.ID == kid).\
+            #filter(Article.date > time()-since).\
+            order_by(desc(Article.date)).\
+            group_by(Article.ID).\
+            offset(top*number).limit(number))
+    content = jsonify(articles=[art.dictionary() for art in articles])
+    for a in articles:
+        a.timesread += 1
+        s.merge(a)
+    s.commit()
+    s.close()
+    return content
 
 @app.route("/offset/<offset>")
 @app.route("/offset/<offset>/<number>")
@@ -94,6 +125,10 @@ def gallery(offset=0, number=30):
             order_by(desc(Article.date)).\
             limit(number - len(articles)).offset(offset*number))
     content = render_template("galery.html", articles=articles)
+    for a in articles:
+        a.timesread += 1
+        s.merge(a)
+    s.commit()
     s.close()
     return content
 
@@ -121,31 +156,6 @@ def change_key(change, keyword_id=None, keyword=None):
     s.commit()
     s.close()
     return "ignored %s" % keyword
-
-@app.route("/key/id/<keyword_id>")
-@app.route("/key/<keyword>")
-@app.route("/key/<keyword>/<offset>")
-@app.route("/key/<keyword>/<offset>/<limit>")
-def read_about_key(keyword_id=None, keyword=None, offset=0, limit=10):
-    global bot
-    offset, limit = map(int, [offset, limit])
-    s = get_session_from_new_engine(DBPATH)
-    if keyword and not keyword_id:
-        kw = s.query(Keyword).filter(Keyword.word == keyword).first()
-    else:
-        kw = s.query(Keyword).filter(Keyword.ID == keyword_id).first()
-    kw.clickcount += 1
-    s.merge(kw)
-    s.commit()
-    arts = s.query(Article).join(Article.keywords).filter(Keyword.ID == kw.ID)
-    arts = arts.order_by(desc(Article.date)).limit(limit).offset(offset*limit)
-    content = show("more", arts)
-    for art in arts:
-        art.timesread+=1
-        s.merge(art)
-    s.commit()
-    s.close()
-    return content
 
 @app.route("/quit")
 def shutdown():
@@ -185,7 +195,7 @@ def read_feed(fid=None, url=None):
         arts = s.query(Article).join(Article.source)
         arts = arts.filter(Source.ID == fid).order_by(desc(Article.date)).all()
     srclist = s.query(Source).order_by(Source.title).all()
-    content = show("more", arts)
+    content = show("feed", arts)
     s.close()
     return content
 

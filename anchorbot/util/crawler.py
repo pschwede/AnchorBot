@@ -9,7 +9,7 @@ from lxml.html import soupparser
 from lxml.etree import tostring as xmltostring, fromstring as xmlfromstring, HTMLParser
 from logger import log
 from time import mktime, time
-from datamodel import Article, Image, Keyword
+from datamodel import Article, Image, Keyword, Media
 
 #from boilerpipe.extract import Extractor
 
@@ -18,7 +18,21 @@ from datamodel import Article, Image, Keyword
 Generic crawler.
 Follows redirections and delivers some useful functions for remote images.
 """
-re_cln = re.compile('(<img[^>]+>|[\n\r]|<script[^>]*>\s*</script>|<iframe.*</iframe>|</*html>|</*head>|</*div[^>]*>| [ ]+)', re.I)
+re_cln = re.compile(
+        '(<img[^>]+>'+
+        '|[\n\r]|<script[^>]*>\s*</script>'+
+        '|<iframe.*</iframe>'+
+        '|</*html>'+
+        '|</*head>'+
+        '|</*div[^>]*>'+
+        '| [ ]+'+
+        ')', re.I)
+re_media = re.compile(
+        "(http://\S.mp3"+
+        "|vimeo.com/\d+"+
+        "|youtu.be/[^\"\'&\w]*"+
+        "|youtube.com/watch?v=[^\"\'&\w]*"+
+        ")", re.I)
 re_splitter = re.compile("\W", re.UNICODE)
 css_textsel = CSSSelector("div,span,p")
 css_imagesel = CSSSelector("img")
@@ -68,7 +82,7 @@ class Crawler(object):
     def crawlHTML(self, html, url, similarcontent=None, depth=0, baseurl=None):
         self.verbose and log("Crawling url=%s"%url)
         content = ""
-        images = []
+        images = media = []
         if html:
             try:
                 tree = soupparser.fromstring(html) 
@@ -81,9 +95,10 @@ class Crawler(object):
                             if elem is not None and elem.get("href") is not None \
                                 and elem.get("href")[-4:] not in \
                                     (".png", ".jpg", ".gif", "jpeg")]
+                media += re_media.findall(html)
             except Exception, e:
                 log(e.message)
-        return (set(images), self.clean(content),)
+        return (set(images), self.clean(content), media[0] if media else None)
 
     def unescape(self, text):
         text = text.replace("\/", "/")
@@ -149,22 +164,23 @@ class Crawler(object):
         image = None
         images = set()
         content = ""
+        media = list()
         url = self.get_link(entry)
-        print "enriching", url
+        print "\nenriching %s" % url
         # get more text and images
         cached_url = self.cache[url]
         if cached_url:
             try:
                 html = entry["content"][0]["value"]
-                images, content = self.crawlHTML(html, cached_url, baseurl=url)
+                images, content, media = self.crawlHTML(html, cached_url, baseurl=url)
             except KeyError:
                 try:
                     html = entry["summary_detail"]["value"]
-                    images, content = self.crawlHTML(html, cached_url, baseurl=url)
+                    images, content, media = self.crawlHTML(html, cached_url, baseurl=url)
                 except KeyError:
                     try:
                         html = entry["summary"]["value"]
-                        images, content = self.crawlHTML(html, cached_url, baseurl=url)
+                        images, content, media = self.crawlHTML(html, cached_url, baseurl=url)
                     except KeyError:
                         content = entry["title"]
 
@@ -182,7 +198,7 @@ class Crawler(object):
             codec = chardet.detect(html)["encoding"]
             if codec:
                 html = html.decode(codec)
-            new_images, more_content = self.crawlHTML(html, url, baseurl=url)
+            new_images, more_content, media = self.crawlHTML(html, url, baseurl=url)
             images |= new_images
             #content = len(more_content)>len(content) and more_content or content
 
@@ -200,7 +216,10 @@ class Crawler(object):
         except AttributeError:
             date = time()
 
+        if media:
+            print u"Found media: %s" % unicode(media)
+
         title = entry["title"]
         keywords = [unicode(kw.lower()) for kw in re_splitter.split(title) if len(kw)>2]
         art = Article(date, title, content, url, source,)
-        return art, list(set(keywords)), image
+        return art, list(set(keywords)), image, media

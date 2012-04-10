@@ -20,14 +20,14 @@ from logger import Logger
 from config import Config
 from crawler import Crawler
 from datamodel import (get_session,
-                                get_engine, Source, Article, Image, Keyword)
+                                get_engine, Source, Article, Image, Keyword, Media)
 from time import time, sleep
 from threading import Timer
 
 HOME = os.path.join(os.path.expanduser("~"), ".anchorbot")
 DBPATH = os.path.join(HOME, "database.sqlite")
 HERE = os.path.realpath(os.path.dirname(__file__))
-TEMP = os.path.join(HOME, "cache/")
+TEMP = os.path.join(os.path.expanduser("~"), ".cache/anchorbot")
 HTML = os.path.join(HOME, "index.html")
 __appname__ = "AnchorBot"
 __version__ = "1.1"
@@ -110,7 +110,7 @@ class Anchorbot(object):
             self.log("Database error: %s" % url)
             s.close()
 
-        article, keywords, image_url = self.crawler.enrich(entry, source)
+        article, keywords, image_url, media = self.crawler.enrich(entry, source)
         s = get_session(self.db)
         s.add(article)
         s.commit()
@@ -129,6 +129,10 @@ class Anchorbot(object):
             article.image = s.query(Image).filter(Image.filename == image_url).first()
         else:
             article.image = Image(image_url, self.cache[image_url])
+        if s.query(Media).filter(Media.filename == media).count():
+            article.media = s.query(Media).filter(Media.filename == media).first()
+        else:
+            article.media = Media(media)
         s.merge(article)
         s.commit()
         s.close()

@@ -92,8 +92,9 @@ table {
 .gallery {
   /*width: 173pt;*/
   overflow: auto;
-  margin-left: 1.5pt;
+  /*margin-left: 1.5pt;*/
   float: left;
+  margin: 0 auto;
   display: none;
 }
     .gallery h1 {

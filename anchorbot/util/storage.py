@@ -63,16 +63,20 @@ class FileCacher(dict):
             except:
                 pass
 
+        self.vacuum(self.max_age_in_days)
+
     def vacuum(self, max_age_in_days):
         # first search for really existing && unrotten files,
         # then burn the rest.
-        keep = set([self.url_last_used_path])
         then = time.time() - max_age_in_days * 24 * 60 * 60
-        for url, (newurl, creation) in self.url_last_used.items():
-            if creation < then:
-                self.__delitem__(url)
-            else:
-                keep.add(newurl)
+        for root, dirs, files in os.walk(self.localdir):
+            for path in [os.path.join(self.localdir, f) for f in files]:
+                try:
+                    if os.stat(path).st_atime < then:
+                        print "cleaning %s" % path
+                        os.remove(path)
+                except OSError:
+                    pass
 
     def __newurl(self, url):
         return os.path.join(self.localdir, str(hex(hash(url))).replace("-", "0"))
@@ -174,7 +178,6 @@ class FileCacher(dict):
             except RuntimeError:
                 pass
         #self.dloader.urlcleanup()
-        self.vacuum(self.max_age_in_days)
 
     def clear(self):
         for url in self.url_last_used.values():

@@ -38,6 +38,37 @@ class Image( Base ):
                 "cachename": self.cachename,
                 }
 
+class Media( Base ):
+    __tablename__ = "media"
+
+    ID = Column( Integer, primary_key=True, autoincrement=True )
+    filename = Column( String, unique=True )
+
+    def __init__(self, filename):
+        self.filename = filename
+
+    def __repr__(self):
+        return "<%s%s>" % ( "Image", ( self.ID, self.filename, ) )
+
+    def html(self, size=(500, 225,), ratio=16./9):
+        if not self.filename:
+            return ''
+        if "vimeo.com" in self.filename:
+            vid = self.filename[10:]
+            return '<iframe src="http://player.vimeo.com/video/%s" width="%i" height="%i" frameborder="0"></iframe>' % (vid, size[0], int(size[1]/ratio))
+        elif "youtu.be" in self.filename:
+            vid = self.filename[9:]
+            return '<iframe width="%i" height="%i" src="http://www.youtube.com/embed/%s" frameborder="0" allowfullscreen></iframe>' % (size[0], int(size[0]/ratio), vid)
+        elif "youtube.com/watch?v=" in self.filename:
+            vid = self.filename[21:]
+            return '<iframe width="%i" height="%i" src="http://www.youtube.com/embed/%s" frameborder="0" allowfullscreen></iframe>' % (size[0], int(size[1]/ratio), vid)
+
+    def dictionary(self):
+        return {"ID": self.ID,
+                "filename": self.filename,
+                "html": self.html(),
+                }
+
 class Source( Base ):
     __tablename__ = "sources"
 
@@ -92,12 +123,14 @@ class Article( Base ):
     source = relationship( "Source", backref="article_br" )
     image_id = Column( Integer, ForeignKey( "images.ID" ), nullable=True )
     image = relationship( "Image", backref="article_br" )
+    media_id = Column( Integer, ForeignKey( "media.ID" ), nullable=True )
+    media = relationship( "Media", backref="article_br" )
     page_id = Column( Integer, ForeignKey( "pages.ID" ) )
     page = relationship( "Page", backref="article_br", lazy="dynamic" )
     keywords = relationship( "Keyword", backref="article_br", lazy="dynamic", secondary="kw2arts" )
     entryhash = Column( Integer, default=None )
 
-    def __init__( self, date, title, content, link, source, image=None, keywords=None, ehash=None ):
+    def __init__( self, date, title, content, link, source, image=None, keywords=None, ehash=None, media=None):
         self.date = date
         self.title = self.__unicodify(title)
         self.content = self.__unicodify(content)
@@ -105,7 +138,9 @@ class Article( Base ):
         self.source = source
         self.image = image
         if keywords:
-            self.set_keywords( keywords )
+            self.set_keywords(keywords)
+        if media:
+            self.set_media(media)
         self.ehash = ehash
     
     def __unicodify(self, s):
@@ -113,23 +148,27 @@ class Article( Base ):
             return s.decode("utf-8")
         return s
 
-    def set_keywords( self, keywords ):
+    def set_keywords(self, keywords):
         for kw in keywords:
-            self.keywords.append( kw )
+            self.keywords.append(kw)
 
-    def set_image( self, image ):
+    def set_media(self, media):
+        for m in media:
+            self.media.append(m)
+
+    def set_image(self, image):
         self.image = image
 
-    def finished( self, date ):
+    def finished(self, date):
         """Has to be called when article has been read to update statistics."""
         self.lastread = date
         self.timesread += 1
 
-    def skipped( self, date ):
+    def skipped(self, date):
         self.lastskip = date
         self.skipcount += 1
 
-    def __repr__( self ):
+    def __repr__(self):
         return "<%s(%s)>" % ( "Article", """
         id=%s,
         title=%s,
@@ -143,7 +182,10 @@ class Article( Base ):
                 "title": self.title, 
                 "link": self.link, 
                 "image": self.image.dictionary(), 
-                "keywords": [kw.dictionary() for kw in sorted(self.keywords, key=lambda kw: kw.clickcount)],
+                "content": self.content,
+                "datestr": self.date,
+                "media": self.media.html(),
+                "keywords": [kw.dictionary() for kw in sorted(self.keywords, key=lambda kw: kw.clickcount, reverse=True)],
                 }
 
 class Keyword( Base ):
@@ -221,8 +263,6 @@ if __name__ == "__main__":
         session.commit()
     except IntegrityError, e:
         session.rollback()
-        #print [session.query(Keyword).filter(Keyword.word == kw).first() or Keyword(kw) for kw in ["bla", "foo"]]
-        #session.add(a)
         session.add( session.query( Keyword ).filter( Keyword.word == u"bla" ).first() or Keyword( "bla" ) )
         session.add( session.query( Keyword ).filter( Keyword.word == u"foo" ).first() or Keyword( "foo" ) )
         session.commit()
