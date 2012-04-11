@@ -1,5 +1,6 @@
 var offset=0;
 var keyword="";
+var dontload = false;
 
 new_article = function(art) {
     article = $('<div/>', {
@@ -16,7 +17,14 @@ new_article = function(art) {
             })
         )
     );
-    if(art.image && art.image.filename != "") {
+    if(art.media && art.media != "") {
+        article.append(
+            $('<div/>', {
+                'class': 'media',
+                html: art.media
+            })
+        );
+    } else if(art.image && art.image.filename != "") {
         article.append(
             $('<div/>', {
                 'class': 'image'
@@ -26,14 +34,6 @@ new_article = function(art) {
                     alt: art.image.filename
                 })
             )
-        );
-    }
-    if(art.media && art.media != "") {
-        article.append(
-            $('<div/>', {
-                'class': 'media',
-                html: art.media
-            })
         );
     }
     return article.append(
@@ -53,13 +53,13 @@ new_article = function(art) {
 }
 
 load_and_inc_offset = function(keyword, n) {
-    if(n <= 0) return;
+    if(n <= 0 || dontload) return;
     $.getJSON('/json/art/'+keyword+'/'+offset+'/'+n, function(data) {
         if(data.articles.length > 0) {
             $.each(data.articles, function(i, art) {
                 new_article(art).appendTo("#content");
             });
-        }
+        } else dontload = true;
     });
     offset++;
 }

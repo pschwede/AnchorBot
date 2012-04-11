@@ -50,18 +50,24 @@ class Media( Base ):
     def __repr__(self):
         return "<%s%s>" % ( "Image", ( self.ID, self.filename, ) )
 
-    def html(self, size=(500, 225,), ratio=16./9):
+    def html(self, size=(500, 225,), ratio=4./3):
         if not self.filename:
             return ''
         if "vimeo.com" in self.filename:
             vid = self.filename[10:]
-            return '<iframe src="http://player.vimeo.com/video/%s" width="%i" height="%i" frameborder="0"></iframe>' % (vid, size[0], int(size[1]/ratio))
+            return '<iframe src="http://player.vimeo.com/video/%s" width="%i" height="%i" frameborder="0"></iframe>' % (vid, size[0], int(size[0]/ratio))
         elif "youtu.be" in self.filename:
             vid = self.filename[9:]
             return '<iframe width="%i" height="%i" src="http://www.youtube.com/embed/%s" frameborder="0" allowfullscreen></iframe>' % (size[0], int(size[0]/ratio), vid)
         elif "youtube.com/watch?v=" in self.filename:
-            vid = self.filename[21:]
-            return '<iframe width="%i" height="%i" src="http://www.youtube.com/embed/%s" frameborder="0" allowfullscreen></iframe>' % (size[0], int(size[1]/ratio), vid)
+            vid = self.filename[20:]
+            return '<iframe width="%i" height="%i" src="http://www.youtube.com/embed/%s" frameborder="0" allowfullscreen></iframe>' % (size[0], int(size[0]/ratio), vid)
+        elif "http://www.youtube.com/v/" in self.filename:
+            vid = self.filename[25:]
+            return '<iframe width="%i" height="%i" src="http://www.youtube.com/embed/%s" frameborder="0" allowfullscreen></iframe>' % (size[0], int(size[0]/ratio), vid)
+        else:
+            vid = re.findall("(?=v=)[\w-]+", self.filename)[0]
+            return '<iframe width="%i" height="%i" src="http://www.youtube.com/embed/%s" frameborder="0" allowfullscreen></iframe>' % (size[0], int(size[0]/ratio), vid)
 
     def dictionary(self):
         return {"ID": self.ID,

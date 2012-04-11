@@ -29,9 +29,11 @@ re_cln = re.compile(
         ')', re.I)
 re_media = re.compile(
         "(http://\S.mp3"+
-        "|vimeo.com/\d+"+
-        "|youtu.be/[^\"\'&\w]*"+
-        "|youtube.com/watch?v=[^\"\'&\w]*"+
+        "|vimeo\.com/\d+"+
+        "|youtu\.be/[\w-]+"+
+        "|youtube\.com/watch?v=[\w-]+"+
+        "|youtube\.com/watch?[^&]+&[\w-]+"+
+        "|http://www.youtube\.com/v/[\w-]+"+
         ")", re.I)
 re_splitter = re.compile("\W", re.UNICODE)
 css_textsel = CSSSelector("div,span,p")
