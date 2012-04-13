@@ -38,8 +38,11 @@ def keyword(keyword):
     if keyword:
         s = get_session_from_new_engine(DBPATH)
         kw = s.query(Keyword).filter(Keyword.word == keyword).first()
-        s.close()
-        return show("key", [], data=kw)
+        kw.clickcount += 1
+        s.merge(kw)
+        content = show("key", [], data=kw)
+        s.commit()
+        return content
 
 @app.route("/json/top/key/<top>")
 @app.route("/json/top/key/<top>/<number>")
@@ -97,6 +100,7 @@ def articles(key, top=0, number=5, since=3*24*60*60):
     for a in articles:
         a.timesread += 1
         s.merge(a)
+        s.flush()
     s.commit()
     s.close()
     return content
@@ -128,6 +132,7 @@ def gallery(offset=0, number=30):
     for a in articles:
         a.timesread += 1
         s.merge(a)
+        s.flush()
     s.commit()
     s.close()
     return content
@@ -227,6 +232,7 @@ def read_article(aid=None):
     for art in arts:
         art.timesread += 1
         s.merge(art)
+        s.flush()
     s.commit()
     srclist = s.query(Source).order_by(Source.title).all()
     content = show("more", arts)
@@ -247,8 +253,8 @@ def main(urls=[], cache_only=False, verbose=False, open_browser=False):
     global app
     global bot
     if open_browser:
-        print "Opening localhost:5000 in browser..."
-        b = Thread(target=webbrowser.open, args=("localhost:5000",))
+        print "Opening %s:%s in browser..." % (host, port,)
+        b = Thread(target=webbrowser.open, args=("%s:%s" % (host, port),))
         b.start()
     bot = setup_anchorbot(urls, cache_only, verbose, update_event)
     print "Running bot..."
@@ -266,6 +272,6 @@ if __name__ == "__main__":
                 sys.argv[1:] if "-a" in sys.argv else [],
                 "-v" in sys.argv,  # verbose option
                 "-c" in sys.argv,  # print cache only
-                "-o" in sys.argv)  # open browser
+                "-s" not in sys.argv)  # do not open browser
     else:
         main()

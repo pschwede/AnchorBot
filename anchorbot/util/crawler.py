@@ -34,6 +34,7 @@ re_media = re.compile(
         "|youtube\.com/watch?v=[\w-]+"+
         "|youtube\.com/watch?[^&]+&[\w-]+"+
         "|http://www.youtube\.com/v/[\w-]+"+
+        "|http://www.youtube\.com/embed/[\w-]+"+
         ")", re.I)
 re_splitter = re.compile("\W", re.UNICODE)
 css_textsel = CSSSelector("div,span,p")

@@ -167,9 +167,9 @@ table {
   padding: 5pt;
   background: #fff;
 }
+.issue1 .media iframe,
 .issue1 .image img {
   border: 3pt solid #000;
-  min-width: 50%;
   max-width: 100%;
 }
   .issue1:nth-child(even) .image,
@@ -190,6 +190,11 @@ table {
     text-align: left; /*justify;*/
     width: 100%;
     margin: 0 auto;
+  }
+  .issue1 .media {
+    margin: 0 auto;
+    width:100%;
+    text-align: center;
   }
 
   #popup_content .list a:visited,

@@ -25,4 +25,7 @@ function setup() {
   }).click(function() {
     $("#popup").slideUp('fast');
   });
+  $("*:not(#popup)").click(function() {
+          $("#popup").slideUp('fast');
+  });
 }

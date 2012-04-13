@@ -65,6 +65,9 @@ class Media( Base ):
         elif "http://www.youtube.com/v/" in self.filename:
             vid = self.filename[25:]
             return '<iframe width="%i" height="%i" src="http://www.youtube.com/embed/%s" frameborder="0" allowfullscreen></iframe>' % (size[0], int(size[0]/ratio), vid)
+        elif "http://www.youtube.com/embed/" in self.filename:
+            vid = self.filename[29:]
+            return '<iframe width="%i" height="%i" src="http://www.youtube.com/embed/%s" frameborder="0" allowfullscreen></iframe>' % (size[0], int(size[0]/ratio), vid)
         else:
             vid = re.findall("(?=v=)[\w-]+", self.filename)[0]
             return '<iframe width="%i" height="%i" src="http://www.youtube.com/embed/%s" frameborder="0" allowfullscreen></iframe>' % (size[0], int(size[0]/ratio), vid)
@@ -215,7 +218,7 @@ class Keyword( Base ):
     def dictionary(self):
         return {"ID": self.ID,
                 "word": self.word,
-                "clickcounts": self.clickcount,
+                "clickcount": self.clickcount,
                 }
 
 class Kw2art( Base ):
