@@ -6,6 +6,7 @@ AnchorBot
 It's a news feed reader with the attempt of making you read the most important
 news first.
 
+
 Features
 --------
 * gets pictures out of the RSS feeds and the page they're linking to
@@ -15,14 +16,6 @@ Features
 
 For more information, please read the [Wiki](http://github.com/spazzpp2/AnchorBot/wiki).
 
-Usage
------
-* To add rss/atom feeds (not implemented in web interface yet), append a line
-with your feed-url to `~/.ancorbot/abos`.
-
-    echo "yourfeedurl" >> ~/.anchorbot/abos
-
-* Call `anchorbot.linux -o` to open your browser with anchorbot's front page.
 
 Installation
 ------------
@@ -43,6 +36,17 @@ Tell me ;)
 *⚠ Running it the first time may take some minutes even with a fast Internet
 connection!*
 
+
+Usage
+-----
+* To add rss/atom feeds (not implemented in web interface yet), append a line
+with your feed-url to `~/.ancorbot/abos`.
+
+    echo "yourfeedurl" >> ~/.anchorbot/abos
+
+* Call `anchorbot.linux` to open your browser with anchorbot's front page.
+
+
 Related Projects
 ----------------
 * [Flipboard](http://flipboard.com/)
@@ -54,6 +58,7 @@ Related Projects
 * [Vienna RSS](http://www.vienna-rss.org/)
 * [Refynr](http://refynr.com/)
 * [Summify](http://summify.com/)
+
 
 *Version 1.0 beta*
 
