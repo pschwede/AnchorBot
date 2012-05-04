@@ -101,7 +101,7 @@ class Crawler(object):
                 media += re_media.findall(html)
             except Exception, e:
                 log(e.message)
-        return (set(images), self.clean(content), media[0] if media else None)
+        return (set(images), self.clean(content), media[-1] if media else None)
 
     def unescape(self, text):
         text = text.replace("\/", "/")
@@ -200,7 +200,10 @@ class Crawler(object):
             html = f.read()
             codec = chardet.detect(html)["encoding"]
             if codec:
-                html = html.decode(codec)
+                try:
+                    html = html.decode(codec)
+                except:
+                    pass
             new_images, more_content, media = self.crawlHTML(html, url, baseurl=url)
             images |= new_images
             #content = len(more_content)>len(content) and more_content or content

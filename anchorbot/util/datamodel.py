@@ -4,6 +4,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker, scoped_session
 from sqlalchemy import create_engine, Column, Float, Integer, String, Unicode, ForeignKey
 import Image as PIL
+import re
 
 Base = declarative_base()
 
@@ -69,8 +70,11 @@ class Media( Base ):
             vid = self.filename[29:]
             return '<iframe width="%i" height="%i" src="http://www.youtube.com/embed/%s" frameborder="0" allowfullscreen></iframe>' % (size[0], int(size[0]/ratio), vid)
         else:
-            vid = re.findall("(?=v=)[\w-]+", self.filename)[0]
-            return '<iframe width="%i" height="%i" src="http://www.youtube.com/embed/%s" frameborder="0" allowfullscreen></iframe>' % (size[0], int(size[0]/ratio), vid)
+            vid = re.findall("(?=v=)[\w-]+", self.filename)
+            if vid:
+                vid = vid[0]
+                return '<iframe width="%i" height="%i" src="http://www.youtube.com/embed/%s" frameborder="0" allowfullscreen></iframe>' % (size[0], int(size[0]/ratio), vid)
+        return ''
 
     def dictionary(self):
         return {"ID": self.ID,

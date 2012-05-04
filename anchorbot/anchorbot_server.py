@@ -9,15 +9,18 @@ from flask import Flask, render_template, url_for, request, redirect, jsonify
 from threading import Thread
 
 from util.anchorbot import Anchorbot, DBPATH
-from util.datamodel import get_session_from_new_engine, Source, Article, Image, Keyword, Kw2art
+from util.datamodel import (get_session_from_new_engine, Source, Article,
+                            Image, Keyword, Kw2art, Media)
 
 host = "0.0.0.0"
 port = 8000
 app = Flask(__name__)
-bot = None # yet
+bot = None  # yet
+
 
 def update_event(x, y):
     print "update!", x, y
+
 
 def show(mode, content, data=''):
     return render_template(
@@ -28,10 +31,12 @@ def show(mode, content, data=''):
             data=data
         )
 
+
 @app.route("/")
 def start():
     global bot
     return show("gallery", [])
+
 
 @app.route("/key/<keyword>")
 def keyword(keyword):
@@ -44,29 +49,32 @@ def keyword(keyword):
         s.commit()
         return content
 
+
 @app.route("/json/top/key/<top>")
 @app.route("/json/top/key/<top>/<number>")
 @app.route("/json/top/key/<top>/<number>/<since>")
-def top_keywords(top, number=5, since=3*24*60*60):
+def top_keywords(top, number=5, since=259200):
     global bot
     top, number, since = map(int, [top, number, since])
     s = get_session_from_new_engine(DBPATH)
     keywords = list(s.query(Keyword).\
             join(Keyword.articles).\
+            join(Article.media).\
             filter(Article.timesread == 0).\
-            filter(Article.date > time()-since).\
+            filter(Article.date > (time() - since)).\
             order_by(desc(Keyword.clickcount)).\
             group_by(Keyword.ID).\
-            offset(top*number).limit(number))
+            offset(top * number).limit(number))
     content = jsonify(keywords=[kw.dictionary() for kw in keywords])
     s.close()
     return content
+
 
 @app.route("/json/top/art/<key>")
 @app.route("/json/top/art/<key>/<top>")
 @app.route("/json/top/art/<key>/<top>/<number>")
 @app.route("/json/top/art/<key>/<top>/<number>/<since>")
-def top_articles(key, top=0, number=5, since=3*24*60*60):
+def top_articles(key, top=0, number=5, since=259200):
     global bot
     kid, top, number, since = map(int, [key, top, number, since])
     s = get_session_from_new_engine(DBPATH)
@@ -76,16 +84,17 @@ def top_articles(key, top=0, number=5, since=3*24*60*60):
             filter(Article.timesread == 0).\
             order_by(desc(Article.date)).\
             group_by(Article.ID).\
-            offset(top*number).limit(number))
+            offset(top * number).limit(number))
     content = jsonify(articles=[art.dictionary() for art in articles])
     s.close()
     return content
+
 
 @app.route("/json/art/<key>")
 @app.route("/json/art/<key>/<top>")
 @app.route("/json/art/<key>/<top>/<number>")
 @app.route("/json/art/<key>/<top>/<number>/<since>")
-def articles(key, top=0, number=5, since=3*24*60*60):
+def articles(key, top=0, number=5, since=259200):
     global bot
     kid, top, number, since = map(int, [key, top, number, since])
     s = get_session_from_new_engine(DBPATH)
@@ -94,8 +103,8 @@ def articles(key, top=0, number=5, since=3*24*60*60):
             filter(Keyword.ID == kid).\
             #filter(Article.date > time()-since).\
             order_by(desc(Article.date)).\
-            group_by(Article.ID).\
-            offset(top*number).limit(number))
+            group_by(Article.title).\
+            offset(top * number).limit(number))
     content = jsonify(articles=[art.dictionary() for art in articles])
     for a in articles:
         a.timesread += 1
@@ -104,6 +113,7 @@ def articles(key, top=0, number=5, since=3*24*60*60):
     s.commit()
     s.close()
     return content
+
 
 @app.route("/offset/<offset>")
 @app.route("/offset/<offset>/<number>")
@@ -120,14 +130,14 @@ def gallery(offset=0, number=30):
                 filter(Keyword.clickcount > 0).\
                 order_by(desc(Keyword.clickcount)).\
                 #group_by(Keyword.ID).\
-                limit(number).offset(offset*number))
+                limit(number).offset(offset * number))
     articles += list(s.query(Article).filter(Article.timesread == 0).\
-            filter(Article.date > now-7*24*60*60).\
+            filter(Article.date > (now - (7 * 24 * 60 * 60))).\
             group_by(Article.title).\
             join(Article.keywords).\
             filter(Keyword.clickcount == 0).\
             order_by(desc(Article.date)).\
-            limit(number - len(articles)).offset(offset*number))
+            limit(number - len(articles)).offset(offset * number))
     content = render_template("galery.html", articles=articles)
     for a in articles:
         a.timesread += 1
@@ -137,15 +147,18 @@ def gallery(offset=0, number=30):
     s.close()
     return content
 
+
 @app.route("/_hate/id/<keyword_id>")
 @app.route("/_hate/<keyword>")
 def hate_key(keyword_id, keyword):
     change_key(-1, keyword_id, keyword)
 
+
 @app.route("/_like/id/<keyword_id>")
 @app.route("/_like/<keyword>")
 def like_key(keyword_id, keyword):
     change_key(1, keyword_id, keyword)
+
 
 def change_key(change, keyword_id=None, keyword=None):
     global bot
@@ -162,6 +175,7 @@ def change_key(change, keyword_id=None, keyword=None):
     s.close()
     return "ignored %s" % keyword
 
+
 @app.route("/quit")
 def shutdown():
     global bot
@@ -172,6 +186,7 @@ def shutdown():
     bot.shutdown()
     return "bye"
 
+
 @app.route("/_feeds")
 def get_feeds():
     s = get_session_from_new_engine(DBPATH)
@@ -180,6 +195,7 @@ def get_feeds():
     s.close()
     return content
 
+
 @app.route("/_keywords")
 def get_keywords():
     s = get_session_from_new_engine(DBPATH)
@@ -187,6 +203,7 @@ def get_keywords():
     content = render_template("keywords.html", keywords=keywords)
     s.close()
     return content
+
 
 @app.route("/feed/id/<fid>")
 @app.route("/feed/<url>")
@@ -204,6 +221,7 @@ def read_feed(fid=None, url=None):
     s.close()
     return content
 
+
 @app.route("/redirect/<aid>")
 def redirect_source(aid=None, url=None):
     global bot
@@ -212,6 +230,7 @@ def redirect_source(aid=None, url=None):
     url = art.link
     s.close()
     return redirect(url)
+
 
 @app.route("/add/<path:url>")
 def add_feed(url=None):
@@ -223,6 +242,7 @@ def add_feed(url=None):
         return "ok"
     except Exception, e:
         print str(e)
+
 
 @app.route("/read/<aid>")
 def read_article(aid=None):
@@ -238,12 +258,14 @@ def read_article(aid=None):
     content = show("more", arts)
     s.close()
 
+
 def setup_anchorbot(urls, cache_only, verbose, update_event):
     global bot
     bot = bot or Anchorbot(cache_only, verbose, update_event)
     if urls:
         map(bot.add_url, urls)
     return bot
+
 
 def main(urls=[], cache_only=False, verbose=False, open_browser=False):
     """The main func which creates an AnchorBot
@@ -262,9 +284,11 @@ def main(urls=[], cache_only=False, verbose=False, open_browser=False):
     print "Running app..."
     app.run(host=host, port=port, debug=True, use_reloader=False)
 
+
 def get_cmd_options():
     usage = __file__
     return usage
+
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:

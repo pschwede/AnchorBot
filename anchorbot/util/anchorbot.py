@@ -184,20 +184,23 @@ class Anchorbot(object):
         for i,url in zip(range(1, 1+len(urls)), urls):
             if not self.running:
                 break
-            s = get_session(self.db)
-            source = s.query(Source).filter(Source.link == url).first()
-            if not source:
-                self.log("New source: %s" % url)
-                source = Source(url)
-                s.add(source)
-                try:
-                    s.flush()
-                except IntegrityError:
-                    s.rollback()
-                    self.log("Couldn't store source %s" % source)
-                    continue
-            s.commit()
-            s.close()
+            try:
+                s = get_session(self.db)
+                source = s.query(Source).filter(Source.link == url).first()
+                if not source:
+                    self.log("New source: %s" % url)
+                    source = Source(url)
+                    s.add(source)
+                    try:
+                        s.flush()
+                    except IntegrityError:
+                        s.rollback()
+                        self.log("Couldn't store source %s" % source)
+                        continue
+                s.commit()
+                s.close()
+            except Exception, e:
+                print str(e)
 
             self.download_feed(url,i=i)
         last_time = time()
