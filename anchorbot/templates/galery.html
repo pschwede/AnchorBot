@@ -6,7 +6,7 @@
 <div id="aid{{ art.ID }}" class="issue2" style="background-image:url('{{ art.image.filename }}');">
     <h2 class="issue_head" title="{{ art.title }}">{{ art.title }}</h2>
     <div class="small">
-        <div>Choose: Why do you want to read this?</div>
+        <div style="width:100%">Choose: Why do you want to read this?</div>
         <div class="tags">
         {% for key in art.keywords %}
             {{ keyword(key) }}
