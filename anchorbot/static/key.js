@@ -46,7 +46,7 @@ new_article = function(art) {
             'class': 'small'
         }).append(
             $('<span/>', {
-                text: art.datestr
+                text: Humanize.naturalDay(parseInt(art.datestr)),
             })
         )
     );
