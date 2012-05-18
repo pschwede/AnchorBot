@@ -1,14 +1,10 @@
-var otheroff = 0;
 var offset = 0;
-var offx = 0;
-var offy = 0;
-var known_keys = [];
 var key_offset = {};
 
 function new_article(art) {
   // Build up keyword button list
   buttons = $("<div/>", {
-    'class': 'small'
+    'class': 'small',
   }).append(
     $("<span/>", {
       style: "font-size:50%",
@@ -38,13 +34,23 @@ function new_article(art) {
 
 function load_more(kid) {
   gallery = $("#container .gallery#"+kid);
+  /* replace the old */
   $.getJSON('/json/top/art/'+kid+'/'+(key_offset[kid]+5), function(data) {
-    if(data.articles.length) {
-      $.each(data.articles, function(i, art) {
-        gallery.find(".issue2:eq("+i+")").fadeOut().after(new_article(art).fadeIn()).remove();
-        key_offset[kid]++;
+    $.each(data.articles, function(i, art) {
+      frame = gallery.children(".issue2:eq("+i+")");
+      $.getJSON('/skip/'+frame.attr("id"), function(d) {});
+      frame.after(new_article(art).fadeIn()).fadeOut().remove();
+      key_offset[kid]++;
+    });
+    /* skip the rest, too */
+    children = gallery.children(".issue2").slice(data.articles.length).each(function(i) {
+      $.getJSON('/skip/'+$(this).attr("id"), function(d) {
       });
-    }
+      $(this).fadeOut().remove();
+      /* fade gallery out if empty */
+      if($("#container .gallery#"+kid+" .issue2").length <= 0)
+        gallery.fadeOut().remove();
+    });
   });
 }
 

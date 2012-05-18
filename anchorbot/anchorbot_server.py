@@ -94,7 +94,7 @@ def top_articles(key, top=0, number=5, since=259200):
 @app.route("/json/art/<key>/<top>")
 @app.route("/json/art/<key>/<top>/<number>")
 @app.route("/json/art/<key>/<top>/<number>/<since>")
-def articles(key, top=0, number=5, since=259200):
+def artcles(key, top=0, number=5, since=259200):
     global bot
     kid, top, number, since = map(int, [key, top, number, since])
     s = get_session_from_new_engine(DBPATH)
@@ -146,6 +146,20 @@ def gallery(offset=0, number=30):
     s.commit()
     s.close()
     return content
+
+
+@app.route("/skip/<article_id>")
+def skip(article_id):
+    if not article_id:
+        return "0"
+    s = get_session_from_new_engine(DBPATH)
+    art = s.query(Article).filter(Article.ID == article_id).first()
+    if art.timesread <= 0:
+        art.timesread -= 1
+    s.merge(art)
+    s.commit()
+    s.close()
+    return "1"
 
 
 @app.route("/_hate/id/<keyword_id>")
