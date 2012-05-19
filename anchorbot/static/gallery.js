@@ -43,14 +43,17 @@ function load_more(kid) {
       key_offset[kid]++;
     });
     /* skip the rest, too */
-    children = gallery.children(".issue2").slice(data.articles.length).each(function(i) {
-      $.getJSON('/skip/'+$(this).attr("id"), function(d) {
+    children = gallery.children(".issue2");
+    if(children.length > data.articles.length){
+      children.slice(data.articles.length).each(function(i) {
+        $.getJSON('/skip/'+$(this).attr("id"), function(d) {
+        });
+        $(this).fadeOut().remove();
+        /* fade gallery out if empty */
+        if($("#container .gallery#"+kid+" .issue2").length <= 0)
+          gallery.fadeOut().remove();
       });
-      $(this).fadeOut().remove();
-      /* fade gallery out if empty */
-      if($("#container .gallery#"+kid+" .issue2").length <= 0)
-        gallery.fadeOut().remove();
-    });
+    }
   });
 }
 
