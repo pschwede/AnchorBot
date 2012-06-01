@@ -23,7 +23,7 @@ Python >= 2.6 needed! No Apache.
 
 *Ubuntu:*
 
-    sudo setup.ubuntu.sh ./anchorbot.linux
+    sudo setup.ubuntu.sh && ./anchorbot.linux
 
 *all other:*
 
