@@ -140,31 +140,35 @@ class Anchorbot(object):
     def download_feed(self, feedurl, i=0, callback=None):
         """Download procedure"""
         del self.cache[feedurl] # make sure, you get the newest
-        feed = self.feeds[feedurl] = feedparser.parse(self.cache[feedurl])
-        s = get_session(self.db)
-        source = s.query(Source).filter(Source.link == feedurl).first()
         try:
-            title = source.title = feed["feed"]["title"]
-        except KeyError:
-            title = source.title = feedurl
-        old_quickhash = source.quickhash
-        new_quickhash = self.get_quickhash(source.link)
-        if old_quickhash != new_quickhash:
-            source.quickhash = new_quickhash
-            s.commit()
-            s.close()
-            for entry in feed["entries"]:
-                if not self.running:
-                    break
-                self.add_entry(entry, source)
-            self.log("Done %i of %i: %s" % (i,len(self.config.get_abos()),feedurl,))
-        else:
-            self.log("Nothing new in %i of %i: %s (%s == %s)" % (i,len(self.config.get_abos()),feedurl,old_quickhash,new_quickhash))
-            s.close()
+            feed = self.feeds[feedurl] = feedparser.parse(self.cache[feedurl])
+            s = get_session(self.db)
+            source = s.query(Source).filter(Source.link == feedurl).first()
+            try:
+                title = source.title = feed["feed"]["title"]
+            except KeyError:
+                title = source.title = feedurl
+            old_quickhash = source.quickhash
+            new_quickhash = self.get_quickhash(source.link)
+            if old_quickhash != new_quickhash:
+                source.quickhash = new_quickhash
+                s.commit()
+                s.close()
+                for entry in feed["entries"]:
+                    if not self.running:
+                        break
+                    self.add_entry(entry, source)
+                self.log("Done %i of %i: %s" % (i,len(self.config.get_abos()),feedurl,))
+            else:
+                self.log("Nothing new in %i of %i: %s (%s == %s)" % (i,len(self.config.get_abos()),feedurl,old_quickhash,new_quickhash))
+                s.close()
 
-        #self.feeds[feedurl] = feedurl
-        if callback:
-            callback(feedurl, title)
+            #self.feeds[feedurl] = feedurl
+            if callback:
+                callback(feedurl, title)
+
+        except Exception, e:
+            print e
 
     def get_quickhash(self, feedurl):
         """Fast value for comparisons without hashing"""

@@ -1,40 +1,3 @@
-{% macro redirect(aid) %}
-/redirect/{{ aid }}
-{% endmacro %}
-
-{% macro button(service, arg, text=None) %}
-  {% if service=="source" %}
-  <a class="about_source button" target="_blank" href="{{ arg }}">Source</a>
-  {% elif service=="share" %}
-  <a class="about_share button" target="_blank" href="/share/{{ arg }}">Share</a>
-  {% endif %}
-{% endmacro %}
-
-{% macro keyword(key, rated=false) %}
-    <a class="button" href="/key/id/{{ key.ID }}">{{ key.word }}</a>
-{% endmacro %}
-
-{% macro article_read(art) %}
-        <div id="aid{{art.ID}}" class="issue1">
-                <h2 class="issue_head" title="{{ art.title }}">{{ art.title }}</h2>
-                {% if art.image.filename %}
-                  <div class="image"><img src="{{ art.image.filename }}" alt=""/></div>
-                {% endif %}
-                <div class="issue_content">{{ art.content|safe }}</div>
-                <div class="small">
-                    <span class="time">{{ art.datestr }}</span>
-                    <span class="keywords">
-                        {% for key in art.keywords %}
-                          {{ keyword(key) }}
-                        {% endfor %}
-                    </span>
-                    <span>
-                        {{ button("source", redirect(art.ID)) }}
-                        {{ button("share", art.id, text=art.title) }}
-                    </span>
-                </div>
-            </div>
-{% endmacro %}
 <!DOCTYPE html>
 <html>
   <head>
@@ -62,14 +25,11 @@
         <div id="popup_content"></div>
     </div>
     <div id="container">
-      {% if mode in ["key", "feed"] %}
+      {% if mode in ["key", "feed", "read"] %}
       <h1 title="{{ data.ID }}" id="keyword">{{ data.word }}</h1>
+      {% endif %}
       <div id="content">
       </div>
-      {% else %}
-      <div class="content">
-      </div>
-      {% endif %}
     </div>
   </body>
 </html>

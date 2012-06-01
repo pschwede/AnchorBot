@@ -84,7 +84,7 @@ table {
   margin: 0 auto;
 }
 
-#galery,
+#gallery,
 #content {
   padding: 5pt;
 }
@@ -97,11 +97,12 @@ table {
   margin: 0 auto;
   display: none;
 }
-    .gallery h1 {
-      background-color: #fff;
-      color: #ccc;
-    }
-    .gallery a h1 {
+.gallery:hover {
+  color: #fff;
+  background-color: #000;
+}
+    .gallery a.title,
+    .gallery a.hate {
       line-height:9pt;
       color: #fff;
       z-index: 999;
@@ -109,14 +110,22 @@ table {
       vertical-align: center;
       text-align: center;
       padding: 2pt;
-      border-top: 1pt solid transparent;
-      border-left: 1pt solid transparent;
-      border-right: 1pt solid transparent;
     }
-    .gallery:hover a h1,
-    .gallery a:hover h1 {
-      color: #000;
-      border-color: #000;
+    .gallery a.hate {
+      padding-left: 10pt;
+      padding-right: 5pt;
+    }
+    .gallery a.title {
+      font-weight: bold;
+      margin: 0 auto;
+      padding-left: 20pt;
+      padding-right: 20pt;
+    }
+    .gallery:hover a.hate {
+      color: #666;
+    }
+    .gallery a:hover.hate {
+      color: #fff;
     }
 
 .issue1 {
@@ -163,9 +172,10 @@ table {
   color: #049;
 }
 .issue1 .image {
-  max-width: 100%;
+  width: 100%;
   padding: 5pt;
   background: #fff;
+  text-align: center;
 }
 .issue1 .media iframe,
 .issue1 .image img {
@@ -187,14 +197,24 @@ table {
   .issue1 .issue_content {
     padding-top: 20pt;
     border-top: 1pt solid #333;
-    text-align: left; /*justify;*/
-    width: 100%;
+    width: 30em;
+    text-align: justify;
     margin: 0 auto;
+    font-family: serif;
+  }
+  .issue1 .issue_content * {
+    font-family: serif;
+    margin: 0;
+    padding: 0;
   }
   .issue1 .media {
     margin: 0 auto;
     width:100%;
     text-align: center;
+  }
+
+  .issue1 .small span {
+      padding: 3pt;
   }
 
   #popup_content .list a:visited,
@@ -237,8 +257,8 @@ table {
 
   .issue2 {
     width: 170pt;
-    height: 170pt;
-    display: inline-block;
+    height: 160pt;
+    display: block;
     vertical-align: top;
     margin: 2pt;
     overflow: auto;

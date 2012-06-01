@@ -41,12 +41,11 @@ def start():
 @app.route("/key/<keyword>")
 def keyword(keyword):
     if keyword:
+        keyword = keyword.split("+")[0]
         s = get_session_from_new_engine(DBPATH)
         kw = s.query(Keyword).filter(Keyword.word == keyword).first()
-        kw.clickcount += 1
-        s.merge(kw)
         content = show("key", [], data=kw)
-        s.commit()
+        s.close()
         return content
 
 
@@ -95,7 +94,6 @@ def top_articles(key, top=0, number=5, since=259200):
 @app.route("/json/art/<key>/<top>/<number>")
 @app.route("/json/art/<key>/<top>/<number>/<since>")
 def artcles(key, top=0, number=5, since=259200):
-    global bot
     kid, top, number, since = map(int, [key, top, number, since])
     s = get_session_from_new_engine(DBPATH)
     articles = list(s.query(Article).\
@@ -163,15 +161,13 @@ def skip(article_id):
 
 
 @app.route("/_hate/id/<keyword_id>")
-@app.route("/_hate/<keyword>")
-def hate_key(keyword_id, keyword):
-    change_key(-1, keyword_id, keyword)
+def hate_key(keyword_id):
+    return change_key(-1, keyword_id)
 
 
 @app.route("/_like/id/<keyword_id>")
-@app.route("/_like/<keyword>")
-def like_key(keyword_id, keyword):
-    change_key(1, keyword_id, keyword)
+def like_key(keyword_id):
+    return change_key(1, keyword_id)
 
 
 def change_key(change, keyword_id=None, keyword=None):
@@ -187,7 +183,7 @@ def change_key(change, keyword_id=None, keyword=None):
     s.merge(kw)
     s.commit()
     s.close()
-    return "ignored %s" % keyword
+    return jsonify({"change":change, "kid":keyword_id});
 
 
 @app.route("/quit")
@@ -230,7 +226,6 @@ def read_feed(fid=None, url=None):
     else:
         arts = s.query(Article).join(Article.source)
         arts = arts.filter(Source.ID == fid).order_by(desc(Article.date)).all()
-    srclist = s.query(Source).order_by(Source.title).all()
     content = show("feed", arts)
     s.close()
     return content
@@ -260,18 +255,17 @@ def add_feed(url=None):
 
 @app.route("/read/<aid>")
 def read_article(aid=None):
-    global bot
-    s = get_session_from_new_engine(DBPATH)
-    arts = s.query(Article).filter(Article.ID == aid).all()
-    for art in arts:
-        art.timesread += 1
-        s.merge(art)
-        s.flush()
-    s.commit()
-    srclist = s.query(Source).order_by(Source.title).all()
-    content = show("more", arts)
-    s.close()
-
+    articles = list()
+    if aid:
+        s = get_session_from_new_engine(DBPATH)
+        for aid in aid.split("+"):
+            art = s.query(Article).filter(Article.ID == aid).first()
+            art.timesread += 1
+            s.merge(art)
+            articles.append(art)
+            s.commit()
+        s.close()
+    return show("read", [], data=articles)
 
 def setup_anchorbot(urls, cache_only, verbose, update_event):
     global bot
@@ -290,7 +284,7 @@ def main(urls=[], cache_only=False, verbose=False, open_browser=False):
     global bot
     if open_browser:
         print "Opening %s:%s in browser..." % (host, port,)
-        b = Thread(target=webbrowser.open, args=("%s:%s" % (host, port),))
+        b = Thread(target=webbrowser.open, args=("http://%s:%s" % (host, port),))
         b.start()
     bot = setup_anchorbot(urls, cache_only, verbose, update_event)
     print "Running bot..."

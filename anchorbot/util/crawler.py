@@ -26,6 +26,7 @@ re_cln = re.compile(
         '|</*head>'+
         '|</*div[^>]*>'+
         '| [ ]+'+
+        'style="[^"]*"'+
         ')', re.I)
 re_media = re.compile(
         "(http://\S.mp3"+

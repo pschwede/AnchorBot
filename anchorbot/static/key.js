@@ -13,7 +13,8 @@ new_article = function(art) {
         }).append(
             $('<h2/>', {
                 'class': 'issue_head',
-                text: art.title
+                text: art.title,
+                name: art.ID
             })
         )
     );
@@ -48,6 +49,18 @@ new_article = function(art) {
             $('<span/>', {
                 text: Humanize.naturalDay(parseInt(art.datestr)),
             })
+        ).append(
+            $('<span/>', {
+                html: '<a href="'+art.link+'">Read the original</a>'
+            })
+        ).append(
+            $('<span/>', {
+                html: '<a href="http://bufferapp.com/add" class="buffer-add-button" data-text="'+
+                        art.title+
+                        '" data-url="'+
+                        art.link+
+                        '" data-count="horizontal" >Buffer</a><script type="text/javascript" src="http://static.bufferapp.com/js/button.js"></script>'
+            })
         )
     );
 }
@@ -64,16 +77,20 @@ load_and_inc_offset = function(keyword, n) {
     offset++;
 }
 
-fill_up = function(kid) {
+fill_up = function(kid, initially) {
   if($(window).scrollTop() >= $(document).height() - $(window).height()) {
       load_and_inc_offset(kid, 1);
   }
-  setTimeout("fill_up("+kid+")", 500);
+  if(!initially)
+      setTimeout("fill_up("+kid+", false)", 500);
 }
 
-$('document').ready(function() {setup();
+$('document').ready(function() {
+  setup();
   kid = $("#keyword").attr('title');
-  fill_up(kid);
+  fill_up(kid, true);
+  fill_up(kid, true);
+  fill_up(kid, true);
 
   $(window).scroll(function() {
     if(1.2*$(window).scrollTop() >= $(document).height() - $(window).height()) {
