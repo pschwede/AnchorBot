@@ -47,7 +47,7 @@ class FileCacher(dict):
         self.verbose = verbose
         self.max_age_in_days = max_age_in_days
         self.localdir = os.path.realpath(os.path.dirname(localdir))
-        if not os.path.isdir(localdir):
+        if not os.path.exists(localdir):
             os.mkdir(localdir)
         self.exp = -1
         self.dont_dl = dont_dl

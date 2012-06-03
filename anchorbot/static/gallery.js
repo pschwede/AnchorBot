@@ -42,21 +42,43 @@ function load_more(kid) {
     $.each(data.articles, function(i, art) {
       frame = gallery.children(".issue2:eq("+i+")");
       $.getJSON('/skip/'+frame.attr("id"), function(d) {});
-      frame.after(new_article(art).fadeIn()).fadeOut().remove();
+      frame.after(
+          new_article(art).fadeIn()
+        ).fadeOut(
+          'fast',
+          function() {
+            $(this).remove();
+          });
       key_offset[kid]++;
     });
     /* skip the rest, too */
     children = gallery.children(".issue2");
     if(children.length > data.articles.length){
       children.slice(data.articles.length).each(function(i) {
-        $.getJSON('/skip/'+$(this).attr("id"), function(d) {
-        });
-        $(this).fadeOut().remove();
+        $.getJSON('/skip/'+$(this).attr("id"));
         /* fade gallery out if empty */
-        if($("#container .gallery#"+kid+" .issue2").length <= 0) {
-          gallery.fadeOut().remove();
+        if(data.articles.length <= 0) {
+          $("#container .gallery#"+kid).animate(
+            {
+              width: 0,
+              opacity: 0.0
+            },
+            'fast',
+            function() {
+              $(this).remove();
+            });
           load_gallery(offset);
           offset++;
+        } else {
+          $(this).animate(
+            {
+              height: 0,
+              opacity: 0.0
+            },
+            'fast',
+            function() {
+              $(this).remove();
+            })
         }
       });
     }
@@ -65,8 +87,15 @@ function load_more(kid) {
 
 hate_and_hide = function(kid) {
   $.getJSON('/_hate/id/'+kid, function(data) {
-      gallery = $("#container .gallery#"+data.kid);
-      gallery.fadeOut().remove();
+      $("#container .gallery#"+data.kid).animate(
+        {
+          width: 0,
+          opacity: 0.0
+        },
+        'fast',
+        function() {
+          $(this).remove();
+        });
       load_gallery(offset);
       offset++;
   });

@@ -49,6 +49,7 @@ with your feed-url to `~/.ancorbot/abos`.
 
 Related Projects
 ----------------
+* [Prismatic](http://www.getprismatic.com/)
 * [Flipboard](http://flipboard.com/)
 * [Hotot](https://code.google.com/p/hotot)
 * [Google Reader](http://reader.google.com/)

@@ -43,7 +43,9 @@ def keyword(keyword):
     if keyword:
         keyword = keyword.split("+")[0]
         s = get_session_from_new_engine(DBPATH)
-        kw = s.query(Keyword).filter(Keyword.word == keyword).first()
+        kw = s.query(Keyword).\
+                filter(Keyword.word == keyword).\
+                first()
         content = show("key", [], data=kw)
         s.close()
         return content
@@ -82,7 +84,7 @@ def top_articles(key, top=0, number=5, since=259200):
             filter(Keyword.ID == kid).\
             filter(Article.timesread == 0).\
             order_by(desc(Article.date)).\
-            group_by(Article.ID).\
+            group_by(Article.title).\
             offset(top * number).limit(number))
     content = jsonify(articles=[art.dictionary() for art in articles])
     s.close()
@@ -93,13 +95,36 @@ def top_articles(key, top=0, number=5, since=259200):
 @app.route("/json/art/<key>/<top>")
 @app.route("/json/art/<key>/<top>/<number>")
 @app.route("/json/art/<key>/<top>/<number>/<since>")
-def artcles(key, top=0, number=5, since=259200):
+def articles(key, top=0, number=5, since=259200):
     kid, top, number, since = map(int, [key, top, number, since])
     s = get_session_from_new_engine(DBPATH)
     articles = list(s.query(Article).\
             join(Article.keywords).\
             filter(Keyword.ID == kid).\
-            #filter(Article.date > time()-since).\
+            filter(Article.timesread == 0).\
+            order_by(desc(Article.date)).\
+            group_by(Article.title).\
+            offset(top * number).limit(number))
+    content = jsonify(articles=[art.dictionary() for art in articles])
+    for a in articles:
+        a.timesread += 1
+        s.merge(a)
+        s.flush()
+    s.commit()
+    s.close()
+    return content
+
+
+@app.route("/json/all/art/<key>")
+@app.route("/json/all/art/<key>/<top>")
+@app.route("/json/all/art/<key>/<top>/<number>")
+@app.route("/json/all/art/<key>/<top>/<number>/<since>")
+def all_articles(key, top=0, number=5, since=259200):
+    kid, top, number, since = map(int, [key, top, number, since])
+    s = get_session_from_new_engine(DBPATH)
+    articles = list(s.query(Article).\
+            join(Article.keywords).\
+            filter(Keyword.ID == kid).\
             order_by(desc(Article.date)).\
             group_by(Article.title).\
             offset(top * number).limit(number))
@@ -183,7 +208,7 @@ def change_key(change, keyword_id=None, keyword=None):
     s.merge(kw)
     s.commit()
     s.close()
-    return jsonify({"change":change, "kid":keyword_id});
+    return jsonify({"change": change, "kid": keyword_id})
 
 
 @app.route("/quit")
@@ -267,6 +292,7 @@ def read_article(aid=None):
         s.close()
     return show("read", [], data=articles)
 
+
 def setup_anchorbot(urls, cache_only, verbose, update_event):
     global bot
     bot = bot or Anchorbot(cache_only, verbose, update_event)
@@ -284,7 +310,10 @@ def main(urls=[], cache_only=False, verbose=False, open_browser=False):
     global bot
     if open_browser:
         print "Opening %s:%s in browser..." % (host, port,)
-        b = Thread(target=webbrowser.open, args=("http://%s:%s" % (host, port),))
+        b = Thread(
+                target=webbrowser.open,
+                args=("http://%s:%s" % (host, port))
+                )
         b.start()
     bot = setup_anchorbot(urls, cache_only, verbose, update_event)
     print "Running bot..."
