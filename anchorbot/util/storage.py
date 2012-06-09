@@ -5,10 +5,11 @@ try:
     import cPickle as pickle
 except ImportError:
     import pickle
-from logger import log #TODO use Logger here
+from logger import log  # TODO use Logger here
 from threading import Thread
 from Queue import Queue
 from StringIO import StringIO
+
 
 class Cacher(object):
     """
@@ -36,14 +37,21 @@ class Cacher(object):
     def clear(self):
         self.dic = {}
 
+
 class NotCachingError(Exception):
     def __init__(self, msg):
         Exception.__init__(self, msg)
 
+
 class FileCacher(dict):
-    def __init__(self, localdir="/tmp/lyrebird/", max_age_in_days= -1, verbose=False, dont_dl=[], dlnum=8):
+    def __init__(self,
+            localdir="/tmp/lyrebird/",
+            max_age_in_days=-1,
+            verbose=False,
+            dont_dl=[],
+            dlnum=8):
         if not dont_dl:
-            dont_dl = [".gif",".swf",".iso",".zip",".avi",".mp3",".ogg"]
+            dont_dl = [".gif", ".swf", ".iso", ".zip", ".avi", ".mp3", ".ogg"]
         self.verbose = verbose
         self.max_age_in_days = max_age_in_days
         self.localdir = os.path.realpath(os.path.dirname(localdir))
@@ -51,19 +59,20 @@ class FileCacher(dict):
             os.mkdir(localdir)
         self.exp = -1
         self.dont_dl = dont_dl
-        self.url_last_used_path = url_last_used_path = os.path.join(self.localdir, "agedic.pkl")
+        self.url_last_used_path = url_last_used_path = os.path.join(
+                self.localdir, "agedic.pkl")
         self.url_last_used = {}
 
         self.dloader = urllib.FancyURLopener()
         self.dlqueue = Queue()
-        
+
         if os.path.exists(url_last_used_path):
             try:
-                self.url_last_used = pickle.load(open(url_last_used_path, 'r'), -1)
+                self.url_last_used = pickle.load(
+                        open(url_last_used_path, 'r'),
+                        -1)
             except:
                 pass
-
-        self.vacuum(self.max_age_in_days)
 
     def vacuum(self, max_age_in_days):
         # first search for really existing && unrotten files,
@@ -79,32 +88,37 @@ class FileCacher(dict):
                     pass
 
     def __newurl(self, url):
-        return os.path.join(self.localdir, str(hex(hash(url))).replace("-", "0"))
+        return os.path.join(
+                self.localdir,
+                str(hex(hash(url))).replace("-", "0"))
 
     def __retrieve(self, url, newurl):
         tries = 4
         done = False
         while tries and not done:
-            tries-=1
+            tries -= 1
             try:
                 self.dloader.retrieve(url, newurl)
                 done = True
             except IOError, e:
                 log("IOError during retrieving %s" % url)
-    
+
     def __queued_retrieve(self):
         while not self.dlqueue.empty():
             self.__getitem__(self.dlqueue.get())
             self.dlqueue.task_done()
 
     def chunk(self, url):
-        """Returns only the first 512 Bytes. Can be used to get image size with PIL"""
+        """
+        Returns only the first 512 Bytes. Can be used to get image size
+        with PIL
+        """
         if url[-4:] in self.dont_dl:
             raise Exception("Not downloading %s" % url)
         f = urllib.urlopen(url)
         s = StringIO(f.read(512))
         return s
-    
+
     def get_all(self, urls, delete=False):
         if delete:
             for url in urls:
@@ -133,7 +147,9 @@ class FileCacher(dict):
             result = self.url_last_used[url][0]
             if not os.path.exists(result):
                 raise KeyError()
-            self.url_last_used[url] = self.url_last_used[self.url_last_used[url]] = (self.url_last_used[url][0], time.time())
+            self.url_last_used[url] = self.url_last_used[
+                        self.url_last_used[url]
+                    ] = (self.url_last_used[url][0], time.time())
             #self.verbose and log("Getting %s from cache." % url)
             return result
         except KeyError:
@@ -142,7 +158,9 @@ class FileCacher(dict):
                 if not os.path.exists(newurl):
                     self.__retrieve(url, newurl)
                     #self.verbose and log("Cached %s to %s." % (url, newurl,))
-                self.url_last_used[url] = self.url_last_used[newurl] = (newurl, time.time())
+                self.url_last_used[url] = self.url_last_used[newurl] = (
+                        newurl,
+                        time.time())
             except IOError, e:
                 self.verbose and log("IOError during download of %s" % url)
                 return url
@@ -152,7 +170,7 @@ class FileCacher(dict):
         try:
             try:
                 os.remove(self.url_last_used[url][0])
-            except OSError,e:
+            except OSError, e:
                 if e.errno == 2:
                     pass
                 else:
@@ -160,7 +178,7 @@ class FileCacher(dict):
             del self.url_last_used[url]
             del self.url_last_used[self.__newurl(url)]
         except KeyError:
-            pass # Oll Korrect
+            pass  # Oll Korrect
 
     def pprint(self):
         try:
@@ -171,9 +189,13 @@ class FileCacher(dict):
 
     def shutdown(self):
         done = False
+        self.vacuum(self.max_age_in_days)
         while not done:
             try:
-                pickle.dump(self.url_last_used, open(self.url_last_used_path, 'w'), -1)
+                pickle.dump(
+                        self.url_last_used,
+                        open(self.url_last_used_path, 'w'),
+                        -1)
                 done = True
             except RuntimeError:
                 pass
@@ -183,6 +205,7 @@ class FileCacher(dict):
         for url in self.url_last_used.values():
             os.remove(url)
         self.url_last_used = {}
+
 
 if __name__ == "__main__":
     c = Cacher()
