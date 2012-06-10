@@ -51,7 +51,7 @@ new_article = function(art) {
             })
         ).append(
             $('<span/>', {
-                html: '<a href="'+art.link+'">Read the original</a>'
+                html: '<a target="_blank" href="'+art.link+'">Read the original</a>'
             })
         ).append(
             $('<span/>', {
@@ -93,8 +93,6 @@ $('document').ready(function() {
   fill_up(kid, true);
 
   $(window).scroll(function() {
-    if(1.2*$(window).scrollTop() >= $(document).height() - $(window).height()) {
-      load_and_inc_offset(kid, 1);
-    }
+    fill_up(kid, false);
   });
 });

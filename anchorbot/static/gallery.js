@@ -1,5 +1,7 @@
 var offset = 0;
 var key_offset = {};
+var vert_num = 3;
+var hori_num = 5;  // unused
 
 function new_article(art) {
   // Build up keyword button list
@@ -20,6 +22,7 @@ function new_article(art) {
       $("<a/>", {
         'class': "button",
         html: key.word,
+        title: "/read/"+art.ID,
         style: "margin-left:5pt;"
       }).click(function() {
           $.getJSON('/_like/id/'+key.ID, function() {
@@ -41,43 +44,42 @@ function new_article(art) {
 }
 
 function load_more(kid) {
-  gallery = $("#container .gallery#"+kid);
-  $.getJSON('/json/top/art/'+kid+'/'+(key_offset[kid]+3)+"/3", function(data) {
+  gallery = $("#content .gallery#"+kid);
+  // hate current articles
+  var hated_ids = new Array();
+  gallery.children(".issue2").each(function(i, issue) {
+    hated_ids[i] = issue.id;
+  });
+  $.getJSON('/json/top/art/'+kid+'/'+(key_offset[kid]+3)+"/"+vert_num, function(data) {
     if(data.articles.length <= 0) {
       // hide the whole gallery
-      $("#container .gallery#"+kid).animate(
-        {
-          width: 0,
-          opacity: 0.0
-        },
-        'fast',
-        function() {
-          $(this).remove();
-        });
+      gallery.animate({width: 0, opacity: 0.0},
+        'fast', function() {$(this).remove();});
+      for(int i=$("#content .gallery").length; i<hori_num; i++) {
         load_gallery(offset);
         offset++;
+      }
     } else {
-      // hide the old articles
-      $("#container .gallery#"+kid+" .issue2").fadeOut(
-        'fast',
-        function() {
-          $.getJSON('/skip/'+$(this).attr("id"), function(d) {});
-          $(this).remove();
-        });
+      // insert the new
       $.each(data.articles, function(i, new_one) {
-        // replace the old
-        $("#container .gallery#"+kid).append(
-            new_article(new_one).fadeIn()
-          );
-        key_offset[kid]++;
+        $("#content .gallery#"+kid).children(".issue2:eq("+i+")").fadeOut(
+          "fast", function() {
+            $(this).remove();
+            new_article(new_one).appendTo("#content .gallery#"+kid).fadeIn();
+          });
       });
+      key_offset[kid]++;
     }
+  });
+  // really hating
+  $.each(hated_ids, function(i, id) {
+    $.getJSON('/skip/'+id, function() {});
   });
 }
 
-hate_and_hide = function(kid) {
+hate_keyword = function(kid) {
   $.getJSON('/_hate/id/'+kid, function(data) {
-      $("#container .gallery#"+data.kid).animate(
+      $("#content .gallery#"+data.kid).animate(
         {
           width: 0,
           opacity: 0.0
@@ -94,35 +96,34 @@ hate_and_hide = function(kid) {
 function load_gallery(offset) {
   $.getJSON('/json/top/key/'+offset+"/1", function(data) {
     if(data.keywords.length > 0) {
-      /* add new container for each key */
+      /* add new div for each key */
       $.each(data.keywords, function(i, kw) {
         key_offset[kw.ID] = 0;
-        $.getJSON('/json/top/art/'+kw.ID+'/'+key_offset[kw.ID]+"/3", function(data) {
-          gallery = $('<div/>', {
-              'class': "gallery",
-              title: kw.word,
-              id: kw.ID
-              }
-          ).append(
-            $("<a/>", {
-                'class': "hate",
-                text: "X ",
-                title: "Hate '"+kw.word+"'",
-                style: "cursor: pointer;"
-            }).click(function() {hate_and_hide(kw.ID);})
-          ).append(
-            $("<a/>", {
-                'class': "title",
-                id: kw.ID,
-                html: kw.word,
-                title: "Show more on '"+kw.word+"'",
-                style: "cursor: e-resize;"
-            }).click(function() {load_more(kw.ID);})
-          ).appendTo("#container");
-          $.each(data.articles, function(j, art) {
-            new_article(art).appendTo(gallery);
+        gallery = $('<div/>', {
+            'class': "gallery",
+            title: kw.word,
+            id: kw.ID
+            }
+        ).append(
+          $("<a/>", {
+              'class': "hate",
+              text: "X ",
+              title: "Hate '"+kw.word+"'",
+              style: "cursor: pointer;"
+          }).click(function() {hate_keyword(kw.ID);})
+        ).append(
+          $("<a/>", {
+              'class': "title",
+              id: kw.ID,
+              html: kw.word,
+              title: "Show more on '"+kw.word+"'",
+              style: "cursor: e-resize;"
+          }).click(function() {load_more(kw.ID);})
+        ).appendTo("#container #content");
+        $.getJSON('/json/top/art/'+kw.ID+"/"+key_offset[kw.ID]+"/"+vert_num, function(data2) {
+          $.each(data2.articles, function(j, art) {
+            $(".gallery#"+kw.ID).append(new_article(art)).fadeIn("slow");
           });
-          $(gallery).fadeIn('slow');
         });
       });
     }
