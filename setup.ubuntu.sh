@@ -1,9 +1,8 @@
 #!/bin/bash
+echo "I recommend to read install scripts before running them!"
 
-# Please read install scripts before running them!
+# this will make sure, the recommended python version is available
+apt-get install python2.7-dev &&
 
-# this will install all needed python modules and libraries to build lxml
-apt-get install libxml2-dev libxslt1-dev python2.7-dev &&
-
-# this will download newest packages and install them
+# this will download newest python modules and installs them
 pip install feedparser sqlite setuptools tweepy beautifulsoup lxml sqlalchemy
