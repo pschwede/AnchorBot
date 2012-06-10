@@ -55,7 +55,7 @@ function load_more(kid) {
       // hide the whole gallery
       gallery.animate({width: 0, opacity: 0.0},
         'fast', function() {$(this).remove();});
-      for(int i=$("#content .gallery").length; i<hori_num; i++) {
+      for(i=$("#content .gallery").length; i<hori_num; i++) {
         load_gallery(offset);
         offset++;
       }

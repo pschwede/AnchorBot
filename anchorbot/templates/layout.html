@@ -12,6 +12,8 @@
     <script type="text/javascript" src="{{ url_for('static', filename='key.js') }}"></script>
     {% elif mode=="feed" %}
     <script type="text/javascript" src="{{ url_for('static', filename='feed.js') }}"></script>
+    {% elif mode=="read" %}
+    <script type="text/javascript" src="{{ url_for('static', filename='read.js') }}"></script>
     {% endif %}
   </head>
   <body>
@@ -25,7 +27,7 @@
         <div id="popup_content"></div>
     </div>
     <div id="container">
-      {% if mode in ["key", "feed", "read"] %}
+      {% if mode in ["key", "feed"] %}
       <h1 title="{{ data.ID }}" id="keyword">{{ data.word }}</h1>
       {% endif %}
       <div id="content">

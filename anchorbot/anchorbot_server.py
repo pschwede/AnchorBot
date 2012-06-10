@@ -90,7 +90,6 @@ def top_articles(key, top=0, number=5, since=259200):
     s.close()
     return content
 
-
 @app.route("/json/art/<key>")
 @app.route("/json/art/<key>/<top>")
 @app.route("/json/art/<key>/<top>/<number>")
