@@ -3,3 +3,11 @@
 *.swp
 index.html
 *.xml
+.project
+.pydevproject
+.settings/
+anchorbot/tags
+anchotbot/util/tags
+build/
+dist/
+profile.txt
