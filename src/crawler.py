@@ -233,6 +233,7 @@ class Crawler(object):
             self.verbose and log(u"Found media: %s" % unicode(media))
 
         title = entry["title"]
+        content = content or title
         keywords = list()
         for kw in re_splitter.split(title):
             keywords.append(unicode(kw.lower()))

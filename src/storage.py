@@ -109,8 +109,8 @@ class FileCacher(dict):
             try:
                 self.dloader.retrieve(url, newurl)
                 done = True
-            except IOError, e:
-                log("IOError during retrieving %s" % url)
+            except Exception, e:
+                log("IOError during retrieving %s: %s" % (url, str(e)))
 
     def __queued_retrieve(self):
         while self.running:

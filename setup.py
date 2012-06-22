@@ -12,6 +12,7 @@ install_requires = [
     "lxml", 
     "sqlalchemy", 
     "humanize",
+    "pyCLI",
 ]
 
 setup(
