@@ -40,7 +40,7 @@ new_article = function(art) {
     return article.append(
         $('<div/>', {
             'class': 'issue_content',
-            html: art.content //TODO make it safe
+            html: art.content
         })
     ).append(
         $('<div/>', {
@@ -67,7 +67,7 @@ new_article = function(art) {
 
 load_and_inc_offset = function(keyword, n) {
     if(n <= 0 || dontload) return;
-    $.getJSON('/json/art/'+keyword+'/'+offset+'/'+n, function(data) {
+    $.getJSON('/json/latest/articles/by/keyword/'+keyword+'/'+offset+'/'+n, function(data) {
         if(data.articles.length > 0) {
             $.each(data.articles, function(i, art) {
                 new_article(art).appendTo("#content");

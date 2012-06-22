@@ -7,17 +7,12 @@ def read(fname):
 
 install_requires = [
     "setuptools",
-    "hamlish-jinja",
     "flask",
     "feedparser", 
     "lxml", 
-    "tweepy", 
     "sqlalchemy", 
-    "pysqlite",
+    "humanize",
 ]
-if platform.system() == "Windows":
-  install_requires.append("pygtk")
-print "Please manually install pywebkitgtk!"
 
 setup(
   name = "AnchorBot",

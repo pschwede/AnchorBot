@@ -6,7 +6,7 @@ function getURL() {
 function setup() {
   $('#feeds').click(function() {
     $("#popup_content").load(
-      getURL()+"/_feeds", 
+      getURL()+"/list/feeds", 
       function() {
         $("#popup").slideDown("medium", function() {});
       }
@@ -17,7 +17,7 @@ function setup() {
 
   $('#keywords').click(function() {
     $("#popup_content").load(
-      getURL()+"/_keywords", 
+      getURL()+"/list/keywords", 
       function() {
         $("#popup").slideDown("medium", function() {});
       }

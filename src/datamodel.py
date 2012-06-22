@@ -1,5 +1,6 @@
 # -*- encoding: utf-8 -*-
 
+from sqlalchemy.pool import QueuePool
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker, scoped_session
 from sqlalchemy import create_engine, Column, Float, Integer, String, Unicode, ForeignKey
@@ -247,7 +248,9 @@ class Kw2art( Base ):
 def get_engine( filename=':memory:' ):
     """Initializes the engine, etc.
        Returns engine."""
-    engine = create_engine( "sqlite:///%s" % filename )
+    engine = create_engine("sqlite:///%s" % filename,
+            poolclass=QueuePool,
+            pool_timeout=10, pool_size=20)
     Base.metadata.bind = engine
     Base.metadata.create_all( engine )
     return engine

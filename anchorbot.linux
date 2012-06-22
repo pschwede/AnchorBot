@@ -1,3 +1,6 @@
 #!/bin/bash
 
-python $(dirname "$0")/anchorbot/anchorbot_server.py ~ $1 $2 $3
+echo "Starting download daemon"
+python $(dirname "$0")/src/anchorbot.py -d
+echo "Starting web interface"
+python $(dirname "$0")/src/server.py $1 $2 $3

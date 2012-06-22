@@ -25,7 +25,7 @@ function new_article(art) {
         title: "/read/"+art.ID,
         style: "margin-left:5pt;"
       }).click(function() {
-          $.getJSON('/_like/id/'+key.ID, function() {
+          $.getJSON('/like/keyword/by/id/'+key.ID, function() {
               window.location = "/key/"+key.word;
           });
       }).appendTo(buttons);
@@ -50,12 +50,12 @@ function load_more(kid) {
   gallery.children(".issue2").each(function(i, issue) {
     hated_ids[i] = issue.id;
   });
-  $.getJSON('/json/top/art/'+kid+'/'+(key_offset[kid]+3)+"/"+vert_num, function(data) {
+  $.getJSON('/json/top/articles/by/keyword/'+kid+'/'+(key_offset[kid]+3)+"/"+vert_num, function(data) {
     if(data.articles.length <= 0) {
       // hide the whole gallery
       gallery.animate({width: 0, opacity: 0.0},
         'fast', function() {$(this).remove();});
-      for(i=$("#content .gallery").length; i<hori_num; i++) {
+      for(i=$("#content .gallery").length; i<=hori_num; i++) {
         load_gallery(offset);
         offset++;
       }
@@ -73,12 +73,12 @@ function load_more(kid) {
   });
   // really hating
   $.each(hated_ids, function(i, id) {
-    $.getJSON('/skip/'+id, function() {});
+    $.getJSON('/hate/article/by/id/'+id, function() {});
   });
 }
 
 hate_keyword = function(kid) {
-  $.getJSON('/_hate/id/'+kid, function(data) {
+  $.getJSON('/hate/keyword/by/id/'+kid, function(data) {
       $("#content .gallery#"+data.kid).animate(
         {
           width: 0,
@@ -94,7 +94,7 @@ hate_keyword = function(kid) {
 }
 
 function load_gallery(offset) {
-  $.getJSON('/json/top/key/'+offset+"/1", function(data) {
+  $.getJSON('/json/top/keywords/'+offset+"/1", function(data) {
     if(data.keywords.length > 0) {
       /* add new div for each key */
       $.each(data.keywords, function(i, kw) {
@@ -120,7 +120,7 @@ function load_gallery(offset) {
               style: "cursor: e-resize;"
           }).click(function() {load_more(kw.ID);})
         ).appendTo("#container #content");
-        $.getJSON('/json/top/art/'+kw.ID+"/"+key_offset[kw.ID]+"/"+vert_num, function(data2) {
+        $.getJSON('/json/top/articles/by/keyword/'+kw.ID+"/"+key_offset[kw.ID]+"/"+vert_num, function(data2) {
           $.each(data2.articles, function(j, art) {
             $(".gallery#"+kw.ID).append(new_article(art)).fadeIn("slow");
           });
@@ -145,10 +145,9 @@ fill_up = function(kid) {
   setTimeout("fill_up()", 1000);
 }
 
-$('document').ready(function() {setup();
-  load_and_inc_offset(1);
-  load_and_inc_offset(1);
-  load_and_inc_offset(1);
-  load_and_inc_offset(1);
-  load_and_inc_offset(1);
+$('document').ready(function() {
+    setup();
+    for(i=0; i < hori_num; i++) {
+      load_and_inc_offset(1);
+    }
 });

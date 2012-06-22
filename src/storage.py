@@ -65,6 +65,7 @@ class FileCacher(dict):
 
         self.dloader = urllib.FancyURLopener()
         self.dlqueue = Queue()
+        self.dlthreads = list()
 
         if os.path.exists(url_last_used_path):
             try:
@@ -105,7 +106,7 @@ class FileCacher(dict):
 
     def __queued_retrieve(self):
         while not self.dlqueue.empty():
-            self.__getitem__(self.dlqueue.get())
+            self.__getitem__(self.dlqueue.get(timeout=1000))
             self.dlqueue.task_done()
 
     def chunk(self, url):
@@ -128,10 +129,16 @@ class FileCacher(dict):
             if url[-4:] not in self.dont_dl:
                 self.dlqueue.put(url)
                 valid_urls.append(url)
-        for i in range(min(10, len(urls))):
+        self.verbose and log("Having %i urls in download queue." % len(valid_urls))
+        for i in range(min(4, len(valid_urls))):
             t = Thread(target=self.__queued_retrieve)
+            t.daemon = True
             t.start()
+            self.dlthreads.append(t)
+        self.verbose and log("Having %i threads for joining download queue." % len([t for t in self.dlthreads if t is not None and t.isAlive()]))
+        self.verbose and log("Joining dlqueue..")
         self.dlqueue.join()
+        self.verbose and log("..done")
         return [self.__getitem__(url) for url in valid_urls]
 
     def __getitem__(self, url):
@@ -139,8 +146,8 @@ class FileCacher(dict):
             return None
         if url == u"None":
             return None
-        if isinstance(url, unicode):
-            url = (url.encode("utf-8"))
+        """if isinstance(url, unicode):
+            url = url.encode("utf-8")"""
         if url[-4:] in self.dont_dl:
             raise Exception("Not downloading %s" % url)
         try:
@@ -208,7 +215,13 @@ class FileCacher(dict):
 
 
 if __name__ == "__main__":
-    c = Cacher()
-    print c["abc"]
-    c["abc"] = 1
-    print c["abc"]
+    c = FileCacher(verbose=True)
+    print c["http://google.de"]
+    c.get_all(["http://google.de", "http://google.com",
+        "http://google.de", "http://google.com",
+        "http://google.de", "http://google.com",
+        "http://google.de", "http://google.com",
+        "http://google.de", "http://google.com",
+        ])
+    c.pprint()
+    c.shutdown()

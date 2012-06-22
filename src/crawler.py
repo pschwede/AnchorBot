@@ -1,15 +1,19 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 
-import urllib, re, Image as PIL
+import urllib
+import re
+import Image as PIL
 import chardet
 from urlparse import urljoin
 from lxml.cssselect import CSSSelector
 from lxml.html import soupparser
-from lxml.etree import tostring as xmltostring, fromstring as xmlfromstring, HTMLParser
+from lxml.etree import (
+        tostring as xmltostring,
+        HTMLParser)
 from logger import log
 from time import mktime, time
-from datamodel import Article, Image, Keyword, Media
+from datamodel import Article
 
 #from boilerpipe.extract import Extractor
 
@@ -19,38 +23,41 @@ Generic crawler.
 Follows redirections and delivers some useful functions for remote images.
 """
 re_cln = re.compile(
-        '(<img[^>]+>'+
-        '|[\n\r]|<script[^>]*>\s*</script>'+
-        '|<iframe.*</iframe>'+
-        '|</*html>'+
-        '|</*head>'+
-        '|</*div[^>]*>'+
-        '| [ ]+'+
-        'style="[^"]*"'+
+        '(<img[^>]+>' +
+        '|[\n\r]|<script[^>]*>\s*</script>' +
+        '|<iframe.*</iframe>' +
+        '|</*html>' +
+        '|</*head>' +
+        '|</*div[^>]*>' +
+        '| [ ]+' +
+        'style="[^"]*"' +
         ')', re.I)
 re_media = re.compile(
-        "(http://\S.mp3"+
-        "|vimeo\.com/\d+"+
-        "|youtu\.be/[\w-]+"+
-        "|youtube\.com/watch?v=[\w-]+"+
-        "|youtube\.com/watch?[^&]+&[\w-]+"+
-        "|http://www.youtube\.com/v/[\w-]+"+
-        "|http://www.youtube\.com/embed/[\w-]+"+
+        "(http://\S.mp3" +
+        "|vimeo\.com/\d+" +
+        "|youtu\.be/[^\"]+" +
+        "|youtube\.com/watch?v=[^\"]+" +
+        "|youtube\.com/watch?[^&]+&[^\"]+" +
+        "|http://www.youtube\.com/v/[^\"]+" +
+        "|http://www.youtube\.com/embed/[^\"]+" +
         ")", re.I)
 re_splitter = re.compile("\W", re.UNICODE)
 css_textsel = CSSSelector("div,span,p")
 css_imagesel = CSSSelector("img")
 css_linksel = CSSSelector("a")
 
+
 class Crawler(object):
     htmlparser = HTMLParser()
 
     def __init__(self, cacher, proxies=None, verbose=False):
         self.opener = urllib.FancyURLopener(proxies)
-        self.cache = cacher # for not retrieving things twice!
+        self.cache = cacher  # for not retrieving things twice!
         self.verbose = verbose
 
     def __textual_content(self, url=None, html=None, similarcontent=None):
+        """ If url is set and html is not, it uses BoilerPipe
+        """
         content = ""
         if html:
             # clean up codec
@@ -59,49 +66,40 @@ class Crawler(object):
                 if codec:
                     html = html.encode(codec, "xmlcharrefreplace")
             except UnicodeDecodeError, e:
-                print "Unencodable character found.", e
-
+                self.verbose and log( "Unencodable character found: %s" % e)
             # regex method (not working; broken re_textual!)
-            #content = sorted([x[0] for x in re_textual.findall(html)], key=lambda x: len(x.split(" ")), reverse=True)[0]
-
-
-            # naive method
-            content = similarcontent or html
-            if similarcontent:
-                length = len(similarcontent)/2
-                for elem in css_textsel(tree):
-                    if elem.text and similarcontent[0:length] in elem.text:
-                        content += elem.text
+            """content = sorted([x[0] for x in re_textual.findall(html)],
+                    key=lambda x: len(x.split(" ")),
+                    reverse=True)[0]"""
         else:
             if url:
-                try:
-                # boilerpipe port
-                    content += Extractor('ArticleExtractor', url="file://"+url).getText()
-                    f.close()
-                except Exception, e:
-                    self.verbose and log("Fail @%s, %s"%(url, e))
-
+                pass
         return content
 
     def crawlHTML(self, html, url, similarcontent=None, depth=0, baseurl=None):
-        self.verbose and log("Crawling url=%s"%url)
+        self.verbose and log("Crawling url=%s" % url)
         content = ""
         images = media = []
-        if html:
-            try:
-                tree = soupparser.fromstring(html) 
-                content = self.__textual_content(html=xmltostring(tree), similarcontent=similarcontent)
-
-                images = [urljoin(baseurl, img.get("src") or img.attrib.values()[0]) \
-                        for img in css_imagesel(tree)]
-                images + [urljoin(baseurl, elem.get("href")) \
-                        for elem in css_linksel(tree) \
-                            if elem is not None and elem.get("href") is not None \
-                                and elem.get("href")[-4:] not in \
-                                    (".png", ".jpg", ".gif", "jpeg")]
-                media += re_media.findall(html)
-            except Exception, e:
-                log(e.message)
+        try:
+            if html:
+                tree = soupparser.fromstring(html)
+                content = self.__textual_content(
+                        html=xmltostring(tree),
+                        similarcontent=similarcontent)
+                images = list()
+                for img in css_imagesel(tree):
+                    images.append(urljoin(baseurl,
+                        img.get("src") or img.attrib.values()[0]))
+                for elem in css_linksel(tree):
+                    if elem and elem.get("href"):
+                        href = elem.get("href")
+                        if href[4:] == "http":
+                            endings = (".png", ".jpg", ".gif", "jpeg")
+                            if href[:4] in endings:
+                                images.append(urljoin(baseurl, elem.get("href")))
+                media += re_media.findall(html) or ""
+        except KeyboardInterrupt:
+            pass
         return (set(images), self.clean(content), media[-1] if media else None)
 
     def unescape(self, text):
@@ -118,7 +116,7 @@ class Crawler(object):
         for imgurl in imagelist:
             try:
                 im = PIL.open(self.cache[imgurl])
-                if x*y < im.size[0]*im.size[1]:
+                if x * y < im.size[0] * im.size[1]:
                     x, y = im.size
                     biggest = imgurl
             except IOError:
@@ -140,7 +138,7 @@ class Crawler(object):
                 if im.size[0] >= minimum[0] and im.size[1] >= minimum[1] and\
                      im.size[0] <= maximum[0] and im.size[1] <= maximum[1]:
                         result.append(imgurl)
-            except Exception, e:
+            except Exception:
                 pass
         return result
 
@@ -160,7 +158,7 @@ class Crawler(object):
             try:
                 link = entry["links"][0]["href"]
             except KeyError:
-                print "Warning! %s has no link!" % entry["title"]
+                self.verbose and log( "Warning! %s has no link!" % entry["title"])
         return link.encode('utf-8')
 
     def enrich(self, entry, source, recursion=1):
@@ -170,28 +168,32 @@ class Crawler(object):
         content = ""
         media = list()
         url = self.get_link(entry)
-        print "\nenriching %s" % url
+        self.verbose and log( "Enriching %s" % url)
         # get more text and images
         cached_url = self.cache[url]
         if cached_url:
             try:
                 html = entry["content"][0]["value"]
-                images, content, media = self.crawlHTML(html, cached_url, baseurl=url)
+                images, content, media = self.crawlHTML(
+                        html, cached_url, baseurl=url)
             except KeyError:
                 try:
                     html = entry["summary_detail"]["value"]
-                    images, content, media = self.crawlHTML(html, cached_url, baseurl=url)
+                    images, content, media = self.crawlHTML(
+                            html, cached_url, baseurl=url)
                 except KeyError:
                     try:
                         html = entry["summary"]["value"]
-                        images, content, media = self.crawlHTML(html, cached_url, baseurl=url)
+                        images, content, media = self.crawlHTML(
+                                html, cached_url, baseurl=url)
                     except KeyError:
                         content = entry["title"]
 
             # get images from entry itself
             for key in ("links", "enclosures"):
                 try:
-                    i = filter(lambda x: x["type"].startswith("image"), entry[key])
+                    i = filter(lambda x: x["type"].startswith("image"),
+                            entry[key])
                     images |= set([item.href.decode("utf-8") for item in i])
                 except KeyError:
                     pass
@@ -205,9 +207,13 @@ class Crawler(object):
                     html = html.decode(codec)
                 except:
                     pass
-            new_images, more_content, media = self.crawlHTML(html, url, baseurl=url)
+            new_images, more_content, media = self.crawlHTML(
+                    html, url, baseurl=url)
             images |= new_images
-            #content = len(more_content)>len(content) and more_content or content
+            """
+            if len(more_content) > len(content):
+                content = more_content
+            """
 
         # filter out some images
         # give the images to the entry finally
@@ -224,9 +230,11 @@ class Crawler(object):
             date = time()
 
         if media:
-            print u"Found media: %s" % unicode(media)
+            self.verbose and log(u"Found media: %s" % unicode(media))
 
         title = entry["title"]
-        keywords = [unicode(kw.lower()) for kw in re_splitter.split(title) if len(kw)>2]
-        art = Article(date, title, content, url, source,)
+        keywords = list()
+        for kw in re_splitter.split(title):
+            keywords.append(unicode(kw.lower))
+        art = Article(date, title, content, url, source)
         return art, list(set(keywords)), image, media

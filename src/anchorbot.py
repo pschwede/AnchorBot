@@ -11,18 +11,17 @@ For further reading, see README.md
 import feedparser
 import sys
 import os
-import urllib
+import cli.daemon
 from sqlalchemy.exc import IntegrityError, DatabaseError
-from sqlalchemy.sql.expression import desc
 
 import storage
 from logger import Logger
 from config import Config
 from crawler import Crawler
-from datamodel import (get_session,
-                                get_engine, Source, Article, Image, Keyword, Media)
-from time import time, sleep
-from threading import Timer
+from datamodel import (
+        get_session, get_engine, Source, Article, Image, Keyword, Media)
+from time import sleep
+import atexit
 
 HOME = os.path.join(os.path.expanduser("~"), ".anchorbot")
 DBPATH = os.path.join(HOME, "database.sqlite")
@@ -33,8 +32,10 @@ __appname__ = "AnchorBot"
 __version__ = "1.1"
 __author__ = "spazzpp2"
 
+
 class Anchorbot(object):
-    """ The most main Class
+    """
+    The most main class
 
     It holds and calls initialization of:
     * singleton instance lock
@@ -43,27 +44,29 @@ class Anchorbot(object):
     * start analysis of the downloaded feeds
     """
 
-    def __init__(self, verbose=False, cache_only=False, update_call=lambda x:x):
+    def __init__(self, verbose=False, cache_only=False,
+            update_call=lambda x: x):
         self.verbose = verbose
         self.log = Logger(verbose, write=os.path.join(HOME, "logger.log")).log
 
-        # print out cache and exit
-        if cache_only:
-            self.__print_cache_and_exit()
-
         try:
             # cache keeps files for 3 days
+            verbose and self.log("Init FileCacher dir=%s, days=%i, verbose=%s" % (TEMP, 3, verbose))
             self.cache = storage.FileCacher(TEMP, 3, verbose)
 
             # prepare datamodel
+            verbose and self.log("Preparing database at %s" % DBPATH)
             self.db = get_engine(DBPATH)
 
             # prepare variables and lists,...
+            verbose and self.log("Preparing variables and lists")
             self.feeds = {}
             self.watched = None
+
+            verbose and self.log("Init crawler with cache")
             self.crawler = Crawler(self.cache)
-            self.crawler.verbose = self.verbose and False
-            #TODO load from config
+            self.crawler.verbose = self.verbose
+
         except IOError, e:
             print "IOError !", e.filename
 
@@ -71,6 +74,7 @@ class Anchorbot(object):
         # load config
         try:
             # Raises Exception if locked
+            verbose and self.log("Loading config from %s" % HOME)
             self.config = Config(HOME, verbose=verbose)
         except Exception, e:
             self.log(str(e))
@@ -78,9 +82,12 @@ class Anchorbot(object):
 
     def run(self):
         self.running, self.timeout = True, 3000
-        self.updater = Timer(0, self.update_all)
-        self.updater.daemon = True
-        self.updater.start()
+        self.verbose and self.log("Running=%s, timeout=%i" % (self.running, self.timeout))
+        try:
+            while self.running:
+                self.update_all()
+        except KeyboardInterrupt:
+            pass
 
     def __print_cache_and_exit(self):
         """ well, prints cache and exits """
@@ -92,11 +99,13 @@ class Anchorbot(object):
         """Does a save shutdown"""
         # stop downloading
         # shutdown
-        print "Shutting down..."
+        self.log("Shutting down...")
         self.running = False
+        self.log("Shutting down cache")
         self.cache.shutdown()
+        self.log("Shutting down config")
         self.config.shutdown()
-        self.updater.cancel()
+        self.log("KTHXBYE!")
 
     def add_entry(self, entry, source):
         url = self.crawler.get_link(entry)
@@ -110,27 +119,35 @@ class Anchorbot(object):
             self.log("Database error: %s" % url)
             s.close()
 
-        article, keywords, image_url, media = self.crawler.enrich(entry, source)
+        article, keywords, image_url, media = self.crawler.\
+                enrich(entry, source)
         s = get_session(self.db)
         s.add(article)
         s.commit()
         for kw in set(keywords):
             try:
                 if s.query(Keyword).filter(Keyword.word == kw).count():
-                    article.keywords.append(s.query(Keyword).filter(Keyword.word == kw).first())
+                    article.keywords.append(
+                            s.query(Keyword).\
+                                    filter(Keyword.word == kw).\
+                                    first())
                 else:
                     article.keywords.append(Keyword(kw))
                 s.merge(article)
                 s.flush()
             except IntegrityError, e:
                 s.rollback()
-                self.log("Keyword '%s' ignored: %s" % (kw,e))
+                self.log("Keyword '%s' ignored: %s" % (kw, e))
         if s.query(Image).filter(Image.filename == image_url).count():
-            article.image = s.query(Image).filter(Image.filename == image_url).first()
+            article.image = s.query(Image).\
+                    filter(Image.filename == image_url).\
+                    first()
         else:
             article.image = Image(image_url, self.cache[image_url])
         if s.query(Media).filter(Media.filename == media).count():
-            article.media = s.query(Media).filter(Media.filename == media).first()
+            article.media = s.query(Media).\
+                    filter(Media.filename == media).\
+                    first()
         else:
             article.media = Media(media)
         s.merge(article)
@@ -139,11 +156,13 @@ class Anchorbot(object):
 
     def download_feed(self, feedurl, i=0, callback=None):
         """Download procedure"""
-        del self.cache[feedurl] # make sure, you get the newest
+        del self.cache[feedurl]  # make sure, you get the newest
         try:
             feed = self.feeds[feedurl] = feedparser.parse(self.cache[feedurl])
             s = get_session(self.db)
-            source = s.query(Source).filter(Source.link == feedurl).first()
+            source = s.query(Source).\
+                    filter(Source.link == feedurl).\
+                    first()
             try:
                 title = source.title = feed["feed"]["title"]
             except KeyError:
@@ -158,12 +177,13 @@ class Anchorbot(object):
                     if not self.running:
                         break
                     self.add_entry(entry, source)
-                self.log("Done %i of %i: %s" % (i,len(self.config.get_abos()),feedurl,))
+                self.log("Done %i of %i: %s" % (i,
+                    len(self.config.get_abos()), feedurl))
             else:
-                self.log("Nothing new in %i of %i: %s (%s == %s)" % (i,len(self.config.get_abos()),feedurl,old_quickhash,new_quickhash))
+                self.log("Nothing new in %i of %i: %s (%s == %s)" % (
+                    i, len(self.config.get_abos()),
+                    feedurl, old_quickhash, new_quickhash))
                 s.close()
-
-            #self.feeds[feedurl] = feedurl
             if callback:
                 callback(feedurl, title)
 
@@ -180,39 +200,30 @@ class Anchorbot(object):
                 sleep(1)
 
     def update_all(self):
-        """Puts all feeds into the download queue to be downloaded.
+        """
+        Puts all feeds into the download queue to be downloaded.
         Needs some DLers in downloaders list
         """
         urls = self.config.get_abos()
         self.cache.get_all(urls, delete=True)
-        for i,url in zip(range(1, 1+len(urls)), urls):
+        for i, url in zip(range(1, 1 + len(urls)), urls):
             if not self.running:
                 break
-            try:
-                s = get_session(self.db)
-                source = s.query(Source).filter(Source.link == url).first()
-                if not source:
-                    self.log("New source: %s" % url)
-                    source = Source(url)
-                    s.add(source)
-                    try:
-                        s.flush()
-                    except IntegrityError:
-                        s.rollback()
-                        self.log("Couldn't store source %s" % source)
-                        continue
-                s.commit()
-                s.close()
-            except Exception, e:
-                print str(e)
-
-            self.download_feed(url,i=i)
-        last_time = time()
-        if self.running:
-            self.updater = Timer(self.timeout, self.update_all)
-            self.updater.start()
-        else:
-            self.updater.cancel()
+            s = get_session(self.db)
+            source = s.query(Source).filter(Source.link == url).first()
+            if not source:
+                self.log("New source: %s" % url)
+                source = Source(url)
+                s.add(source)
+                try:
+                    s.flush()
+                except IntegrityError:
+                    s.rollback()
+                    self.log("Couldn't store source %s" % source)
+                    continue
+            s.commit()
+            s.close()
+            self.download_feed(url, i=i)
 
     def add_url(self, url):
         """Adds a feed url to the abos
@@ -231,9 +242,30 @@ class Anchorbot(object):
         """
         self.config.del_abo(url)
 
-def get_cmd_options():
-    usage = "anchorbot.py"
-    return usage
+
+@cli.daemon.DaemonizingApp
+def anchorbot(app):
+    bot = Anchorbot(
+            app.params.verbose,
+            app.params.cache)
+    atexit.register(bot.shutdown)
+
+    if app.params.add:
+        print "Adding:", app.params.add
+
+    if app.params.daemonize:
+        app.log.info("About to daemonize")
+        app.daemonize()
+        bot.run()
+    else:
+        bot.run()
+
+
+anchorbot.add_param("-c", "--cache", help="only print cache", 
+        default=False, action="store_true")
+anchorbot.add_param("-a", "--add", help="add new urls",
+        default=False, type=str)
+
 
 if __name__ == "__main__":
-    print "Please run anchorbot_server.py"
+    anchorbot.run()
