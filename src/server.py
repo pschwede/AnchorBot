@@ -93,6 +93,9 @@ def skip(article_id):
         return "0"
     s = get_session_from_new_engine(DBPATH)
     art = s.query(Article).filter(Article.ID == article_id).first()
+    art.timesread -= 1
+    s.merge(art)
+    s.commit()
     s.close()
     return "1"
 
@@ -131,6 +134,10 @@ def articles(key, top=0, number=5, since=259200):
             offset(top * number)\
             .limit(number)
             )
+    for art in articles:
+        art.timesread += 1
+        s.merge(art)
+    s.commit()
     content = jsonify(articles=[art.dictionary() for art in articles])
     s.close()
     return content
@@ -145,7 +152,7 @@ def top_keywords(top, number=5, since=259200):
     keywords = list(
             s.query(Keyword).\
             join(Article.keywords).\
-            filter(Article.timesread == 0 or Article.date > (time() - since)).\
+            filter(Article.timesread == 0 and Article.date > (time() - since)).\
             order_by(desc(Keyword.clickcount)).\
             group_by(Article.title).\
             offset(top * number).\
@@ -224,6 +231,9 @@ def change_key(change, keyword_id=None, keyword=None):
         kw = s.query(Keyword).filter(Keyword.word == keyword).first()
     else:
         kw = s.query(Keyword).filter(Keyword.ID == keyword_id).first()
+    kw.clickcount += change
+    s.merge(kw)
+    s.commit()
     s.close()
     return jsonify({"change": change, "kid": keyword_id})
 

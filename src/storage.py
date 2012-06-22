@@ -10,6 +10,7 @@ from threading import Thread
 from Queue import Queue
 from StringIO import StringIO
 
+PIPES = 10
 
 class Cacher(object):
     """
@@ -67,6 +68,13 @@ class FileCacher(dict):
         self.dlqueue = Queue()
         self.dlthreads = list()
 
+        self.running = True
+        for i in range(PIPES):
+            t = Thread(target=self.__queued_retrieve)
+            t.daemon = True
+            t.start()
+            self.dlthreads.append(t)
+
         if os.path.exists(url_last_used_path):
             try:
                 self.url_last_used = pickle.load(
@@ -105,9 +113,12 @@ class FileCacher(dict):
                 log("IOError during retrieving %s" % url)
 
     def __queued_retrieve(self):
-        while not self.dlqueue.empty():
-            self.__getitem__(self.dlqueue.get(timeout=1000))
-            self.dlqueue.task_done()
+        while self.running:
+            if not self.dlqueue.empty():
+                item = self.dlqueue.get(1000)
+                self.__getitem__(item)
+                self.dlqueue.task_done()
+                self.verbose and log("task done: %s" % item)
 
     def chunk(self, url):
         """
@@ -130,12 +141,7 @@ class FileCacher(dict):
                 self.dlqueue.put(url)
                 valid_urls.append(url)
         self.verbose and log("Having %i urls in download queue." % len(valid_urls))
-        for i in range(min(4, len(valid_urls))):
-            t = Thread(target=self.__queued_retrieve)
-            t.daemon = True
-            t.start()
-            self.dlthreads.append(t)
-        self.verbose and log("Having %i threads for joining download queue." % len([t for t in self.dlthreads if t is not None and t.isAlive()]))
+        self.verbose and log("Having %i threads for joining download queue." % len(self.dlthreads))
         self.verbose and log("Joining dlqueue..")
         self.dlqueue.join()
         self.verbose and log("..done")
@@ -196,6 +202,7 @@ class FileCacher(dict):
 
     def shutdown(self):
         done = False
+        self.running = False
         self.vacuum(self.max_age_in_days)
         while not done:
             try:
