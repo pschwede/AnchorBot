@@ -2,5 +2,5 @@
 
 __all__ = ["anchorbot", "browser", "crawler", "config", "microblogger", "storage", "processor", "templates"]
 
-def _( text ):
+def _(text):
     return text

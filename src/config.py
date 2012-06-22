@@ -2,7 +2,6 @@
 import os
 import threading
 import time
-import timer
 
 import pickle
 
@@ -13,23 +12,28 @@ class SelfRenewingLock(threading.Thread):
     def __init__(self, lockfile, dtime=5):
         super(SelfRenewingLock, self).__init__()
         self.lockfile = lockfile
-        self.__locked = False
-        self.DTIME = dtime * (10 ** 6)  # seconds
-        #self.daemon = True
+        self.__locked = True
+        self.DTIME = dtime
+        self.waiting = threading.Event()
+        self.daemon = True
 
     def run(self):
-        timer.Timer(self.DTIME, self.__renew).start()
+        while not self.waiting.is_set():
+            f = open(self.lockfile, 'w')
+            pickle.dump(time.time(), f)
+            self.waiting.wait(self.DTIME)
 
-    def __renew(self):
-        f = open(self.lockfile, 'w')
-        pickle.dump(time.time(), f)
-        timer.Timer(self.DTIME, self.__renew).start()
+    def stop(self):
+        self.waiting.set()
+        self.free()
 
     def locked(self):
         if self.__locked:
             return True
         if os.path.exists(self.lockfile):
-            old = pickle.load(open(self.lockfile, 'r'))
+            f = open(self.lockfile, 'r')
+            old = pickle.load(f)
+            f.close()
             self.__locked = ((time.time() - old) <= self.DTIME)
             return self.__locked
         else:
@@ -38,6 +42,7 @@ class SelfRenewingLock(threading.Thread):
     def free(self):
         while os.path.exists(self.lockfile):
             os.remove(self.lockfile)
+        self.__locked = False
 
 
 class Config(object):
@@ -121,6 +126,10 @@ class Config(object):
 
 if __name__ == "__main__":
     s = SelfRenewingLock("/tmp/testlock", 1)
-    print s.locked()
     s.start()
+    print s.locked()
+    time.sleep(3)
+    print s.locked()
+    time.sleep(1)
+    s.stop()
     print s.locked()

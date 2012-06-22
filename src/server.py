@@ -110,8 +110,8 @@ def all_articles(key, top=0, number=5, since=259200):
             order_by(desc(Article.date)).\
             group_by(Article.link).\
             offset(top * number).limit(number))
-    print "About %i articles" % len(articles)
     content = jsonify(articles=[art.dictionary() for art in articles])
+    print content
     s.close()
     return content
 
@@ -129,9 +129,11 @@ def articles(key, top=0, number=5, since=259200):
             filter(Keyword.ID == kid).\
             order_by(desc(Article.date)).\
             group_by(Article.link).\
-            offset(top * number).limit(number))
-    print "About %i articles" % len(articles)
+            offset(top * number)\
+            .limit(number)
+            )
     content = jsonify(articles=[art.dictionary() for art in articles])
+    print content
     s.close()
     return content
 
@@ -141,15 +143,16 @@ def articles(key, top=0, number=5, since=259200):
 @flask_app.route("/json/top/keywords/<top>/<number>/<since>")
 def top_keywords(top, number=5, since=259200):
     top, number, since = map(int, [top, number, since])
-    print "Getting %i keywords from the top %i" % (number, top)
     s = get_session_from_new_engine(DBPATH)
-    print "Session built"
-    keywords = list(s.query(Keyword).\
+    keywords = list(
+            s.query(Keyword).\
+            join(Article.keywords).\
             filter(Article.timesread == 0 or Article.date > (time() - since)).\
             order_by(desc(Keyword.clickcount)).\
             group_by(Article.title).\
-            offset(top * number).limit(number))
-    print "About %i keywords" % len(articles)
+            offset(top * number).\
+            limit(number)
+            )
     content = jsonify(keywords=[kw.dictionary() for kw in keywords])
     s.close()
     return content

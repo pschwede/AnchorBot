@@ -235,6 +235,6 @@ class Crawler(object):
         title = entry["title"]
         keywords = list()
         for kw in re_splitter.split(title):
-            keywords.append(unicode(kw.lower))
+            keywords.append(unicode(kw.lower()))
         art = Article(date, title, content, url, source)
         return art, list(set(keywords)), image, media
