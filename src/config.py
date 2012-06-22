@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- encoding: utf-8 -*-
 import os
 import threading
 import time
@@ -12,37 +13,35 @@ class SelfRenewingLock(threading.Thread):
     def __init__(self, lockfile, dtime=5):
         super(SelfRenewingLock, self).__init__()
         self.lockfile = lockfile
-        self.__locked = True
         self.DTIME = dtime
-        self.waiting = threading.Event()
+        self.stopevent = threading.Event()
         self.daemon = True
+        self.__locked = False
 
     def run(self):
-        while not self.waiting.is_set():
+        while not self.stopevent.is_set():
             f = open(self.lockfile, 'w')
             pickle.dump(time.time(), f)
-            self.waiting.wait(self.DTIME)
+            f.close()
+            time.sleep(self.DTIME/2.1)
 
     def stop(self):
-        self.waiting.set()
-        self.free()
+        self.stopevent.set()
 
     def locked(self):
-        if self.__locked:
-            return True
+        # check, if file old enough to be unused
         if os.path.exists(self.lockfile):
             f = open(self.lockfile, 'r')
             old = pickle.load(f)
             f.close()
-            self.__locked = ((time.time() - old) <= self.DTIME)
-            return self.__locked
-        else:
+            if (time.time() - old) <= self.DTIME:
+                return True
             return False
+        return False
 
     def free(self):
         while os.path.exists(self.lockfile):
             os.remove(self.lockfile)
-        self.__locked = False
 
 
 class Config(object):
@@ -125,11 +124,14 @@ class Config(object):
             self.lock.free()
 
 if __name__ == "__main__":
-    s = SelfRenewingLock("/tmp/testlock", 1)
+    s = SelfRenewingLock("/tmp/testlock", 4)
     s.start()
-    print s.locked()
+    assert not s.locked()
     time.sleep(3)
-    print s.locked()
+    assert s.locked()
     time.sleep(1)
-    s.stop()
-    print s.locked()
+    assert s.locked()
+    time.sleep(5)
+    assert s.locked()
+    s.free()
+    assert not s.locked()

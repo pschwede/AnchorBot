@@ -111,7 +111,6 @@ def all_articles(key, top=0, number=5, since=259200):
             group_by(Article.link).\
             offset(top * number).limit(number))
     content = jsonify(articles=[art.dictionary() for art in articles])
-    print content
     s.close()
     return content
 
@@ -133,7 +132,6 @@ def articles(key, top=0, number=5, since=259200):
             .limit(number)
             )
     content = jsonify(articles=[art.dictionary() for art in articles])
-    print content
     s.close()
     return content
 
@@ -172,7 +170,6 @@ def top_articles(key, top=0, number=5, since=259200):
             order_by(desc(Article.date)).\
             group_by(Article.title).\
             offset(top * number).limit(number))
-    print "About %i articles" % len(articles)
     content = jsonify(articles=[art.dictionary() for art in articles])
     s.close()
     return content
@@ -216,9 +213,9 @@ def redirect_source(aid=None, url=None):
 def shutdown():
     try:
         request.environ.get("werkzeug.server.shutdown")()
-    except:
-        print "Not using werkzeug engine."
-    return "bye"
+    except Exception, e:
+        print str(e)
+    return "Bye"
 
 
 def change_key(change, keyword_id=None, keyword=None):
