@@ -198,7 +198,7 @@ class Article( Base ):
                 "image": self.image.dictionary(), 
                 "content": self.content,
                 "datestr": self.date,
-                "media": self.media.html(),
+                "media": self.media and self.media.html() or "",
                 "keywords": [kw.dictionary() for kw in sorted(self.keywords, key=lambda kw: kw.clickcount, reverse=True)],
                 }
 

@@ -260,7 +260,7 @@ table {
   .issue2 {
     width: 168pt;
     height: 126pt;
-    display: block;
+    display: inline-block;
     vertical-align: top;
     margin: 2pt;
     overflow: auto;

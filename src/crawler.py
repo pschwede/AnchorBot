@@ -14,6 +14,7 @@ from lxml.etree import (
 from logger import log
 from time import mktime, time
 from datamodel import Article
+from html2text import html2text
 
 #from boilerpipe.extract import Extractor
 
@@ -58,22 +59,7 @@ class Crawler(object):
     def __textual_content(self, url=None, html=None, similarcontent=None):
         """ If url is set and html is not, it uses BoilerPipe
         """
-        content = ""
-        if html:
-            # clean up codec
-            try:
-                codec = chardet.detect(html)["encoding"]
-                if codec:
-                    html = html.encode(codec, "xmlcharrefreplace")
-            except UnicodeDecodeError, e:
-                self.verbose and log( "Unencodable character found: %s" % e)
-            # regex method (not working; broken re_textual!)
-            """content = sorted([x[0] for x in re_textual.findall(html)],
-                    key=lambda x: len(x.split(" ")),
-                    reverse=True)[0]"""
-        else:
-            if url:
-                pass
+        content = html2text(html)
         return content
 
     def crawlHTML(self, html, url, similarcontent=None, depth=0, baseurl=None):
@@ -233,7 +219,6 @@ class Crawler(object):
             self.verbose and log(u"Found media: %s" % unicode(media))
 
         title = entry["title"]
-        content = content or title
         keywords = list()
         for kw in re_splitter.split(title):
             keywords.append(unicode(kw.lower()))

@@ -152,9 +152,10 @@ def top_keywords(top, number=5, since=259200):
     keywords = list(
             s.query(Keyword).\
             join(Article.keywords).\
-            filter(Article.timesread == 0 and Article.date > (time() - since)).\
+            filter(Article.timesread == 0).\
+            # filter(Article.date > time() - since).\
+            group_by(Keyword.ID).\
             order_by(desc(Keyword.clickcount)).\
-            group_by(Article.title).\
             offset(top * number).\
             limit(number)
             )
@@ -163,11 +164,36 @@ def top_keywords(top, number=5, since=259200):
     return content
 
 
+@flask_app.route("/json/top/articles/<top>")
+@flask_app.route("/json/top/articles/<top>/<number>")
+@flask_app.route("/json/top/articles/<top>/<number>/<since>")
+def top_articles(top=0, number=5, since=259200):
+    top, number, since = map(int, [top, number, since])
+    s = get_session_from_new_engine(DBPATH)
+    articles = list(s.query(Article).\
+            filter(Article.timesread == 0).\
+            join(Article.keywords).\
+            order_by(desc(Keyword.clickcount)).\
+            group_by(Article.title).\
+            offset(top * number).\
+            limit(number))
+    def sum_keyword_stats(art):
+        s, c = 0., 0
+        for keyword in art.keywords:
+            s += keyword.clickcount
+            c += 2
+        return s/c
+    articles = sorted(articles, key=sum_keyword_stats)
+    content = jsonify(articles=[art.dictionary() for art in articles])
+    s.close()
+    return content
+
+
 @flask_app.route("/json/top/articles/by/keyword/<key>")
 @flask_app.route("/json/top/articles/by/keyword/<key>/<top>")
 @flask_app.route("/json/top/articles/by/keyword/<key>/<top>/<number>")
 @flask_app.route("/json/top/articles/by/keyword/<key>/<top>/<number>/<since>")
-def top_articles(key, top=0, number=5, since=259200):
+def top_articles_by_keyword(key, top=0, number=5, since=259200):
     kid, top, number, since = map(int, [key, top, number, since])
     s = get_session_from_new_engine(DBPATH)
     articles = list(s.query(Article).\
