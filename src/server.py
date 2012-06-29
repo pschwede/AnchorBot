@@ -201,7 +201,7 @@ def top_articles_by_keyword(key, top=0, number=5, since=259200):
             join(Article.keywords).\
             filter(Keyword.ID == kid).\
             order_by(desc(Article.date)).\
-            group_by(Article.title).\
+            group_by(Article.link).\
             offset(top * number).limit(number))
     content = jsonify(articles=[art.dictionary() for art in articles])
     s.close()

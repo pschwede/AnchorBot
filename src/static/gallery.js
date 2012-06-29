@@ -44,7 +44,6 @@ function new_article(article) {
 
 
 function load(callback) {
-    done = false;
     contained = $("#content .issue2");
     $.getJSON("/json/top/articles/"+offset+"/"+(vert_num*hori_num),
         function(data) {
@@ -55,12 +54,11 @@ function load(callback) {
             $.each(data.articles, function(i, art) {
                 new_article(art).appendTo("#content", function() {
                     $(this).fadeIn("fast");
-                    done = true;
                 });
             });
         });
     offset += 1;
-    if(callback && done) callback();
+    if(callback) callback();
 }
 
 

@@ -72,27 +72,21 @@ load_and_inc_offset = function(keyword, n) {
             $.each(data.articles, function(i, art) {
                 new_article(art).appendTo("#content");
             });
-        } else dontload = true;
+        }
     });
     offset++;
-}
-
-fill_up = function(kid, initially) {
-  if($(window).scrollTop() >= $(document).height() - $(window).height()) {
-      load_and_inc_offset(kid, 1);
-  }
-  if(!initially)
-      setTimeout("fill_up("+kid+", false)", 500);
 }
 
 $('document').ready(function() {
   setup();
   kid = $("#keyword").attr('title');
-  fill_up(kid, true);
-  fill_up(kid, true);
-  fill_up(kid, true);
+  load_and_inc_offset(kid, 1);
+  load_and_inc_offset(kid, 1);
+  load_and_inc_offset(kid, 1);
 
   $(window).scroll(function() {
-    fill_up(kid, false);
+      if(1.2*$(window).scrollTop() >= $(document).height() - $(window).height()) {
+          load_and_inc_offset(kid, 1);
+      }
   });
 });

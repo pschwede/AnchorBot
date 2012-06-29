@@ -10,39 +10,47 @@ from threading import Thread
 from Queue import Queue
 from StringIO import StringIO
 
-PIPES = 10
+class LimitedDict(dict):
+    def __init__(self, size=5, **kwargs):
+        self.maxsize = size
+        self.accesses = 0
+        self.update(kwargs)
 
-class Cacher(object):
-    """
-    Object-Wrapper around a dict. Have seen smaller and quickier, though.
-    """
-    def __init__(self):
-        self.dic = {}
+    def find_least_accessed_key(self):
+        delme = None
+        items = self.items()
+        if items:
+            delme = items[0][0]  # default is the key of oldest item in items list
+            val = self.accesses  # biggest possible number
+            for key, obj in self.items():
+                if obj[0] < val: delme = key
+        return delme
 
-    def get(self, url):
-        return self.dic[url]
+    def __setitem__(self, key, obj):
+        if super(LimitedDict, self).__contains__(key):  
+            print "just overwriting"
+            super(LimitedDict, self).__setitem__(key, (0, obj))
+            return
 
-    def __getitem__(self, url):
-        try:
-            obj = self.dic[url]
-            log("Ha! Gottcha!")
-            return obj
-        except KeyError:
-            return None
+        if len(self) >= self.maxsize:
+            delme = self.find_least_accessed_key()
+            print "deleting %s" % delme
+            if delme:
+                super(LimitedDict, self).__delitem__(delme)
 
-    def __setitem__(self, url, obj):
-        if self[url]:
-            log("Overwriting %s" % url)
-        self.dic[url] = obj
+        print "adding %s" % str((key, (0, obj)))
+        super(LimitedDict, self).__setitem__(key, (0, obj))
 
-    def clear(self):
-        self.dic = {}
+    def __getitem__(self, key):
+        if key in self.keys():
+            # inc item access count
+            item = super(LimitedDict, self).__getitem__(key)  # should not raise KeyError
+            item = (item[0]+1, item[1])
+            super(LimitedDict, self).__setitem__(key, item)
 
-
-class NotCachingError(Exception):
-    def __init__(self, msg):
-        Exception.__init__(self, msg)
-
+            # inc global access count
+            self.accesses += 1
+            return item[1]
 
 class FileCacher(dict):
     def __init__(self,
@@ -50,9 +58,10 @@ class FileCacher(dict):
             max_age_in_days=-1,
             verbose=False,
             dont_dl=[],
-            dlnum=8):
+            dlnum=8,
+            memory=30):
         if not dont_dl:
-            dont_dl = [".gif", ".swf", ".iso", ".zip", ".avi", ".mp3", ".ogg"]
+            dont_dl = [".jar", ".gif", ".swf", ".iso", ".zip", ".avi", ".mp3", ".ogg"]
         self.verbose = verbose
         self.max_age_in_days = max_age_in_days
         self.localdir = os.path.realpath(os.path.dirname(localdir))
@@ -69,7 +78,7 @@ class FileCacher(dict):
         self.dlthreads = list()
 
         self.running = True
-        for i in range(PIPES):
+        for i in range(dlnum):
             t = Thread(target=self.__queued_retrieve)
             t.daemon = True
             t.start()
@@ -222,13 +231,11 @@ class FileCacher(dict):
 
 
 if __name__ == "__main__":
-    c = FileCacher(verbose=True)
-    print c["http://google.de"]
-    c.get_all(["http://google.de", "http://google.com",
-        "http://google.de", "http://google.com",
-        "http://google.de", "http://google.com",
-        "http://google.de", "http://google.com",
-        "http://google.de", "http://google.com",
-        ])
-    c.pprint()
-    c.shutdown()
+    d = LimitedDict()
+    for i in range(5):
+        d[i] = i
+    print d, d.accesses
+    print d[0], d[1], d[2], d[3]
+    print d, d.accesses
+    d[99] = 99
+    print d, d.accesses

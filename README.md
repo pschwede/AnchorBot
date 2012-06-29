@@ -49,6 +49,8 @@ with your feed-url to `~/.ancorbot/abos`.
 
 Related Projects
 ----------------
+* [curn](software.clapper.org/curn/)
+* [rawdog](http://offog.org/code/rawdog.html)
 * [Prismatic](http://www.getprismatic.com/)
 * [Flipboard](http://flipboard.com/)
 * [Hotot](https://code.google.com/p/hotot)

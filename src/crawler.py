@@ -57,9 +57,7 @@ class Crawler(object):
         self.verbose = verbose
 
     def __textual_content(self, url=None, html=None, similarcontent=None):
-        """ If url is set and html is not, it uses BoilerPipe
-        """
-        content = html2text(html)
+        content = html
         return content
 
     def crawlHTML(self, html, url, similarcontent=None, depth=0, baseurl=None):
