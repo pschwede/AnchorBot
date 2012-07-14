@@ -61,6 +61,7 @@ Related Projects
 * [Vienna RSS](http://www.vienna-rss.org/)
 * [Refynr](http://refynr.com/)
 * [Summify](http://summify.com/)
+* [News.me](http://news.me/)
 
 
 *Version 1.0 beta*
