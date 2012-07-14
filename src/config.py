@@ -62,6 +62,7 @@ class Config(object):
         if os.path.exists(self.abofile):
             f = open(self.abofile, 'r')
             self.abos = filter(lambda x: len(x), f.read().split("\n"))
+            self.abos = list(set(self.abos))  # remove doubles
             if self.verbose:
                 log(self.abos)
             f.close()

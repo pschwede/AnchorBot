@@ -4,6 +4,7 @@
 import sys
 import atexit
 import cli.daemon
+import humanize
 
 from sqlalchemy.sql.expression import desc
 from time import time
@@ -28,9 +29,33 @@ def show(mode, content, data=''):
 
 
 @flask_app.route("/")
-def start():
-    return show("gallery", [])
-
+@flask_app.route("/gallery")
+@flask_app.route("/gallery/offset/<offset>")
+def gallery(offset=0, number=5*3, since=259200):
+    offset, number, since = map(int, [offset, number, since])
+    radius = 3
+    s = get_session_from_new_engine(DBPATH)
+    articles = list(s.query(Article).\
+            join(Article.keywords).\
+            filter(Article.timesread == 0).\
+            filter(Article.skipcount <= 5).\
+            order_by(desc(Article.date)).\
+            group_by(Article.title).\
+            offset(offset * number * radius).\
+            limit(number * radius))
+    articles = sort_articles(articles, number)
+    for art in articles: 
+        art.skipped(time())
+        s.merge(art)
+    content = render_template(
+            "gallery.html",
+            style=url_for("static", filename="default.css"),
+            articles=[art.dictionary() for art in articles],
+            new_offset=offset+1
+        )
+    s.commit()
+    s.close()
+    return content
 
 @flask_app.route("/hate/keyword/by/id/<keyword_id>")
 def hate_key(keyword_id):
@@ -54,7 +79,7 @@ def read_feed(fid=None, url=None):
 
 
 @flask_app.route("/like/keyword/by/id/<keyword_id>")
-def like_key(keyword_id):
+def like_keyword(keyword_id):
     return change_key(1, keyword_id)
 
 
@@ -91,9 +116,10 @@ def get_keywords(limit=30):
 def skip(article_id):
     if not article_id:
         return "0"
+    result = "1"
     s = get_session_from_new_engine(DBPATH)
     art = s.query(Article).filter(Article.ID == article_id).first()
-    art.timesread -= 1
+    art.skipcount += 1
     s.merge(art)
     s.commit()
     s.close()
@@ -131,11 +157,11 @@ def articles(key, top=0, number=5, since=259200):
             filter(Keyword.ID == kid).\
             order_by(desc(Article.date)).\
             group_by(Article.link).\
-            offset(top * number)\
-            .limit(number)
+            offset(top * number).\
+            limit(number)
             )
     for art in articles:
-        art.timesread += 1
+        art.finished(time())
         s.merge(art)
     s.commit()
     content = jsonify(articles=[art.dictionary() for art in articles])
@@ -169,25 +195,31 @@ def top_keywords(top, number=5, since=259200):
 @flask_app.route("/json/top/articles/<top>/<number>/<since>")
 def top_articles(top=0, number=5, since=259200):
     top, number, since = map(int, [top, number, since])
+    radius = 3
     s = get_session_from_new_engine(DBPATH)
     articles = list(s.query(Article).\
-            filter(Article.timesread == 0).\
             join(Article.keywords).\
-            order_by(desc(Keyword.clickcount)).\
+            # filter(Article.timesread == 0).\
+            # order_by(desc(Keyword.clickcount)).\
+            order_by(desc(Article.date)).\
             group_by(Article.title).\
-            offset(top * number).\
-            limit(number))
-    def sum_keyword_stats(art):
-        s, c = 0., 0
-        for keyword in art.keywords:
-            s += keyword.clickcount
-            c += 2
-        return s/c
-    articles = sorted(articles, key=sum_keyword_stats)
-    content = jsonify(articles=[art.dictionary() for art in articles])
+            offset(top * number * radius).\
+            limit(number * radius))
+    content = jsonify(articles=[art.dictionary() for art in sort_articles(articles, number)])
     s.close()
     return content
 
+def sort_articles(articles, number=5):
+    def sum_keyword_stats(art):
+        points = art.date * 10 ** -10
+        points -= 9*abs(art.timesread)
+        points -= 3*abs(art.skipcount)
+        for keyword in art.keywords:
+            points += keyword.clickcount
+            points -= 1
+        return points
+    if len(articles) == 0: print "empty list"
+    return sorted(articles, key=sum_keyword_stats, reverse=True)[:number]
 
 @flask_app.route("/json/top/articles/by/keyword/<key>")
 @flask_app.route("/json/top/articles/by/keyword/<key>/<top>")
@@ -222,15 +254,45 @@ def keyword(keyword):
 
 
 @flask_app.route("/read/<aid>")
-def read_article(aid=None):
+@flask_app.route("/read/<aid>/because/of/<kid>")
+def read_article(aid=None, kid=None):
+    if kid: like_keyword(kid)
     articles = list()
-    if aid:
+    more_articles = list()
+    aids = map(int, aid.split("+"))
+    if aids:
         s = get_session_from_new_engine(DBPATH)
-        for aid in aid.split("+"):
+        for aid in aids:
             art = s.query(Article).filter(Article.ID == aid).first()
+            art.finished(time())
+            s.merge(art)
+            s.commit()
             articles.append(art)
-        s.close()
-    return show("read", [], data=articles)
+    if kid:
+        more_articles = list(s.query(Article).\
+                # filter(Article.timesread == 0).\
+                join(Article.keywords).\
+                filter(Keyword.ID == kid).\
+                filter(Article.date > articles[0].date).\
+                order_by(desc(Article.date)).\
+                group_by(Article.link).\
+                limit(5))
+        more_articles += list(s.query(Article).\
+                # filter(Article.timesread == 0).\
+                join(Article.keywords).\
+                filter(Keyword.ID == kid).\
+                filter(Article.date < articles[0].date).\
+                order_by(desc(Article.date)).\
+                group_by(Article.link).\
+                limit(5))
+    content = render_template(
+            "read.html",
+            style=url_for("static", filename="default.css"),
+            articles=articles,
+            more_articles=[art for art in more_articles if art.ID not in aids]
+        )
+    s.close()
+    return content
 
 
 @flask_app.route("/redirect/<aid>")

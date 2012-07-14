@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
   <head>
@@ -6,35 +7,24 @@
     <script type="text/javascript" src="{{ url_for('static', filename='jquery.js') }}"></script>
     <script type="text/javascript" src="{{ url_for('static', filename='anim.js') }}"></script>
     <script type="text/javascript" src="{{ url_for('static', filename='humanize.min.js') }}"></script>
-    {% block scripts %}
-    {% if mode is defined and  mode in ["gallery", "key", "feed"] %}
-    <script type="text/javascript" src="{{ url_for('static', filename=mode+'.js') }}"></script>
+    {% if mode=="gallery" %}
+    <script type="text/javascript" src="{{ url_for('static', filename='gallery.js') }}"></script>
+    {% elif mode=="key" %}
+    <script type="text/javascript" src="{{ url_for('static', filename='key.js') }}"></script>
+    {% elif mode=="feed" %}
+    <script type="text/javascript" src="{{ url_for('static', filename='feed.js') }}"></script>
+    {% elif mode=="read" %}
+    <script type="text/javascript" src="{{ url_for('static', filename='read.js') }}"></script>
     {% endif %}
-    {% endblock %}
   </head>
   <body>
-    {% block header %}
     <div id="header">
       <a class="title" href="/">AnchorBot</a>
       <a class="menu" id="feeds" href="#">Feeds</a>
       <a class="menu" id="keywords" href="#">Keys</a>
       <a class="menu" href="/quit" title="Shuts down this server">Quit</a>
     </div>
-    {% endblock %}
     <div id="popup">
-    {% block popup %}
         <div id="popup_content"></div>
-    {% endblock %}
     </div>
     <div id="container">
-    {% block container %}
-      {% if mode in ["key", "feed"] %}
-      <h1 title="{{ data.ID }}" id="keyword">{{ data.word }}</h1>
-      {% endif %}
-      <div id="content">
-      {% block content %}{% endblock %}
-      </div>
-    {% endblock %}
-    </div>
-  </body>
-</html>

@@ -1,17 +1,19 @@
-{% macro keyword(key, rated=false) %}
-    <a class="button" href="/key/id/{{ key.ID }}">{{ key.word }}</a>
-{% endmacro %}
-
-{% for art in articles %}
-<div id="aid{{ art.ID }}" class="issue2" style="background-image:url('{{ art.image.filename }}');">
-    <h2 class="issue_head" title="{{ art.title }}">{{ art.title }}</h2>
-    <div class="small">
-        <div style="width:100%">Choose: Why do you want to read this?</div>
-        <div class="tags">
-        {% for key in art.keywords %}
-            {{ keyword(key) }}
-        {% endfor %}
+{% extends "layout.html" %}
+{% block content %}
+  {% for article in articles %}
+    <div id="{{ article.ID }}" class="issue2" style="background-image:url('{{ article.image.filename }}');">
+        <h2 class="issue_head">{{ article.title }} ({{ article.timesread }}|{{ article.skipcount }})</h2>
+        <div class="small">
+          <span style="font-size:50%">Release: {{ article.datestr }}</span>
+            <div style="font-size:50%; width:100%">Choose: Why do you want to read this?</div>
+            <div class="tags">
+            {% for key in article.keywords %}
+              <a class="button" target="_blank" href="/read/{{ article.ID }}/because/of/{{ key.ID }}">{{ key.word }}</a>
+            {% endfor %}
+            </div>
         </div>
     </div>
-</div>
-{% endfor %}
+  {% endfor %}
+  <a href="/gallery/offset/{{ new_offset }}" id="moar" target="_parent">
+    <div style="width:100%;text-align:center;" class="button">MOAR PLZ</div></a>
+{% endblock %}

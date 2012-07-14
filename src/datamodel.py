@@ -5,6 +5,8 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker, scoped_session
 from sqlalchemy import create_engine, Column, Float, Integer, String, Unicode, ForeignKey
 import Image as PIL
+import humanize
+import time
 import re
 
 Base = declarative_base()
@@ -48,6 +50,7 @@ class Media( Base ):
 
     def __init__(self, filename):
         self.filename = filename
+        self.rendered_html = self.html()
 
     def __repr__(self):
         return "<%s%s>" % ( "Image", ( self.ID, self.filename, ) )
@@ -75,7 +78,7 @@ class Media( Base ):
             if vid:
                 vid = vid[0]
                 return '<iframe width="%i" height="%i" src="http://www.youtube.com/embed/%s" frameborder="0" allowfullscreen></iframe>' % (size[0], int(size[0]/ratio), vid)
-        return ''
+        return None
 
     def dictionary(self):
         return {"ID": self.ID,
@@ -195,9 +198,11 @@ class Article( Base ):
         return {"ID": self.ID,
                 "title": self.title, 
                 "link": self.link, 
-                "image": self.image.dictionary(), 
+                "image": self.image and self.image.dictionary() or None, 
                 "content": self.content,
-                "datestr": self.date,
+                "skipcount": self.skipcount,
+                "timesread": self.timesread,
+                "datestr": humanize.naturaltime(time.time() - self.date),
                 "media": self.media and self.media.html() or "",
                 "keywords": [kw.dictionary() for kw in sorted(self.keywords, key=lambda kw: kw.clickcount, reverse=True)],
                 }
@@ -282,3 +287,4 @@ if __name__ == "__main__":
         session.add( session.query( Keyword ).filter( Keyword.word == u"bla" ).first() or Keyword( "bla" ) )
         session.add( session.query( Keyword ).filter( Keyword.word == u"foo" ).first() or Keyword( "foo" ) )
         session.commit()
+    session.close()

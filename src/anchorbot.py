@@ -20,7 +20,7 @@ from config import Config
 from crawler import Crawler
 from datamodel import (
         get_session, get_engine, Source, Article, Image, Keyword, Media)
-from time import sleep
+from time import sleep, time
 import atexit
 
 HOME = os.path.join(os.path.expanduser("~"), ".anchorbot")
@@ -52,7 +52,7 @@ class Anchorbot(object):
         try:
             # cache keeps files for 3 days
             verbose and self.log("Init FileCacher dir=%s, days=%i, verbose=%s" % (TEMP, 3, verbose))
-            self.cache = storage.FileCacher(TEMP, 3, verbose)
+            self.cache = storage.FileCacher(TEMP, 3, verbose=verbose)
 
             # prepare datamodel
             verbose and self.log("Preparing database at %s" % DBPATH)
@@ -60,7 +60,6 @@ class Anchorbot(object):
 
             # prepare variables and lists,...
             verbose and self.log("Preparing variables and lists")
-            self.feeds = {}
             self.watched = None
 
             verbose and self.log("Init crawler with cache")
@@ -81,11 +80,19 @@ class Anchorbot(object):
             sys.exit(1)
 
     def run(self):
-        self.running, self.timeout = True, 3000
+        self.running, self.timeout = True, 30
         self.verbose and self.log("Running=%s, timeout=%i" % (self.running, self.timeout))
         try:
+            timeout = self.timeout
             while self.running:
-                self.update_all()
+                t0 = time()
+                somethings = self.update_all()
+                if somethings:
+                    timeout = max(0, self.timeout - time() + t0)
+                else:
+                    timeout = max(0, min(timeout * 2 - time() + t0, 4*60*60))
+                self.verbose and self.log("sleeping %i s" % timeout)
+                sleep(timeout)
         except KeyboardInterrupt:
             pass
 
@@ -108,20 +115,20 @@ class Anchorbot(object):
         self.log("KTHXBYE!")
 
     def add_entry(self, entry, source):
-        url = self.crawler.get_link(entry)
+        url = self.crawler.get_link(entry).encode("utf-8")
 
         s = get_session(self.db)
         try:
             if s.query(Article).filter(Article.link == url).count():
                 s.close()
-                return
+                return 0
         except DatabaseError:
             self.log("Database error: %s" % url)
             s.close()
+            return 0
 
         article, keywords, image_url, media = self.crawler.\
                 enrich(entry, source)
-        s = get_session(self.db)
         s.add(article)
         s.commit()
         for kw in set(keywords):
@@ -153,51 +160,70 @@ class Anchorbot(object):
         s.merge(article)
         s.commit()
         s.close()
+        return 1
 
-    def download_feed(self, feedurl, i=0, callback=None):
+    def download_feed(self, urls, callback=None):
         """Download procedure"""
-        del self.cache[feedurl]  # make sure, you get the newest
-        try:
-            feed = self.feeds[feedurl] = feedparser.parse(self.cache[feedurl])
-            s = get_session(self.db)
-            source = s.query(Source).\
-                    filter(Source.link == feedurl).\
-                    first()
+        somethings = 0
+        self.cache.get_all(urls, delete=True)
+        sources = dict()
+        hashes = dict()
+        s = get_session(self.db)
+        for source in set(s.query(Source).all()):
+            sources[source.link] = source
+            hashes[source.link] = source.quickhash
+        s.close()
+        for feedurl,i in zip(urls, range(len(urls))):
             try:
-                title = source.title = feed["feed"]["title"]
-            except KeyError:
-                title = source.title = feedurl
-            old_quickhash = source.quickhash
-            new_quickhash = self.get_quickhash(source.link)
-            if old_quickhash != new_quickhash:
-                source.quickhash = new_quickhash
-                s.commit()
-                s.close()
-                for entry in feed["entries"]:
-                    if not self.running:
-                        break
-                    self.add_entry(entry, source)
-                self.log("Done %i of %i: %s" % (i,
-                    len(self.config.get_abos()), feedurl))
-            else:
-                self.log("Nothing new in %i of %i: %s (%s == %s)" % (
-                    i, len(self.config.get_abos()),
-                    feedurl, old_quickhash, new_quickhash))
-                s.close()
-            if callback:
-                callback(feedurl, title)
+                old_quickhash = hashes[feedurl]
+                new_quickhash = str(self.get_quickhash(feedurl))
+                if old_quickhash == new_quickhash:
+                    self.log("Nothing new in %i of %i: %s (%s == %s)" % (
+                        i+1, len(urls),
+                        feedurl, old_quickhash, new_quickhash))
+                else:
+                    self.log("Something new in %i of %i: %s (%s != %s)" % (
+                        i+1, len(urls),
+                        feedurl, old_quickhash, new_quickhash))
+                    source = sources[feedurl]
+                    source.quickhash = new_quickhash
+                    feed = feedparser.parse(self.cache[feedurl])
+                    try:
+                        title = source.title = feed["feed"]["title"]
+                    except KeyError:
+                        title = source.title = feedurl
+                    s = get_session(self.db)
+                    s.merge(source)
+                    s.commit()
+                    s.close()
+                    new_articles = 0
+                    for entry in feed["entries"]:
+                        if not self.running:
+                            break
+                        new_articles += self.add_entry(entry, source)
+                    self.log("Done %i of %i: %s" % (i,
+                        len(self.config.get_abos()), feedurl))
+                    somethings += new_articles
+                if callback:
+                    callback(feedurl, title)
+            except Exception, e:
+                print e
 
-        except Exception, e:
-            print e
+        return somethings
 
     def get_quickhash(self, feedurl):
         """Fast value for comparisons without hashing"""
-        while True:
+        h = None
+        tries = 4
+        while tries and h is None:
             try:
-                h = hash(open(self.cache[feedurl]).read())
-                return h
-            except:
-                sleep(1)
+                f = open(self.cache[feedurl], "r")
+                h = str(hash(f.read()))
+                print h, feedurl, f.read(), h
+                f.close()
+            except IOError:
+                tries -= 1
+        return h
 
     def update_all(self):
         """
@@ -206,10 +232,10 @@ class Anchorbot(object):
         """
         urls = self.config.get_abos()
         self.cache.get_all(urls, delete=True)
-        for i, url in zip(range(1, 1 + len(urls)), urls):
+        s = get_session(self.db)
+        for url in urls:
             if not self.running:
                 break
-            s = get_session(self.db)
             source = s.query(Source).filter(Source.link == url).first()
             if not source:
                 self.log("New source: %s" % url)
@@ -222,8 +248,8 @@ class Anchorbot(object):
                     self.log("Couldn't store source %s" % source)
                     continue
             s.commit()
-            s.close()
-            self.download_feed(url, i=i)
+        s.close()
+        return self.download_feed(urls)
 
     def add_url(self, url):
         """Adds a feed url to the abos
@@ -234,6 +260,7 @@ class Anchorbot(object):
             source = Source(url, None)
             s.add(source)
             s.commit()
+            s.close()
         except Exception, e:
             print str(e)
 
@@ -246,7 +273,7 @@ class Anchorbot(object):
 @cli.daemon.DaemonizingApp
 def anchorbot(app):
     bot = Anchorbot(
-            app.params.verbose,
+            not app.params.verbose,
             app.params.cache)
     atexit.register(bot.shutdown)
 

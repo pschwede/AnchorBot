@@ -1,4 +1,4 @@
-var offset = 0;
+var offset = 1;
 var vert_num = 3;
 var hori_num = 5;  // unused
 
@@ -25,7 +25,7 @@ function new_article(article) {
         style: "margin-left:5pt;"
       }).click(function() {
           $.getJSON('/like/keyword/by/id/'+key.ID, function() {
-              window.location = "/key/"+key.word;
+              window.location = "/read/"+article.ID;
           });
       }).appendTo(buttons);
   });
@@ -64,19 +64,4 @@ function load(callback) {
 
 $('document').ready(function() {
     setup();
-    load();
-    $("#container").append(
-        $("<div/>", {
-            style: "width:100%;text-align:center;"
-        }).append(
-            $("<a/>", {
-                html: "MOAR",
-                "class": "more button",
-            })
-        ).click(function() {
-            button = $(this);
-            button.fadeOut("fast", function() {
-                load(function() {button.fadeIn("slow");});
-            });
-        }));
 });

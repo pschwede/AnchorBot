@@ -34,14 +34,14 @@ re_cln = re.compile(
         'style="[^"]*"' +
         ')', re.I)
 re_media = re.compile(
-        "(http://\S.mp3" +
-        "|vimeo\.com/\d+" +
-        "|youtu\.be/[^\"]+" +
-        "|youtube\.com/watch?v=[^\"]+" +
-        "|youtube\.com/watch?[^&]+&[^\"]+" +
-        "|http://www.youtube\.com/v/[^\"]+" +
-        "|http://www.youtube\.com/embed/[^\"]+" +
-        ")", re.I)
+        r"(http://\S.mp3" +
+        r"|vimeo\.com/\d+" +
+        r'|youtu\.be/[-\w]+' +
+        r'|youtube\.com/watch?v=[-\w]+' +
+        r'|youtube\.com/watch?[^&]+&[-\w]+' +
+        r'|http://www.youtube\.com/v/[-\w]+' +
+        r'|http://www.youtube\.com/embed/[-\w]+' +
+        r")", re.I)
 re_splitter = re.compile("\W", re.UNICODE)
 css_textsel = CSSSelector("div,span,p")
 css_imagesel = CSSSelector("img")
@@ -75,7 +75,7 @@ class Crawler(object):
                     images.append(urljoin(baseurl,
                         img.get("src") or img.attrib.values()[0]))
                 for elem in css_linksel(tree):
-                    if elem and elem.get("href"):
+                    if elem is not None and elem.get("href"):
                         href = elem.get("href")
                         if href[4:] == "http":
                             endings = (".png", ".jpg", ".gif", "jpeg")
@@ -97,6 +97,7 @@ class Crawler(object):
         biggest = ""
         imagelist = list(set(imagelist))
         x, y = 0, 0
+        self.cache.get_all(imagelist)
         for imgurl in imagelist:
             try:
                 im = PIL.open(self.cache[imgurl])
@@ -116,6 +117,7 @@ class Crawler(object):
 
         images = list(set(images))
         result = []
+        self.cache.get_all(images)
         for imgurl in images:
             try:
                 im = PIL.open(self.cache[imgurl])
@@ -201,7 +203,6 @@ class Crawler(object):
 
         # filter out some images
         # give the images to the entry finally
-        self.cache.get_all(images)
         images = self.filter_images(images, minimum=(40, 40,))
         #print images
         if not image:

@@ -1,6 +1,7 @@
 import urllib
 import os
 import time
+from md5 import md5
 try:
     import cPickle as pickle
 except ImportError:
@@ -61,7 +62,7 @@ class FileCacher(dict):
             dlnum=8,
             memory=30):
         if not dont_dl:
-            dont_dl = [".jar", ".gif", ".swf", ".iso", ".zip", ".avi", ".mp3", ".ogg"]
+            dont_dl = ["r.xz", ".jar", ".gif", ".swf", ".iso", ".zip", ".avi", ".mp3", ".ogg"]
         self.verbose = verbose
         self.max_age_in_days = max_age_in_days
         self.localdir = os.path.realpath(os.path.dirname(localdir))
@@ -100,17 +101,16 @@ class FileCacher(dict):
             for path in [os.path.join(self.localdir, f) for f in files]:
                 try:
                     if os.stat(path).st_atime < then:
-                        print "cleaning %s" % path
+                        self.verbose and log("Removing %s" % path)
                         os.remove(path)
                 except OSError:
                     pass
 
     def __newurl(self, url):
-        return os.path.join(
-                self.localdir,
-                str(hex(hash(url))).replace("-", "0"))
+        return os.path.join(self.localdir, str(hex(hash(url))).replace("-","0"))
 
     def __retrieve(self, url, newurl):
+        self.verbose and log("Downloading %s." % url)
         tries = 4
         done = False
         while tries and not done:
@@ -127,7 +127,6 @@ class FileCacher(dict):
                 item = self.dlqueue.get(1000)
                 self.__getitem__(item)
                 self.dlqueue.task_done()
-                self.verbose and log("task done: %s" % item)
 
     def chunk(self, url):
         """
@@ -161,8 +160,8 @@ class FileCacher(dict):
             return None
         if url == u"None":
             return None
-        """if isinstance(url, unicode):
-            url = url.encode("utf-8")"""
+        if isinstance(url, unicode):
+            url = url.encode("utf-8")
         if url[-4:] in self.dont_dl:
             raise Exception("Not downloading %s" % url)
         try:

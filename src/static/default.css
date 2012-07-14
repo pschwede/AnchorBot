@@ -80,7 +80,7 @@ table {
 
 #container {
   padding-top: 30pt;
-  width: 882pt;
+  max-width: 882pt;
   margin: 0 auto;
 }
 
@@ -217,13 +217,7 @@ table {
       padding: 3pt;
   }
 
-  #popup_content .list a:visited,
-  #popup_content .list a:link,
-  #popup_content .list .button,
-  #popup .button,
-  .small a.button:visited,
-  .small a.button:link,
-  .small .button {
+  .button, a.button {
     white-space: nowrap;
     font-family: sans-serif;
     font-weight: bold;
@@ -238,8 +232,7 @@ table {
     color: #666;
     cursor: pointer;
   }
-  #popup_content .list a.button:hover,
-  .small a.button:hover {
+  .button:hover, a.button:hover {
     background-color: #08f;
     text-shadow: -1pt -1pt 0.1pt rgba(0,0,0,0.3);
     box-shadow: inset 0 1pt 0 rgba(255,255,255,0.3), inset 0 -1pt 0 rgba(0,0,0,.2);
@@ -258,7 +251,7 @@ table {
   }
 
   .issue2 {
-    width: 168pt;
+    width: 165pt;
     height: 126pt;
     display: inline-block;
     vertical-align: top;
@@ -267,12 +260,9 @@ table {
     background-color: #ddd;
     border: 1pt solid #000;
   }
-  .issue:first {
-    margin: 2pt 0;
-  }
   .issue2 .image {
-    width:100%;
-    height:100%;
+    width: 100%;
+    height: 100%;
     background-repeat: no-repeat;
   }
   .issue2:nth-child(odd) {
@@ -329,7 +319,7 @@ table {
   }
   .issue2 .issue_head {
     z-index: 5;
-    color:#fff;
+    color: #fff;
     background: rgba(0,0,0,0.6);
     text-shadow: 1pt 1pt 0 #000;
     font-size: 10pt;
