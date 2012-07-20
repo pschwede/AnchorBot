@@ -5,4 +5,5 @@ echo "I recommend to read install scripts before running them!"
 apt-get install python2.7-dev &&
 
 # this will download newest python modules and installs them
-pip install feedparser sqlite setuptools tweepy beautifulsoup lxml sqlalchemy humanize
+pip install feedparser sqlite setuptools tweepy beautifulsoup lxml sqlalchemy\
+    humanize pyCLI html2text chardet HTMLParser markdown flask-markdown

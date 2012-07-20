@@ -13,6 +13,11 @@ install_requires = [
     "sqlalchemy", 
     "humanize",
     "pyCLI",
+    "html2text",
+    "chardet",
+    "HTMLParser",
+    "markdown",
+    "flask-markdown"
 ]
 
 setup(
