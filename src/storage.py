@@ -64,6 +64,7 @@ class FileCacher(dict):
         if not dont_dl:
             dont_dl = ["r.xz", ".jar", ".gif", ".swf", ".iso", ".zip", ".avi", ".mp3", ".ogg"]
         self.verbose = verbose
+        self.dlnum = dlnum
         self.max_age_in_days = max_age_in_days
         self.localdir = os.path.realpath(os.path.dirname(localdir))
         if not os.path.exists(localdir):
@@ -79,11 +80,6 @@ class FileCacher(dict):
         self.dlthreads = list()
 
         self.running = True
-        for i in range(dlnum):
-            t = Thread(target=self.__queued_retrieve)
-            t.daemon = True
-            t.start()
-            self.dlthreads.append(t)
 
         if os.path.exists(url_last_used_path):
             try:
@@ -122,11 +118,10 @@ class FileCacher(dict):
                 log("IOError during retrieving: %s" % (str(e)))
 
     def __queued_retrieve(self):
-        while self.running:
-            if not self.dlqueue.empty():
-                item = self.dlqueue.get(1000)
-                self.__getitem__(item)
-                self.dlqueue.task_done()
+        while not self.dlqueue.empty():
+            item = self.dlqueue.get(1000)
+            self.__getitem__(item)
+            self.dlqueue.task_done()
 
     def chunk(self, url):
         """
@@ -149,10 +144,12 @@ class FileCacher(dict):
                 self.dlqueue.put(url)
                 valid_urls.append(url)
         self.verbose and log("Having %i urls in download queue." % len(valid_urls))
-        self.verbose and log("Having %i threads for joining download queue." % len(self.dlthreads))
+        for i in range(self.dlnum):
+            t = Thread(target=self.__queued_retrieve)
+            t.daemon = True
+            t.start()
         self.verbose and log("Joining dlqueue..")
         self.dlqueue.join()
-        self.verbose and log("..done")
         return [self.__getitem__(url) for url in valid_urls]
 
     def __getitem__(self, url):
