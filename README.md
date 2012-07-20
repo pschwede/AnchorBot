@@ -1,8 +1,6 @@
 AnchorBot
 =========
 
-![AnchorBot as seen in a Firefox with Pentadactyl Extension on Xubuntu 11.10 with Awesome WM](https://github.com/spazzpp2/AnchorBot/raw/master/screenshot.png)
-
 It's a news feed reader with the attempt of making you read the most important
 news first.
 

@@ -12,7 +12,6 @@ install_requires = [
     "lxml", 
     "sqlalchemy", 
     "humanize",
-    "pyCLI",
     "html2text",
     "chardet",
     "HTMLParser",

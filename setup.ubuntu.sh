@@ -6,4 +6,4 @@ apt-get install python2.7-dev &&
 
 # this will download newest python modules and installs them
 pip install feedparser sqlite setuptools tweepy beautifulsoup lxml sqlalchemy\
-    humanize pyCLI html2text chardet HTMLParser markdown flask-markdown
+    humanize html2text chardet HTMLParser markdown flask-markdown
