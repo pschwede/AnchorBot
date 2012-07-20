@@ -16,22 +16,13 @@ from sqlalchemy.exc import IntegrityError, DatabaseError
 
 import storage
 from logger import Logger
-from config import Config
+from config import *
 from crawler import Crawler
 from datamodel import (
         get_session, get_engine, Source, Article, Image, Keyword, Media)
 from time import sleep, time
 import atexit
-
-HOME = os.path.join(os.path.expanduser("~"), ".anchorbot")
-DBPATH = os.path.join(HOME, "database.sqlite")
-HERE = os.path.realpath(os.path.dirname(__file__))
-TEMP = os.path.join(os.path.expanduser("~"), ".cache/anchorbot/")
-HTML = os.path.join(HOME, "index.html")
-__appname__ = "AnchorBot"
-__version__ = "1.1"
-__author__ = "spazzpp2"
-
+import md5
 
 class Anchorbot(object):
     """
@@ -51,7 +42,8 @@ class Anchorbot(object):
 
         try:
             # cache keeps files for 3 days
-            verbose and self.log("Init FileCacher dir=%s, days=%i, verbose=%s" % (TEMP, 3, verbose))
+            verbose and self.log("Init FileCacher dir=%s, days=%i, verbose=%s" % (
+                TEMP, 3, verbose))
             self.cache = storage.FileCacher(TEMP, 3, verbose=verbose)
 
             # prepare datamodel
@@ -74,37 +66,52 @@ class Anchorbot(object):
         try:
             # Raises Exception if locked
             verbose and self.log("Loading config from %s" % HOME)
-            self.config = Config(HOME, verbose=verbose)
+            self.config = Config(HOME, verbose=True)
         except Exception, e:
             self.log(str(e))
             sys.exit(1)
 
     def run(self):
-        self.running, self.timeout = True, 30
-        self.verbose and self.log("Running=%s, timeout=%i" % (self.running, self.timeout))
+        self.running = True
+        self.firsttimeout = 16
+        self.timeouts, self.update = dict(), dict()
+        self.verbose and self.log("Running=%s, timeout=%s" % (
+            self.running, self.timeouts))
         try:
-            timeout = self.timeout
             while self.running:
-                t0 = time()
-                somethings = self.update_all()
-                if somethings:
-                    timeout = max(0, self.timeout - time() + t0)
-                else:
-                    timeout = max(0, min(timeout * 2 - time() + t0, 4*60*60))
-                self.verbose and self.log("sleeping %i s" % timeout)
-                sleep(timeout)
+                t = time()
+
+                # add urls
+                for url in self.config.get_abos():
+                    if url not in self.timeouts.keys():
+                        self.timeouts[url] = self.firsttimeout
+                        self.update[url] = 0
+
+                # update all that have a small enough timeout
+                check_these = [x[0] for x in self.update.items() if x[1] <= t]
+                news = self.update_all(check_these)
+
+                # update timeouts
+                print "Have news:", news
+                for url in check_these:
+                    self.timeouts[url] *= .5 if url in news else 2
+                    self.update[url] = t + self.timeouts[url]
+
+                remaining = min(self.update.values()) - time()
+                if remaining > 0:
+                    self.verbose and self.log("sleeping %i seconds" % (
+                        remaining))
+                    sleep(remaining)
         except KeyboardInterrupt:
             pass
 
     def __print_cache_and_exit(self):
         """ well, prints cache and exits """
-        # print
         self.cache.pprint()
         self.shutdown()
 
     def shutdown(self, stuff=None):
         """Does a save shutdown"""
-        # stop downloading
         # shutdown
         self.log("Shutting down...")
         self.running = False
@@ -115,7 +122,10 @@ class Anchorbot(object):
         self.log("KTHXBYE!")
 
     def add_entry(self, entry, source):
-        url = self.crawler.get_link(entry).encode("utf-8")
+        try:
+            url = self.crawler.get_link(entry).encode("utf-8")
+        except UnicodeError:
+            url = str(self.crawler.get_link(entry))
 
         s = get_session(self.db)
         try:
@@ -164,29 +174,31 @@ class Anchorbot(object):
 
     def download_feed(self, urls, callback=None):
         """Download procedure"""
-        somethings = 0
+        somethings = list()
         self.cache.get_all(urls, delete=True)
         sources = dict()
         hashes = dict()
         s = get_session(self.db)
-        for source in set(s.query(Source).all()):
-            sources[source.link] = source
-            hashes[source.link] = source.quickhash
+        for source in s.query(Source).all():
+            if source.link in sources.keys():
+                s.delete(source)
+                s.commit()
+            else:
+                sources[source.link] = source
+                hashes[source.link] = source.quickhash
         s.close()
         for feedurl,i in zip(urls, range(len(urls))):
             try:
                 old_quickhash = hashes[feedurl]
                 new_quickhash = str(self.get_quickhash(feedurl))
                 if old_quickhash == new_quickhash:
-                    self.log("Nothing new in %i of %i: %s (%s == %s)" % (
-                        i+1, len(urls),
-                        feedurl, old_quickhash, new_quickhash))
+                    self.log("%i of %i not new: %s" % (
+                        i+1, len(urls), feedurl))
                 else:
-                    self.log("Something new in %i of %i: %s (%s != %s)" % (
-                        i+1, len(urls),
-                        feedurl, old_quickhash, new_quickhash))
+                    self.log("%i of %i  n e w : %s" % (
+                        i+1, len(urls), feedurl))
                     source = sources[feedurl]
-                    source.quickhash = new_quickhash
+                    hashes[feedurl] = source.quickhash = new_quickhash
                     feed = feedparser.parse(self.cache[feedurl])
                     try:
                         title = source.title = feed["feed"]["title"]
@@ -201,9 +213,8 @@ class Anchorbot(object):
                         if not self.running:
                             break
                         new_articles += self.add_entry(entry, source)
-                    self.log("Done %i of %i: %s" % (i,
-                        len(self.config.get_abos()), feedurl))
-                    somethings += new_articles
+                    if new_articles:
+                        somethings.append(feedurl)
                 if callback:
                     callback(feedurl, title)
             except Exception, e:
@@ -218,20 +229,17 @@ class Anchorbot(object):
         while tries and h is None:
             try:
                 f = open(self.cache[feedurl], "r")
-                h = str(hash(f.read()))
-                print h, feedurl, f.read(), h
+                h = md5.md5(f.read()).hexdigest()
                 f.close()
             except IOError:
                 tries -= 1
         return h
 
-    def update_all(self):
+    def update_all(self, urls):
         """
         Puts all feeds into the download queue to be downloaded.
         Needs some DLers in downloaders list
         """
-        urls = self.config.get_abos()
-        self.cache.get_all(urls, delete=True)
         s = get_session(self.db)
         for url in urls:
             if not self.running:

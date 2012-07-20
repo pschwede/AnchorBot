@@ -1,3 +1,17 @@
-{% for source in sources %}
-<div class="list"><a class="button" href="{{ url_for('read_feed', fid=source.ID) }}">{{ source.title }}</a></div>
-{% endfor %}
+{% extends "layout.html" %}
+{% block content %}
+    {% for source in sources %}
+    <div class="list" style="display: inline-block; width:33%">
+        <a class="button" href="{{ url_for('read_feed', fid=source.ID) }}" target="_blank">
+            <img src="{{ source.image.filename }}" alt=""/>
+            {% if source.title %}
+                {{ source.title }}
+            {% elif source.link|count > 30 %}
+                {{ source.link[:30] }}…
+            {% else %}
+                {{ source.link }}
+            {% endif %}
+        </a>
+    </div>
+    {% endfor %}
+{% endblock %}

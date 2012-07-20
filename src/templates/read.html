@@ -1,4 +1,5 @@
 {% extends "layout.html" %}
+{% block title %}Read - {% endblock %}
 {% block header %}
 {% endblock %}
 {% block content %}
@@ -9,14 +10,13 @@
     </h1>
     {% if article.media and article.media.html() %}
     <div class="media">{{ article.media.html()|safe }}</div>
-    {% elif article.image %} 
+    {% elif article.image and article.image.filename %} 
     <div class="image"><img src="{{ article.image.filename }}" alt="" /></div>
     {% endif %}
     <div class="issue_content">
-      <p>{{ article.content|safe }}</p></div>
+      <p>{{ article.content|markdown }}</p></div>
     <div class="small"><span>
-      <a href="{{ article.link }}" class="button" target="_parent">Read orginal</a>
-      <a href="http://bufferapp.com/add" class="buffer-add-button" data-text="{{ article.title }}" data-url="{{ article.link }}" data-count="horizontal" >Buffer</a><script type="text/javascript" src="http://static.bufferapp.com/js/button.js"></script>
+        <a href="{{ article.link }}" class="button" target="_parent">Read more</a>
     </span></div>
   </div>
 {% endfor %}

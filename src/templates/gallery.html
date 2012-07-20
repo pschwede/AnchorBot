@@ -1,19 +1,27 @@
 {% extends "layout.html" %}
+{% block title %}Gallery - {% endblock %}
 {% block content %}
+<div id="gallery">
   {% for article in articles %}
     <div id="{{ article.ID }}" class="issue2" style="background-image:url('{{ article.image.filename }}');">
-        <h2 class="issue_head">{{ article.title }} ({{ article.timesread }}|{{ article.skipcount }})</h2>
-        <div class="small">
-          <span style="font-size:50%">Release: {{ article.datestr }}</span>
-            <div style="font-size:50%; width:100%">Choose: Why do you want to read this?</div>
-            <div class="tags">
-            {% for key in article.keywords %}
-              <a class="button" target="_blank" href="/read/{{ article.ID }}/because/of/{{ key.ID }}">{{ key.word }}</a>
-            {% endfor %}
-            </div>
-        </div>
+      <h2 class="issue_head">
+      {% for word in article.title.split(" ") %}
+          {% if id_per_key[word] %}
+            <a href="/read/{{ article.ID }}/because/of/{{ id_per_key[word] }}" target="_blank">
+              {{ word }}
+            </a>
+          {% else %}
+          {{ word }}
+          {% endif %}
+      {% endfor %}
+      </h2>
+      <div class="small">
+        <div>&#11016; Choose: Why do you want to read this? &#11017;</div>
+        <div>Released {{ article.datestr }}</div>
+      </div>
     </div>
   {% endfor %}
   <a href="/gallery/offset/{{ new_offset }}" id="moar" target="_parent">
-    <div style="width:100%;text-align:center;" class="button">MOAR PLZ</div></a>
+    <div style="text-align:center;" class="button">MOAR PLZ</div></a>
+</div>
 {% endblock %}

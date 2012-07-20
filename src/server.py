@@ -9,14 +9,17 @@ import humanize
 from sqlalchemy.sql.expression import desc
 from time import time
 from flask import Flask, render_template, url_for, request, redirect, jsonify
+from flaskext.markdown import Markdown
 
-from anchorbot import DBPATH
+from config import DBPATH
 from datamodel import get_session_from_new_engine, Source, Article, Keyword
+import re
+from crawler import get_keywords as crawl_keywords, htmlunescape
 
 _host = "0.0.0.0"
 _port = 8000
 flask_app = Flask(__name__)
-
+Markdown(flask_app)
 
 def show(mode, content, data=''):
     return render_template(
@@ -43,15 +46,28 @@ def gallery(offset=0, number=5*3, since=259200):
             group_by(Article.title).\
             offset(offset * number * radius).\
             limit(number * radius))
+    id_per_key = dict()
     articles = sort_articles(articles, number)
     for art in articles: 
         art.skipped(time())
         s.merge(art)
+        # trying to find a way to tell jinja2 how to make links out of headlines:
+        for word in crawl_keywords(art.title, forjinja2=True):
+            try:
+                id_per_key[word]
+            except KeyError:
+                for key in art.keywords:
+                    try:
+                        if key.word == crawl_keywords(word)[0]:
+                             id_per_key[word] = key.ID
+                    except IndexError:
+                        pass
     content = render_template(
             "gallery.html",
             style=url_for("static", filename="default.css"),
             articles=[art.dictionary() for art in articles],
-            new_offset=offset+1
+            new_offset=offset+1,
+            id_per_key=id_per_key,
         )
     s.commit()
     s.close()
@@ -64,16 +80,22 @@ def hate_key(keyword_id):
 
 @flask_app.route("/feed/<url>")
 @flask_app.route("/feed/id/<fid>")
-def read_feed(fid=None, url=None):
+@flask_app.route("/feed/id/<fid>/<amount>")
+def read_feed(fid=None, url=None, amount=3):
     s = get_session_from_new_engine(DBPATH)
     if url:
         arts = s.query(Article).join(Article.source)
-        arts = arts.filter(Source.link.contains(url)).order_by(Article.date)
+        arts = arts.filter(Source.link.contains(url)).order_by(desc(Article.date))
         arts = arts.all()
     else:
         arts = s.query(Article).join(Article.source)
         arts = arts.filter(Source.ID == fid).order_by(desc(Article.date)).all()
-    content = show("feed", arts)
+    content = render_template(
+            "read.html",
+            style=url_for("static", filename="default.css"),
+            articles=arts[:amount],
+            more_articles=arts[amount:],
+        )
     s.close()
     return content
 
@@ -83,11 +105,15 @@ def like_keyword(keyword_id):
     return change_key(1, keyword_id)
 
 
+@flask_app.route("/feeds")
 @flask_app.route("/list/feeds")
 def get_feeds():
     s = get_session_from_new_engine(DBPATH)
-    sources = s.query(Source).order_by(Source.title).all()
-    content = render_template("feeds.html", sources=sources)
+    sources = sorted(s.query(Source).all(), key=lambda x: x.title)
+    content = render_template("feeds.html", 
+            style=url_for("static", filename="default.css"),
+            sources=sources,
+            )
     s.close()
     return content
 
@@ -100,14 +126,21 @@ def selectSQL(query):
     return jsonify(items)
 
 
+@flask_app.route("/keys")
+@flask_app.route("/list/keys")
+@flask_app.route("/keywords")
 @flask_app.route("/list/keywords")
 @flask_app.route("/list/keywords/<limit>")
-def get_keywords(limit=30):
+def get_keywords(limit=60):
     s = get_session_from_new_engine(DBPATH)
     keywords = s.query(Keyword).\
             order_by(desc(Keyword.clickcount)).\
             limit(limit)
-    content = render_template("keywords.html", keywords=keywords)
+    content = render_template(
+            "keywords.html",
+            style=url_for("static", filename="default.css"),
+            keywords=keywords,
+        )
     s.close()
     return content
 
@@ -317,7 +350,7 @@ def change_key(change, keyword_id=None, keyword=None):
     s = get_session_from_new_engine(DBPATH)
     if keyword and not keyword_id:
         kw = s.query(Keyword).filter(Keyword.word == keyword).first()
-    else:
+    elif keyword_id:
         kw = s.query(Keyword).filter(Keyword.ID == keyword_id).first()
     kw.clickcount += change
     s.merge(kw)

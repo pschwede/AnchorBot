@@ -15,6 +15,7 @@ from logger import log
 from time import mktime, time
 from datamodel import Article
 from html2text import html2text
+import HTMLParser
 
 #from boilerpipe.extract import Extractor
 
@@ -34,30 +35,44 @@ re_cln = re.compile(
         'style="[^"]*"' +
         ')', re.I)
 re_media = re.compile(
-        r"(http://\S.mp3" +
-        r"|vimeo\.com/\d+" +
-        r'|youtu\.be/[-\w]+' +
-        r'|youtube\.com/watch?v=[-\w]+' +
-        r'|youtube\.com/watch?[^&]+&[-\w]+' +
-        r'|http://www.youtube\.com/v/[-\w]+' +
-        r'|http://www.youtube\.com/embed/[-\w]+' +
-        r")", re.I)
+        "(http://\S.mp3" +
+        "|vimeo\.com/\d+" +
+        '|youtu\.be/[-\w]+' +
+        '|youtube\.com/watch?v=[-\w]+' +
+        '|youtube\.com/watch?[^&]+&[-\w]+' +
+        '|http://www.youtube\.com/v/[-\w]+' +
+        '|http://www.youtube\.com/embed/[-\w]+' +
+        ")", re.I)
 re_splitter = re.compile("\W", re.UNICODE)
+re_mdimages = re.compile("!\[[^\]]*\]\([^\)]*\)")
 css_textsel = CSSSelector("div,span,p")
 css_imagesel = CSSSelector("img")
 css_linksel = CSSSelector("a")
+htmlunescape = HTMLParser.HTMLParser().unescape
 
+def get_keywords(title, forjinja2=False):
+    keywords = list()
+    if not forjinja2:
+        for kw in re_splitter.split(htmlunescape(title).lower()):
+            if len(kw)>1:
+                keywords.append(unicode(kw))
+    else:
+        for kw in title.split(" "):
+            if len(kw)>1:
+                keywords.append(unicode(kw))
+
+    return keywords
 
 class Crawler(object):
-    htmlparser = HTMLParser()
-
     def __init__(self, cacher, proxies=None, verbose=False):
         self.opener = urllib.FancyURLopener(proxies)
         self.cache = cacher  # for not retrieving things twice!
         self.verbose = verbose
 
     def __textual_content(self, url=None, html=None, similarcontent=None):
-        content = html
+        #content = html
+        content = html2text(self.clean(html))
+        #content = re_mdimages.sub("", content)
         return content
 
     def crawlHTML(self, html, url, similarcontent=None, depth=0, baseurl=None):
@@ -68,7 +83,7 @@ class Crawler(object):
             if html:
                 tree = soupparser.fromstring(html)
                 content = self.__textual_content(
-                        html=xmltostring(tree),
+                        html=html,
                         similarcontent=similarcontent)
                 images = list()
                 for img in css_imagesel(tree):
@@ -84,14 +99,7 @@ class Crawler(object):
                 media += re_media.findall(html) or ""
         except KeyboardInterrupt:
             pass
-        return (set(images), self.clean(content), media[-1] if media else None)
-
-    def unescape(self, text):
-        text = text.replace("\/", "/")
-        text = text.replace("&quot;", "\"")
-        text = text.replace("&lt;", "<")
-        text = text.replace("&gt;", ">")
-        return text
+        return (set(images), content, media[-1] if media else None)
 
     def biggest_image(self, imagelist):
         biggest = ""
@@ -218,8 +226,6 @@ class Crawler(object):
             self.verbose and log(u"Found media: %s" % unicode(media))
 
         title = entry["title"]
-        keywords = list()
-        for kw in re_splitter.split(title):
-            keywords.append(unicode(kw.lower()))
         art = Article(date, title, content, url, source)
+        keywords = get_keywords(title)
         return art, list(set(keywords)), image, media

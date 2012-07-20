@@ -8,6 +8,14 @@ import pickle
 
 from logger import log
 
+HOME = os.path.join(os.path.expanduser("~"), ".anchorbot")
+DBPATH = os.path.join(HOME, "database.sqlite")
+HERE = os.path.realpath(os.path.dirname(__file__))
+TEMP = os.path.join(os.path.expanduser("~"), ".cache/anchorbot/")
+HTML = os.path.join(HOME, "index.html")
+__appname__ = "AnchorBot"
+__version__ = "1.1"
+__author__ = "spazzpp2"
 
 class SelfRenewingLock(threading.Thread):
     def __init__(self, lockfile, dtime=5):
@@ -36,7 +44,6 @@ class SelfRenewingLock(threading.Thread):
             f.close()
             if (time.time() - old) <= self.DTIME:
                 return True
-            return False
         return False
 
     def free(self):
@@ -62,10 +69,10 @@ class Config(object):
         if os.path.exists(self.abofile):
             f = open(self.abofile, 'r')
             self.abos = filter(lambda x: len(x), f.read().split("\n"))
+            f.close()
             self.abos = list(set(self.abos))  # remove doubles
             if self.verbose:
                 log(self.abos)
-            f.close()
         else:
             self.abos = defaultabos
         if os.path.exists(self.configfile):
