@@ -10,13 +10,14 @@ html, body {
   font-family: Georgia,"Times New Roman",Times,serif;
   line-height: 133%;
   font-size: 12pt;
-  color: #000;
+  background: #fff;
+  color: #333;
 }
 
 li {
   margin-left:0;
-  padding-left:0;
-  text-indent: 1em;
+  padding-left: 1em;
+  text-indent: -1em;
   list-style-position: inside;
 }
 
@@ -28,33 +29,27 @@ table {
   position: fixed;
   top: 0;
   left: 0;
-  background-color: #000;
+  background-color: #ddd;
   display: block;
   width: 100%;
-  padding: 3pt;
   font-family: Arial, Sans;
   z-index: 99;
+  border-bottom: 1pt solid #666;
   height: 17pt;
-  border-bottom: 1pt solid #fff;
+  padding: 3pt;
 }
 #header a.title {
   font-weight: bold;
-  color: #666;
+  color: rgba(20,20,20,0.9);
   padding-right: 5pt;
-}
-#header a.title:hover {
-  color: #000;
-  text-shadow: 1pt -1pt 2pt #fff, -1pt 1pt 2pt #fff, 1pt 1pt 2pt #fff, -1pt -1pt 2pt #fff;
+  text-shadow: 0pt 1pt 0pt rgba(255,255,255,0.8);
 }
 #header a.menu {
   margin: 0;
-  color: #666;
+  color: rgba(20,20,20,0.9);
   padding: 5pt;
   height: 100%;
-}
-#header a.menu:focus,
-#header a.menu:hover {
-  color: #fff;
+  text-shadow: 0pt 1pt 0pt rgba(255,255,255,0.8);
 }
 
 #popup {
@@ -80,53 +75,15 @@ table {
 
 #container {
   padding-top: 30pt;
-  max-width: 882pt;
+  width: 100%;
   margin: 0 auto;
 }
 
-#gallery,
-#content {
+#gallery {
+  margin: 0 auto;
   padding: 5pt;
+  text-align: center;
 }
-
-.gallery {
-  /*width: 173pt;*/
-  overflow: auto;
-  /*margin-left: 1.5pt;*/
-  float: left;
-  margin: 0 auto;
-  display: none;
-}
-.gallery:hover {
-  color: #fff;
-  background-color: #000;
-}
-    .gallery a.title,
-    .gallery a.hate {
-      line-height:9pt;
-      color: #fff;
-      z-index: 999;
-      font-size: 9pt;
-      vertical-align: center;
-      text-align: center;
-      padding: 2pt;
-    }
-    .gallery a.hate {
-      padding-left: 10pt;
-      padding-right: 5pt;
-    }
-    .gallery a.title {
-      font-weight: bold;
-      margin: 0 auto;
-      padding-left: 20pt;
-      padding-right: 20pt;
-    }
-    .gallery:hover a.hate {
-      color: #666;
-    }
-    .gallery a:hover.hate {
-      color: #fff;
-    }
 
 .issue1 {
   width: 100%;
@@ -174,7 +131,7 @@ table {
 .issue1 .image {
   width: 100%;
   padding: 5pt;
-  background: #fff;
+  background: transparent;
   text-align: center;
 }
 .issue1 .media iframe,
@@ -193,11 +150,15 @@ table {
     font-size: 18pt;
     line-height: 130%;
     font-variant: small-caps;
+    text-shadow: 0pt 1pt 0 rgba(255,255,255,0.7);
   }
   .issue1 .issue_content {
     padding-top: 20pt;
-    border-top: 1pt solid #333;
-    width: 30em;
+    width: 34em;
+    padding-left: 2em;
+    padding-right: 2em;
+    padding-bottom: 20pt;
+    background-color: #fff;
     text-align: justify;
     margin: 0 auto;
     font-family: serif;
@@ -227,14 +188,14 @@ table {
     border-radius: 10pt;
     border: 1pt solid rgba(0,0,0,0.3);
     box-shadow: 0pt 1pt 0pt rgba(0,0,0,0.2);
-    text-shadow: 1pt 1pt 0 rgba(255,255,255,0.7);
+    text-shadow: 0pt 1pt 0 rgba(255,255,255,0.7);
     text-align: center;
     color: #666;
     cursor: pointer;
   }
   .button:hover, a.button:hover {
     background-color: #08f;
-    text-shadow: -1pt -1pt 0.1pt rgba(0,0,0,0.3);
+    text-shadow: 0pt -1pt 0.1pt rgba(0,0,0,0.3);
     box-shadow: inset 0 1pt 0 rgba(255,255,255,0.3), inset 0 -1pt 0 rgba(0,0,0,.2);
     color: #fff;
     cursor: pointer;
@@ -251,14 +212,12 @@ table {
   }
 
   .issue2 {
-    width: 165pt;
-    height: 126pt;
+    width: 19%;
+    min-width: 162pt;
+    min-height: 126pt;
     display: inline-block;
-    vertical-align: top;
-    margin: 2pt;
     overflow: auto;
     background-color: #ddd;
-    border: 1pt solid #000;
   }
   .issue2 .image {
     width: 100%;
@@ -272,14 +231,13 @@ table {
     background-position: 66% 66%;
   }
   .issue2 .small {
-    width: 160pt;
-    font: 14pt sans-serif;
-    color: #fff;
+    width: 100%;
+    font: 7pt sans-serif;
+    color: #000;
     display: none;
-    padding: 5pt;
     float:left;
-    background: rgba(0,0,0,0.6);
-    border-bottom: 1pt solid #555;
+    text-align: center;
+    border-bottom-width: 1pt;
   }
   .issue2 .small .tags {
     max-height: 100pt;
@@ -308,28 +266,43 @@ table {
     float: none;
     margin: 2pt auto;
   }
-  .issue2:hover .issue_head {
-    display: none;
-  }
-  .issue2:hover .small {
-    display: block;
-  }
   .issue2 .issue_content {
     display: none;
   }
   .issue2 .issue_head {
     z-index: 5;
     color: #fff;
-    background: rgba(0,0,0,0.6);
-    text-shadow: 1pt 1pt 0 #000;
+    text-shadow: 0pt 1pt 0 #000;
     font-size: 10pt;
     font-variant: small-caps;
     text-align: center;
     line-height: 15pt;
     position: relative;
-    border-bottom: 1pt solid #555;
     padding-left: 5pt;
     padding-right: 5pt;
+    border-bottom-width: 1pt;
+  }
+  .issue2 .small,
+  .issue2 .issue_head {
+    background: rgba(0, 0, 0, .6);
+  }
+  .issue2,
+  .issue2 .small,
+  .issue2 .issue_head {
+    border-color: rgba(0, 0, 0, 0.8);
+  }
+  .issue2 .small,
+  .issue2 .issue_head a:visited,
+  .issue2 .issue_head a:link {
+    color: #fff;
+  }
+  .issue2 .issue_head a:hover {
+    color: #08f;
+  }
+  .issue2:hover .issue_head {
+  }
+  .issue2:hover .small {
+    display: block;
   }
 
   .issue1, .issue2 {
