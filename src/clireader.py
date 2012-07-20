@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 import sys
-from anchorbot import DBPATH
+from config import DBPATH
 from sqlalchemy import desc
 from datamodel import get_session_from_new_engine, Article, Keyword
 from html2text import html2text
