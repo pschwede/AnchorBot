@@ -31,9 +31,6 @@ Python >= 2.6 needed! No Apache.
 
 Tell me ;)
 
-*⚠ Running it the first time may take some minutes even with a fast Internet
-connection!*
-
 
 Usage
 -----
@@ -42,7 +39,9 @@ with your feed-url to `~/.ancorbot/abos`.
 
     echo "yourfeedurl" >> ~/.anchorbot/abos
 
-* Call `anchorbot.linux` to open your browser with anchorbot's front page.
+* Call `bot.sh` to run the downloading and analyzing bot. Be sure to have internet connection.
+
+* Execute web.sh to run the server and open your webbrowser with it's url.
 
 
 Related Projects

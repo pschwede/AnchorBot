@@ -109,7 +109,7 @@ class Source( Base ):
                 "link": self.link,
                 "title": self.title,
                 "image_id": self.image_id,
-                "image": self.mage.dictionary(),
+                "image": self.image and self.image.dictionary(),
                 "quickhash": self.quickhash,
                 }
 
@@ -202,9 +202,10 @@ class Article( Base ):
                 "image": self.image and self.image.dictionary() or None, 
                 "content": self.content,
                 "skipcount": self.skipcount,
+                "source": self.source.dictionary(),
                 "timesread": self.timesread,
                 "datestr": humanize.naturaltime(time.time() - self.date),
-                "media": self.media and self.media.html() or "",
+                "media": self.media and self.media.dictionary() or None,
                 "keywords": [kw.dictionary() for kw in sorted(self.keywords, key=lambda kw: kw.clickcount, reverse=True)],
                 }
 

@@ -8,16 +8,21 @@
       <h1 class="issue_head" title="{{ article.ID }}" id="article{{article.ID}}">
       {{ article.title }}
     </h1>
-    {% if article.media and article.media.html() %}
-    <div class="media">{{ article.media.html()|safe }}</div>
+    {% if article.media and article.media.html %}
+    <div class="media">{{ article.media.html|safe }}</div>
     {% elif article.image and article.image.filename %} 
     <div class="image"><img src="{{ article.image.filename }}" alt="" /></div>
     {% endif %}
     <div class="issue_content">
       <p>{{ article.content|markdown }}</p></div>
-    <div class="small"><span>
+    <div class="small">
+      <span>
+        This piece of news has been released on <a href="{{ article.source.link }}">{{ article.source.title }}</a> {{ article.datestr }}.
+      </span>
+      <span>
         <a href="{{ article.link }}" class="button" target="_parent">Read more</a>
-    </span></div>
+      </span>
+    </div>
   </div>
 {% endfor %}
 <div class="issue1">

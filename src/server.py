@@ -274,16 +274,25 @@ def top_articles_by_keyword(key, top=0, number=5, since=259200):
 
 
 @flask_app.route("/key/<keyword>")
-def keyword(keyword):
-    if keyword:
-        keyword = keyword.split("+")[0]
-        s = get_session_from_new_engine(DBPATH)
-        kw = s.query(Keyword).\
-                filter(Keyword.word == keyword).\
-                first()
-        content = show("key", [], data=kw)
-        s.close()
-        return content
+@flask_app.route("/key/<keyword>/<amount>")
+def keyword(keyword, amount=3):
+    s = get_session_from_new_engine(DBPATH)
+    arts = s.query(Article).\
+            join(Article.keywords).\
+            filter(Keyword.word.contains(keyword)).\
+            order_by(desc(Article.date)).\
+            all()
+    for art in arts[:amount]:
+        art.finished(time())
+        s.merge(art)
+    content = render_template(
+            "read.html",
+            style=url_for("static", filename="default.css"),
+            articles=arts[:amount],
+            more_articles=arts[amount:],
+        )
+    s.close()
+    return content
 
 
 @flask_app.route("/read/<aid>")
@@ -321,7 +330,7 @@ def read_article(aid=None, kid=None):
     content = render_template(
             "read.html",
             style=url_for("static", filename="default.css"),
-            articles=articles,
+            articles=[a.dictionary() for a in articles],
             more_articles=[art for art in more_articles if art.ID not in aids]
         )
     s.close()
