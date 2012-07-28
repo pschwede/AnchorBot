@@ -17,7 +17,7 @@ For more information, please read the [Wiki](http://github.com/spazzpp2/AnchorBo
 
 Installation
 ------------
-Python >= 2.6 needed! No Apache.
+Python at least as new as 2.6 needed.
 
 *Ubuntu:*
 
@@ -34,14 +34,14 @@ Tell me ;)
 
 Usage
 -----
-* To add rss/atom feeds (not implemented in web interface yet), append a line
+To add rss/atom feeds (not implemented in web interface yet), append a line
 with your feed-url to `~/.ancorbot/abos`.
 
     echo "yourfeedurl" >> ~/.anchorbot/abos
 
-* Call `bot.sh` to run the downloading and analyzing bot. Be sure to have internet connection.
+Call `bot.sh` to run the downloading and analyzing bot. Be sure to have internet connection.
 
-* Execute web.sh to run the server and open your webbrowser with it's url.
+Execute web.sh to run the server and open your webbrowser with it's url.
 
 
 Related Projects
@@ -61,9 +61,9 @@ Related Projects
 * [News.me](http://news.me/)
 
 
-*Version 1.0 beta*
+* Version 1.0 beta*
 
-*© spazzpp2 – Licensed under MIT License*
+* © spazzpp2 – Licensed under MIT License*
 
 This project was once known as "Lyrebird" and is - as before - still a tribute
 to the [bird that retweets](http://youtu.be/7XiQDgNUEMw) the terrifying
