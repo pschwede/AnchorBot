@@ -41,7 +41,7 @@ with your feed-url to `~/.ancorbot/abos`.
 
 Call `bot.sh` to run the downloading and analyzing bot. Be sure to have internet connection.
 
-Execute web.sh to run the server and open your webbrowser with it's url.
+Execute `web.sh` to run the server and open your webbrowser with it's url.
 
 
 Related Projects
