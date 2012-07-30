@@ -21,7 +21,7 @@ Python at least as new as 2.6 needed.
 
 *Ubuntu:*
 
-    sudo setup.ubuntu.sh && ./anchorbot.linux
+    sudo setup.ubuntu.sh
 
 *all other:*
 
@@ -61,9 +61,9 @@ Related Projects
 * [News.me](http://news.me/)
 
 
-* Version 1.0 beta*
+*Version 1.0 beta*
 
-* © spazzpp2 – Licensed under MIT License*
+*© spazzpp2 – Licensed under MIT License*
 
 This project was once known as "Lyrebird" and is - as before - still a tribute
 to the [bird that retweets](http://youtu.be/7XiQDgNUEMw) the terrifying
