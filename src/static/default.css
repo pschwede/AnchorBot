@@ -281,6 +281,8 @@ table {
     padding-left: 5pt;
     padding-right: 5pt;
     border-bottom-width: 1pt;
+    max-height: 108pt;
+    overflow: auto;
   }
   .issue2 .small,
   .issue2 .issue_head {
