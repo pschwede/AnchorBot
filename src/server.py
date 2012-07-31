@@ -21,6 +21,7 @@ _port = 8000
 flask_app = Flask(__name__)
 Markdown(flask_app)
 
+
 def show(mode, content, data=''):
     return render_template(
             "layout.html",
@@ -34,7 +35,7 @@ def show(mode, content, data=''):
 @flask_app.route("/")
 @flask_app.route("/gallery")
 @flask_app.route("/gallery/offset/<offset>")
-def gallery(offset=0, number=5*3, since=259200):
+def gallery(offset=0, number=15, since=259200):
     offset, number, since = map(int, [offset, number, since])
     radius = 3
     s = get_session_from_new_engine(DBPATH)
@@ -48,10 +49,11 @@ def gallery(offset=0, number=5*3, since=259200):
             limit(number * radius))
     id_per_key = dict()
     articles = sort_articles(articles, number)
-    for art in articles: 
+    for art in articles:
         art.skipped(time())
         s.merge(art)
-        # trying to find a way to tell jinja2 how to make links out of headlines:
+        # trying to find a way to tell jinja2,
+        # how to make links out of headlines:
         for word in crawl_keywords(art.title, forjinja2=True):
             try:
                 id_per_key[word]
@@ -59,19 +61,20 @@ def gallery(offset=0, number=5*3, since=259200):
                 for key in art.keywords:
                     try:
                         if key.word == crawl_keywords(word)[0]:
-                             id_per_key[word] = key.ID
+                            id_per_key[word] = key.ID
                     except IndexError:
                         pass
     content = render_template(
             "gallery.html",
             style=url_for("static", filename="default.css"),
             articles=[art.dictionary() for art in articles],
-            new_offset=offset+1,
+            new_offset=offset + 1,
             id_per_key=id_per_key,
         )
     s.commit()
     s.close()
     return content
+
 
 @flask_app.route("/hate/keyword/by/id/<keyword_id>")
 def hate_key(keyword_id):
@@ -85,11 +88,15 @@ def read_feed(fid=None, url=None, amount=3):
     s = get_session_from_new_engine(DBPATH)
     if url:
         arts = s.query(Article).join(Article.source)
-        arts = arts.filter(Source.link.contains(url)).order_by(desc(Article.date))
+        arts = arts.\
+                filter(Source.link.contains(url)).\
+                order_by(desc(Article.date))
         arts = arts.all()
     else:
         arts = s.query(Article).join(Article.source)
-        arts = arts.filter(Source.ID == fid).order_by(desc(Article.date)).all()
+        arts = arts.\
+                filter(Source.ID == fid).\
+                order_by(desc(Article.date)).all()
     content = render_template(
             "read.html",
             style=url_for("static", filename="default.css"),
@@ -110,7 +117,8 @@ def like_keyword(keyword_id):
 def get_feeds():
     s = get_session_from_new_engine(DBPATH)
     sources = sorted(s.query(Source).all(), key=lambda x: x.title)
-    content = render_template("feeds.html", 
+    content = render_template(
+            "feeds.html",
             style=url_for("static", filename="default.css"),
             sources=sources,
             )
@@ -180,7 +188,8 @@ def all_articles(key, top=0, number=5, since=259200):
 @flask_app.route("/json/latest/articles/by/keyword/<key>")
 @flask_app.route("/json/latest/articles/by/keyword/<key>/<top>")
 @flask_app.route("/json/latest/articles/by/keyword/<key>/<top>/<number>")
-@flask_app.route("/json/latest/articles/by/keyword/<key>/<top>/<number>/<since>")
+@flask_app.route("/json/latest/articles/by/keyword/<key>/<top>/" +
+                                                        "<number>/<since>")
 def articles(key, top=0, number=5, since=259200):
     kid, top, number, since = map(int, [key, top, number, since])
     s = get_session_from_new_engine(DBPATH)
@@ -238,21 +247,28 @@ def top_articles(top=0, number=5, since=259200):
             group_by(Article.title).\
             offset(top * number * radius).\
             limit(number * radius))
-    content = jsonify(articles=[art.dictionary() for art in sort_articles(articles, number)])
+    content = jsonify(
+            articles=[
+                art.dictionary() for art in sort_articles(articles, number)])
     s.close()
     return content
+
 
 def sort_articles(articles, number=5):
     def sum_keyword_stats(art):
         points = art.date * 10 ** -10
-        points -= 9*abs(art.timesread)
-        points -= 3*abs(art.skipcount)
+        points -= 9 * abs(art.timesread)
+        points -= 3 * abs(art.skipcount)
+        c = 0
         for keyword in art.keywords:
             points += keyword.clickcount
-            points -= 1
+            c += 1
+        points /= c
         return points
-    if len(articles) == 0: print "empty list"
+    if len(articles) == 0:
+        print "empty list"
     return sorted(articles, key=sum_keyword_stats, reverse=True)[:number]
+
 
 @flask_app.route("/json/top/articles/by/keyword/<key>")
 @flask_app.route("/json/top/articles/by/keyword/<key>/<top>")
@@ -298,7 +314,8 @@ def keyword(keyword, amount=3):
 @flask_app.route("/read/<aid>")
 @flask_app.route("/read/<aid>/because/of/<kid>")
 def read_article(aid=None, kid=None):
-    if kid: like_keyword(kid)
+    if kid:
+        like_keyword(kid)
     articles = list()
     more_articles = list()
     aids = map(int, aid.split("+"))
@@ -367,6 +384,7 @@ def change_key(change, keyword_id=None, keyword=None):
     s.close()
     return jsonify({"change": change, "kid": keyword_id})
 
+
 @cli.daemon.DaemonizingApp
 def server(cli_app):
     atexit.register(shutdown)
@@ -378,8 +396,11 @@ def server(cli_app):
             debug=cli_app.params.flaskdebug,
             use_reloader=True)
 
-server.add_param("-hp", "--hostport", help="set host:port url", default="0.0.0.0:8000")
-server.add_param("-fd", "--flaskdebug", help="set debugflag for flask", default="0.0.0.0:8000")
+
+server.add_param("-hp", "--hostport", help="set host:port url",
+        default="0.0.0.0:8000")
+server.add_param("-fd", "--flaskdebug", help="set debugflag for flask",
+        default="0.0.0.0:8000")
 server.add_param("-r", "--reloader", help="use reloader", default=False)
 
 if __name__ == "__main__":
