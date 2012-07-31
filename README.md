@@ -7,7 +7,7 @@ news first.
 
 Features
 --------
-* gets pictures out of the RSS feeds and the page they're linking to
+* gets videos and pictures out of the RSS feeds and the page they're linking to
 * analyzes feed entries for repeatations in microblogs or other feeds to merge and sort
 * focus on readability
 * locally hosted webinterface to run inside your browser
@@ -17,7 +17,7 @@ For more information, please read the [Wiki](http://github.com/spazzpp2/AnchorBo
 
 Installation
 ------------
-Python at least as new as 2.6 needed.
+Needs Python at least as new as 2.6.
 
 *Ubuntu:*
 
@@ -26,10 +26,6 @@ Python at least as new as 2.6 needed.
 *all other:*
 
     setup.py install
-
-*Windows:*
-
-Tell me ;)
 
 
 Usage
