@@ -8,9 +8,6 @@ import chardet
 from urlparse import urljoin
 from lxml.cssselect import CSSSelector
 from lxml.html import soupparser
-from lxml.etree import (
-        tostring as xmltostring,
-        HTMLParser)
 from logger import log
 from time import mktime, time
 from datamodel import Article
@@ -60,8 +57,8 @@ def get_keywords(title, forjinja2=False):
         for kw in title.split(" "):
             if len(kw)>1:
                 keywords.append(unicode(kw))
-
     return keywords
+
 
 class Crawler(object):
     def __init__(self, cacher, proxies=None, verbose=False):
