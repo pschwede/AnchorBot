@@ -1,9 +1,9 @@
 {% extends "layout.html" %}
 {% block title %}Gallery - {% endblock %}
 {% block content %}
-<div id="gallery">
+<ul id="gallery">
   {% for article in articles %}
-    <div id="{{ article.ID }}" class="issue2" style="background-image:url('{{ article.image.filename }}');">
+    <li id="{{ article.ID }}" class="issue2" style="background-image:url('{{ article.image.filename }}');">
       <h2 class="issue_head">
       {% for word in article.title.split(" ") %}
           {% if id_per_key[word] %}
@@ -19,9 +19,10 @@
         <div>&#11016; Choose: Why do you want to read this? &#11017;</div>
         <div>Released {{ article.datestr }}</div>
       </div>
-    </div>
+      <div class="issue_content">
+        <p>{{ article.content|markdown }}</p>
+      </div>
+    </li>
   {% endfor %}
-  <a href="/gallery/offset/{{ new_offset }}" id="moar" target="_parent">
-    <div style="text-align:center;" class="button">MOAR PLZ</div></a>
-</div>
+</ul>
 {% endblock %}
