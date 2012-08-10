@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 # -*- encoding utf-8 -*-
 
-import sys
 import atexit
 import cli.daemon
-import humanize
 
 from sqlalchemy.sql.expression import desc
 from time import time
@@ -13,8 +11,7 @@ from flaskext.markdown import Markdown
 
 from config import DBPATH
 from datamodel import get_session_from_new_engine, Source, Article, Keyword
-import re
-from crawler import get_keywords as crawl_keywords, htmlunescape
+from crawler import get_keywords as crawl_keywords
 
 _host = "0.0.0.0"
 _port = 8000
@@ -35,35 +32,41 @@ def show(mode, content, data=''):
 @flask_app.route("/")
 @flask_app.route("/gallery")
 @flask_app.route("/gallery/offset/<offset>")
-def gallery(offset=0, number=15, since=259200):
+def gallery(offset=0, number=17, since=259200):
     offset, number, since = map(int, [offset, number, since])
-    radius = 3
+    radius = 5
+    t = time()
+    print "%.1f -- Getting articles.." % (time() - t)
     s = get_session_from_new_engine(DBPATH)
     articles = list(s.query(Article).\
             join(Article.keywords).\
             filter(Article.timesread == 0).\
-            filter(Article.skipcount <= 5).\
+            filter(Article.skipcount <= 2).\
             order_by(desc(Article.date)).\
             group_by(Article.title).\
-            offset(offset * number * radius).\
-            limit(number * radius))
-    id_per_key = dict()
+            offset(offset * (number + radius)).\
+            limit(number + radius))
+    print "%.1f -- ..sorting %i Articles.." % (time() - t,
+            len(articles),)
     articles = sort_articles(articles, number)
+    #print "%.1f -- ..increase skipped count.." % (time() - t)
+    print "%.1f -- ..split and prepare headlines.." % (time() - t)
+    # trying to find a way to tell jinja2,
+    # how to make links out of headlines:
+    id_per_key = dict()
     for art in articles:
         art.skipped(time())
         s.merge(art)
-        # trying to find a way to tell jinja2,
-        # how to make links out of headlines:
-        for word in crawl_keywords(art.title, forjinja2=True):
+        for word in set(crawl_keywords(art.title, forjinja2=True)):
             try:
-                id_per_key[word]
-            except KeyError:
-                for key in art.keywords:
-                    try:
-                        if key.word == crawl_keywords(word)[0]:
-                            id_per_key[word] = key.ID
-                    except IndexError:
-                        pass
+                ck = crawl_keywords(word)[0]
+                kwid = list(s.query(Keyword.ID).\
+                        filter(Keyword.word == ck).\
+                        limit(1))[0][0]
+                id_per_key[word] = kwid
+            except IndexError:
+                pass
+    print "%.1f -- ..rendering template.." % (time() - t)
     content = render_template(
             "gallery.html",
             style=url_for("static", filename="default.css"),
@@ -73,6 +76,7 @@ def gallery(offset=0, number=15, since=259200):
         )
     s.commit()
     s.close()
+    print "%.1f -- ..done." % (time() - t)
     return content
 
 
@@ -86,22 +90,56 @@ def hate_key(keyword_id):
 @flask_app.route("/feed/id/<fid>/<amount>")
 def read_feed(fid=None, url=None, amount=3):
     s = get_session_from_new_engine(DBPATH)
+    articles = list()
+    more_articles = list()
     if url:
-        arts = s.query(Article).join(Article.source)
-        arts = arts.\
+        articles = s.query(Article).join(Article.source)
+        articles = articles.\
                 filter(Source.link.contains(url)).\
                 order_by(desc(Article.date))
-        arts = arts.all()
+        more_articles = list(s.query(Article).\
+                # filter(Article.timesread == 0).\
+                join(Article.source).\
+                filter(Source.link.contains(url)).\
+                filter(Article.date > articles[0].date).\
+                order_by(desc(Article.date)).\
+                group_by(Article.link).\
+                limit(5))
+        more_articles += list(s.query(Article).\
+                # filter(Article.timesread == 0).\
+                join(Article.source).\
+                filter(Source.link.contains(url)).\
+                filter(Article.date < articles[0].date).\
+                order_by(desc(Article.date)).\
+                group_by(Article.link).\
+                limit(5))
+        arts = articles.all()
     else:
         arts = s.query(Article).join(Article.source)
         arts = arts.\
                 filter(Source.ID == fid).\
                 order_by(desc(Article.date)).all()
+        more_articles = list(s.query(Article).\
+                # filter(Article.timesread == 0).\
+                join(Article.source).\
+                filter(Source.ID == fid).\
+                filter(Article.date > articles[0].date).\
+                order_by(desc(Article.date)).\
+                group_by(Article.link).\
+                limit(5))
+        more_articles += list(s.query(Article).\
+                # filter(Article.timesread == 0).\
+                join(Article.source).\
+                filter(Source.ID == fid).\
+                filter(Article.date < articles[0].date).\
+                order_by(desc(Article.date)).\
+                group_by(Article.link).\
+                limit(5))
     content = render_template(
             "read.html",
             style=url_for("static", filename="default.css"),
-            articles=arts[:amount],
-            more_articles=arts[amount:],
+            articles=[a.dictionary() for a in articles],
+            more_articles=[art for art in more_articles if art not in articles]
         )
     s.close()
     return content
@@ -157,7 +195,6 @@ def get_keywords(limit=60):
 def skip(article_id):
     if not article_id:
         return "0"
-    result = "1"
     s = get_session_from_new_engine(DBPATH)
     art = s.query(Article).filter(Article.ID == article_id).first()
     art.skipcount += 1
@@ -237,7 +274,7 @@ def top_keywords(top, number=5, since=259200):
 @flask_app.route("/json/top/articles/<top>/<number>/<since>")
 def top_articles(top=0, number=5, since=259200):
     top, number, since = map(int, [top, number, since])
-    radius = 3
+    radius = 2 * number
     s = get_session_from_new_engine(DBPATH)
     articles = list(s.query(Article).\
             join(Article.keywords).\
@@ -245,7 +282,7 @@ def top_articles(top=0, number=5, since=259200):
             # order_by(desc(Keyword.clickcount)).\
             order_by(desc(Article.date)).\
             group_by(Article.title).\
-            offset(top * number * radius).\
+            offset(top * (number + radius)).\
             limit(number * radius))
     content = jsonify(
             articles=[
@@ -257,17 +294,17 @@ def top_articles(top=0, number=5, since=259200):
 def sort_articles(articles, number=5):
     def sum_keyword_stats(art):
         points = art.date * 10 ** -10
-        points -= 9 * abs(art.timesread)
-        points -= 3 * abs(art.skipcount)
+        if art.timesread != 0 or art.skipcount != 0:
+            return 0
         c = 0
         for keyword in art.keywords:
             points += keyword.clickcount
             c += 1
-        points /= c
-        return points
+        return points / c
     if len(articles) == 0:
         print "empty list"
-    return sorted(articles, key=sum_keyword_stats, reverse=True)[:number]
+    return sorted(list(set(articles)),
+            key=sum_keyword_stats, reverse=True)[:number]
 
 
 @flask_app.route("/json/top/articles/by/keyword/<key>")
@@ -394,13 +431,13 @@ def server(cli_app):
     host, port = cli_app.params.hostport.split(":")
     flask_app.run(host=host, port=int(port),
             debug=cli_app.params.flaskdebug,
-            use_reloader=True)
+            use_reloader=True,)
 
 
 server.add_param("-hp", "--hostport", help="set host:port url",
         default="0.0.0.0:8000")
 server.add_param("-fd", "--flaskdebug", help="set debugflag for flask",
-        default="0.0.0.0:8000")
+        action="store_true", default=False)
 server.add_param("-r", "--reloader", help="use reloader", default=False)
 
 if __name__ == "__main__":
