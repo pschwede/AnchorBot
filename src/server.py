@@ -2,7 +2,8 @@
 # -*- encoding utf-8 -*-
 
 import atexit
-import cli.daemon
+import argparse
+import logging
 
 from sqlalchemy.sql.expression import desc
 from time import time
@@ -18,16 +19,8 @@ _port = 8000
 flask_app = Flask(__name__)
 Markdown(flask_app)
 
-
-def show(mode, content, data=''):
-    return render_template(
-            "layout.html",
-            style=url_for("static", filename="default.css"),
-            mode=mode,
-            content=content,
-            data=data
-        )
-
+logger = logging.Logger("server")
+logger.addHandler(logging.StreamHandler())
 
 @flask_app.route("/")
 @flask_app.route("/gallery")
@@ -36,7 +29,7 @@ def gallery(offset=0, number=17, since=259200):
     offset, number, since = map(int, [offset, number, since])
     radius = 5
     t = time()
-    print "%.1f -- Getting articles.." % (time() - t)
+    logger.debug("%.1f -- Getting articles.." % (time() - t))
     s = get_session_from_new_engine(DBPATH)
     articles = list(s.query(Article).\
             join(Article.keywords).\
@@ -46,15 +39,15 @@ def gallery(offset=0, number=17, since=259200):
             group_by(Article.title).\
             offset(offset * (number + radius)).\
             limit(number + radius))
-    print "%.1f -- ..sorting %i Articles.." % (time() - t,
-            len(articles),)
+    logger.debug("%.1f -- ..sorting %i Articles.." % (time() - t,
+        len(articles),))
     articles = sort_articles(articles, number)
-    #print "%.1f -- ..increase skipped count.." % (time() - t)
-    print "%.1f -- ..split and prepare headlines.." % (time() - t)
+    logger.debug("%.1f -- ..split and prepare headlines.." % (time() - t))
     # trying to find a way to tell jinja2,
     # how to make links out of headlines:
     id_per_key = dict()
     for art in articles:
+        logger.debug("Article.image.filename:", art.image.filename)
         art.skipped(time())
         s.merge(art)
         for word in set(crawl_keywords(art.title, forjinja2=True)):
@@ -66,17 +59,17 @@ def gallery(offset=0, number=17, since=259200):
                 id_per_key[word] = kwid
             except IndexError:
                 pass
-    print "%.1f -- ..rendering template.." % (time() - t)
+    logger.debug("%.1f -- ..rendering template.." % (time() - t))
     content = render_template(
             "gallery.html",
             style=url_for("static", filename="default.css"),
-            articles=[art.dictionary() for art in articles],
+            articles=[art.dictionary(100) for art in articles],
             new_offset=offset + 1,
             id_per_key=id_per_key,
         )
     s.commit()
     s.close()
-    print "%.1f -- ..done." % (time() - t)
+    logger.debug("%.1f -- ..done." % (time() - t))
     return content
 
 
@@ -114,9 +107,9 @@ def read_feed(fid=None, url=None, amount=3):
                 group_by(Article.link).\
                 limit(5))
         arts = articles.all()
-    else:
-        arts = s.query(Article).join(Article.source)
-        arts = arts.\
+    elif len(articles):
+        articles = s.query(Article).join(Article.source)
+        articles = arts.\
                 filter(Source.ID == fid).\
                 order_by(desc(Article.date)).all()
         more_articles = list(s.query(Article).\
@@ -290,21 +283,35 @@ def top_articles(top=0, number=5, since=259200):
     s.close()
     return content
 
+def total_points(art):
+    points = 0
+    days = (time() - art.date) / 24 / 60 / 60
+    if days < 3:
+        points += 3
+    elif days < 5:
+        points += 2
+    elif days < 7:
+        points += 1
+    elif days < 14:
+        points -= days + 7
+    if art.image is not None:
+        points += 1
+    if art.media is not None:
+        points += 2
+    points -= art.timesread * 2
+    points -= art.skipcount
+    c = 0
+    for keyword in art.keywords:
+        points += keyword.clickcount
+        c += 1
+    points -= abs(5 - c)
+    return points
 
 def sort_articles(articles, number=5):
-    def sum_keyword_stats(art):
-        points = art.date * 10 ** -10
-        if art.timesread != 0 or art.skipcount != 0:
-            return 0
-        c = 0
-        for keyword in art.keywords:
-            points += keyword.clickcount
-            c += 1
-        return points / c
     if len(articles) == 0:
-        print "empty list"
+        logger.debug("empty list")
     return sorted(list(set(articles)),
-            key=sum_keyword_stats, reverse=True)[:number]
+            key=total_points, reverse=True)[:number]
 
 
 @flask_app.route("/json/top/articles/by/keyword/<key>")
@@ -405,7 +412,7 @@ def shutdown():
     try:
         request.environ.get("werkzeug.server.shutdown")()
     except Exception, e:
-        print str(e)
+        logger.error(str(e))
     return "Bye"
 
 
@@ -421,24 +428,18 @@ def change_key(change, keyword_id=None, keyword=None):
     s.close()
     return jsonify({"change": change, "kid": keyword_id})
 
+app = argparse.ArgumentParser(description="AnchorBot server app")
+app.add_argument("--host", "-u", default="0.0.0.0", type=str,
+        help="The host adress")
+app.add_argument("--port", "-p", default="8000", type=int,
+        help="the port number")
+app.add_argument("--debug", "-d", default=False,
+        help="run debug mode", action="store_const", const=True)
+args = app.parse_args()
 
-@cli.daemon.DaemonizingApp
-def server(cli_app):
-    atexit.register(shutdown)
-    if cli_app.params.daemonize:
-        cli_app.log.info("About to daemonize")
-        cli_app.daemonize()
-    host, port = cli_app.params.hostport.split(":")
-    flask_app.run(host=host, port=int(port),
-            debug=cli_app.params.flaskdebug,
-            use_reloader=True,)
+logger.setLevel(logging.DEBUG if args.debug else logging.CRITICAL)
 
-
-server.add_param("-hp", "--hostport", help="set host:port url",
-        default="0.0.0.0:8000")
-server.add_param("-fd", "--flaskdebug", help="set debugflag for flask",
-        action="store_true", default=False)
-server.add_param("-r", "--reloader", help="use reloader", default=False)
-
-if __name__ == "__main__":
-    server.run()
+atexit.register(shutdown)
+flask_app.run(host=args.host, port=args.port,
+        debug=args.debug,
+        use_reloader=False,)

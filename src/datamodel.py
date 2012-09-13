@@ -6,10 +6,13 @@ from sqlalchemy.orm import relationship, sessionmaker, scoped_session
 from sqlalchemy import create_engine, Column, Float, Integer, String, Unicode, ForeignKey
 import Image as PIL
 import humanize
+import logging
 import time
 import re
 
 Base = declarative_base()
+
+logger = logging.getLogger("root")
 
 class Image( Base ):
     __tablename__ = "images"
@@ -26,10 +29,10 @@ class Image( Base ):
         return "<%s%s>" % ( "Image", ( self.ID, self.filename, ) )
 
     def __cmp__( self, other ):
-        im = PIL.open( self.cache[self.filename] )
-        a1 = int.__mul__( im.size )
-        im = PIL.open( self.cache[other.filename] )
-        a2 = int.__mul__( im.size )
+        im = PIL.open( self.cachename )
+        a1 = im.size[0] * im.size[1]
+        im = PIL.open( other.cachename )
+        a2 = im.size[0] * im.size[1]
         if a1 < a2:
             return -1
         elif a1 == a2:
@@ -195,12 +198,16 @@ class Article( Base ):
         keys=%s
         """ % ( self.ID, self.title, self.link, self.image, [kw.word for kw in sorted(self.keywords, key=lambda kw: kw.clickcount)]))
     
-    def dictionary(self):
+    def dictionary(self, max_content=None):
+        content_begin = self.content.rfind(self.title)
+        if content_begin > 0:
+            logger.debug(content_begin, self.title, self.content)
+            content_begin += len(self.title) + 1
         return {"ID": self.ID,
                 "title": self.title, 
                 "link": self.link, 
                 "image": self.image and self.image.dictionary() or None, 
-                "content": self.content,
+                "content": self.content if max_content is None else self.content[0:max_content],
                 "skipcount": self.skipcount,
                 "source": self.source.dictionary(),
                 "timesread": self.timesread,

@@ -5,8 +5,7 @@ import threading
 import time
 
 import pickle
-
-from logger import log
+import logging
 
 HOME = os.path.join(os.path.expanduser("~"), ".anchorbot")
 DBPATH = os.path.join(HOME, "database.sqlite")
@@ -51,10 +50,13 @@ class SelfRenewingLock(threading.Thread):
             os.remove(self.lockfile)
 
 
+class LockedException(Exception):
+    def __init__(self, msg):
+        self.msg = msg
+
+
 class Config(object):
-    def __init__(self, path, defaults=dict(), defaultabos=set(),
-            verbose=False):
-        self.verbose = verbose
+    def __init__(self, path, defaults=dict(), defaultabos=set()):
         self.path = os.path.realpath(path)
         self.lockfile = os.path.join(self.path, "anchorlock")
         self.lock = SelfRenewingLock(self.lockfile)
@@ -66,13 +68,13 @@ class Config(object):
         self.lock.start()
         self.configfile = os.path.join(self.path, "config")
         self.abofile = os.path.join(self.path, "abos")
+        self.logger = logging.getLogger("root")
         if os.path.exists(self.abofile):
             f = open(self.abofile, 'r')
             self.abos = filter(lambda x: len(x), f.read().split("\n"))
             f.close()
             self.abos = list(set(self.abos))  # remove doubles
-            if self.verbose:
-                log(self.abos)
+            self.logger.info(self.abos)
         else:
             self.abos = defaultabos
         if os.path.exists(self.configfile):

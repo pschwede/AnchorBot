@@ -5,13 +5,12 @@ import urllib
 import re
 import Image as PIL
 import chardet
+import logging
 from urlparse import urljoin
 from lxml.cssselect import CSSSelector
 from lxml.html import soupparser
-from logger import log
 from time import mktime, time
 from datamodel import Article
-from html2text import html2text
 import HTMLParser
 
 #from boilerpipe.extract import Extractor
@@ -34,11 +33,11 @@ re_cln = re.compile(
 re_media = re.compile(
         "(http://\S.mp3" +
         "|vimeo\.com/\d+" +
-        '|youtu\.be/[-\w]+' +
-        '|youtube\.com/watch?v=[-\w]+' +
-        '|youtube\.com/watch?[^&]+&[-\w]+' +
-        '|http://www.youtube\.com/v/[-\w]+' +
-        '|http://www.youtube\.com/embed/[-\w]+' +
+        '|youtu\.be/[-\w]+[^"]' +
+        '|youtube\.com/watch?v=[-\w]+[^"]' +
+        '|youtube\.com/watch?[^&]+&[-\w]+[^"]' +
+        '|youtube\.com/v/[-\w]+[^"]' +
+        '|youtube\.com/embed/[-\w]+[^"]' +
         ")", re.I)
 re_splitter = re.compile("\W", re.UNICODE)
 re_mdimages = re.compile("!\[[^\]]*\]\([^\)]*\)")
@@ -46,6 +45,8 @@ css_textsel = CSSSelector("div,span,p")
 css_imagesel = CSSSelector("img")
 css_linksel = CSSSelector("a")
 htmlunescape = HTMLParser.HTMLParser().unescape
+
+logger = logging.getLogger("root")
 
 def get_keywords(title, forjinja2=False):
     keywords = list()
@@ -61,42 +62,40 @@ def get_keywords(title, forjinja2=False):
 
 
 class Crawler(object):
-    def __init__(self, cacher, proxies=None, verbose=False):
+    def __init__(self, cacher, proxies=None):
         self.opener = urllib.FancyURLopener(proxies)
         self.cache = cacher  # for not retrieving things twice!
-        self.verbose = verbose
 
     def __textual_content(self, url=None, html=None, similarcontent=None):
-        #content = html
-        content = html2text(self.clean(html))
-        #content = re_mdimages.sub("", content)
-        return content
+        return self.clean(html)
 
     def crawlHTML(self, html, url, similarcontent=None, depth=0, baseurl=None):
-        self.verbose and log("Crawling url=%s" % url)
+        logger.debug("Crawling url=%s" % url)
         content = ""
         images = media = []
         try:
             if html:
-                tree = soupparser.fromstring(html)
                 content = self.__textual_content(
                         html=html,
                         similarcontent=similarcontent)
-                images = list()
-                for img in css_imagesel(tree):
-                    images.append(urljoin(baseurl,
-                        img.get("src") or img.attrib.values()[0]))
-                for elem in css_linksel(tree):
-                    if elem is not None and elem.get("href"):
-                        href = elem.get("href")
-                        if href[4:] == "http":
-                            endings = (".png", ".jpg", ".gif", "jpeg")
-                            if href[:4] in endings:
-                                images.append(urljoin(baseurl, elem.get("href")))
                 media += re_media.findall(html) or ""
+                try:
+                    tree = soupparser.fromstring(html)
+                    for img in css_imagesel(tree):
+                        images.append(urljoin(baseurl,
+                            img.get("src") or img.attrib.values()[0]))
+                    for elem in css_linksel(tree):
+                        if elem is not None and elem.get("href"):
+                            href = elem.get("href")
+                            if href[4:] == "http":
+                                endings = (".png", ".jpg", ".gif", "jpeg")
+                                if href[:4] in endings:
+                                    images.append(urljoin(baseurl, elem.get("href")))
+                except TypeError:
+                    pass
         except KeyboardInterrupt:
             pass
-        return (set(images), content, media[-1] if media else None)
+        return (set(images), content, media[0] if media else None)
 
     def biggest_image(self, imagelist):
         biggest = ""
@@ -149,7 +148,7 @@ class Crawler(object):
             try:
                 link = entry["links"][0]["href"]
             except KeyError:
-                self.verbose and log( "Warning! %s has no link!" % entry["title"])
+                logger.warn( "%s has no link!" % entry["title"])
         return link.encode('utf-8')
 
     def enrich(self, entry, source, recursion=1):
@@ -159,24 +158,24 @@ class Crawler(object):
         content = ""
         media = list()
         url = self.get_link(entry)
-        self.verbose and log( "Enriching %s" % url)
+        logger.debug( "Enriching %s" % url)
         # get more text and images
         cached_url = self.cache[url]
         if cached_url:
             try:
                 html = entry["content"][0]["value"]
                 images, content, media = self.crawlHTML(
-                        html, cached_url, baseurl=url)
+                        html=html, url=cached_url, baseurl=url)
             except KeyError:
                 try:
                     html = entry["summary_detail"]["value"]
                     images, content, media = self.crawlHTML(
-                            html, cached_url, baseurl=url)
+                            html=html, url=cached_url, baseurl=url)
                 except KeyError:
                     try:
                         html = entry["summary"]["value"]
                         images, content, media = self.crawlHTML(
-                                html, cached_url, baseurl=url)
+                                html=html, url=cached_url, baseurl=url)
                     except KeyError:
                         content = entry["title"]
 
@@ -199,19 +198,20 @@ class Crawler(object):
                 except:
                     pass
             new_images, more_content, media = self.crawlHTML(
-                    html, url, baseurl=url)
+                    html=html, url=url, baseurl=url)
             images |= new_images
-            """
-            if len(more_content) > len(content):
+            if more_content is not None and\
+                    len(more_content) > len(content) and\
+                    len(more_content) < 5000:
                 content = more_content
-            """
 
         # filter out some images
         # give the images to the entry finally
         images = self.filter_images(images, minimum=(40, 40,))
         #print images
-        if not image:
+        if image is None:
             image = self.biggest_image(images)
+            self.logger.debug("image set: %s" % image)
         #TODO resize image to a prefered size here!
 
         try:
@@ -219,8 +219,8 @@ class Crawler(object):
         except AttributeError:
             date = time()
 
-        if media:
-            self.verbose and log(u"Found media: %s" % unicode(media))
+        if media is not None:
+            logger.debug(u"Found media: %s" % unicode(media))
 
         title = entry["title"]
         art = Article(date, title, content, url, source)

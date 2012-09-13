@@ -225,7 +225,7 @@ table {
     width: 179pt;
     height: 126pt;
     display: inline-block;
-    overflow: auto;
+    overflow: hidden;
     background-color: #ddd;
     float: left;
     margin: 2pt;
@@ -288,8 +288,8 @@ table {
     color: #000;
     padding: 5pt;
     overflow: auto;
-    margin-top: 134pt;
-    height: 96.5pt;
+    margin-top: 165pt;
+    height: 50pt;
     border-top: 1pt solid #fff;
     display: none;
     text-align: left;

@@ -1,21 +1,23 @@
 import urllib
 import os
 import time
-from md5 import md5
+import pprint
+import logging
 try:
     import cPickle as pickle
 except ImportError:
     import pickle
-from logger import log  # TODO use Logger here
 from threading import Thread
 from Queue import Queue
 from StringIO import StringIO
+
 
 class LimitedDict(dict):
     def __init__(self, size=5, **kwargs):
         self.maxsize = size
         self.accesses = 0
         self.update(kwargs)
+        self.logger = logging.getLogger("root")
 
     def find_least_accessed_key(self):
         delme = None
@@ -29,17 +31,17 @@ class LimitedDict(dict):
 
     def __setitem__(self, key, obj):
         if super(LimitedDict, self).__contains__(key):  
-            print "just overwriting"
+            self.logger.debug("just overwriting")
             super(LimitedDict, self).__setitem__(key, (0, obj))
             return
 
         if len(self) >= self.maxsize:
             delme = self.find_least_accessed_key()
-            print "deleting %s" % delme
+            self.logger.debug("deleting %s" % delme)
             if delme:
                 super(LimitedDict, self).__delitem__(delme)
 
-        print "adding %s" % str((key, (0, obj)))
+        self.logger.debug("adding %s" % str((key, (0, obj))))
         super(LimitedDict, self).__setitem__(key, (0, obj))
 
     def __getitem__(self, key):
@@ -57,13 +59,11 @@ class FileCacher(dict):
     def __init__(self,
             localdir="/tmp/lyrebird/",
             max_age_in_days=-1,
-            verbose=False,
             dont_dl=[],
             dlnum=8,
             memory=30):
         if not dont_dl:
             dont_dl = ["r.xz", ".jar", ".gif", ".swf", ".iso", ".zip", ".avi", ".mp3", ".ogg"]
-        self.verbose = verbose
         self.dlnum = dlnum
         self.max_age_in_days = max_age_in_days
         self.localdir = os.path.realpath(os.path.dirname(localdir))
@@ -74,6 +74,7 @@ class FileCacher(dict):
         self.url_last_used_path = url_last_used_path = os.path.join(
                 self.localdir, "agedic.pkl")
         self.url_last_used = {}
+        self.logger = logging.getLogger("root")
 
         self.dloader = urllib.FancyURLopener()
         self.dlqueue = Queue()
@@ -97,7 +98,7 @@ class FileCacher(dict):
             for path in [os.path.join(self.localdir, f) for f in files]:
                 try:
                     if os.stat(path).st_atime < then:
-                        self.verbose and log("Removing %s" % path)
+                        self.logger.debug("Removing %s" % path)
                         os.remove(path)
                 except OSError:
                     pass
@@ -105,17 +106,13 @@ class FileCacher(dict):
     def __newurl(self, url):
         return os.path.join(self.localdir, str(hex(hash(url))).replace("-","0"))
 
-    def __retrieve(self, url, newurl):
-        self.verbose and log("Downloading %s." % url)
-        tries = 4
-        done = False
-        while tries and not done:
-            tries -= 1
+    def __retrieve(self, url, newurl, tries=4):
+        self.logger.debug("[  DL  ] %s" % url)
+        if tries > 0:
             try:
                 self.dloader.retrieve(url, newurl)
-                done = True
             except Exception, e:
-                log("IOError during retrieving: %s" % (str(e)))
+                self.__retrieve(url, newurl, tries-1)
 
     def __queued_retrieve(self):
         while not self.dlqueue.empty():
@@ -143,12 +140,11 @@ class FileCacher(dict):
             if url[-4:] not in self.dont_dl:
                 self.dlqueue.put(url)
                 valid_urls.append(url)
-        self.verbose and log("Having %i urls in download queue." % len(valid_urls))
+        self.logger.debug("Downloading %i urls." % len(valid_urls))
         for i in range(self.dlnum):
             t = Thread(target=self.__queued_retrieve)
             t.daemon = True
             t.start()
-        self.verbose and log("Joining dlqueue..")
         self.dlqueue.join()
         return [self.__getitem__(url) for url in valid_urls]
 
@@ -168,19 +164,19 @@ class FileCacher(dict):
             self.url_last_used[url] = self.url_last_used[
                         self.url_last_used[url]
                     ] = (self.url_last_used[url][0], time.time())
-            #self.verbose and log("Getting %s from cache." % url)
+            #self.logger.debug("Getting %s from cache." % url)
             return result
         except KeyError:
             newurl = self.__newurl(url)
             try:
                 if not os.path.exists(newurl):
                     self.__retrieve(url, newurl)
-                    #self.verbose and log("Cached %s to %s." % (url, newurl,))
+                    #self.logger.debug("Cached %s to %s." % (url, newurl,))
                 self.url_last_used[url] = self.url_last_used[newurl] = (
                         newurl,
                         time.time())
             except IOError, e:
-                self.verbose and log("IOError during download of %s" % url)
+                self.logger.error("IOError during download of %s" % url)
                 return url
             return newurl
 
@@ -192,7 +188,7 @@ class FileCacher(dict):
                 if e.errno == 2:
                     pass
                 else:
-                    print e.message
+                    self.logger.error(e.message)
             del self.url_last_used[url]
             del self.url_last_used[self.__newurl(url)]
         except KeyError:
@@ -200,10 +196,9 @@ class FileCacher(dict):
 
     def pprint(self):
         try:
-            import pprint as p
-            p.pprint(self.url_last_used, indent=2, width=50)
+            pprint.pprint(self.url_last_used, indent=2, width=50)
         except ImportError:
-            print(self.url_last_used)
+            self.logger.info(self.url_last_used)
 
     def shutdown(self):
         done = False

@@ -22,7 +22,7 @@ def levenshtein(s, t):
 if __name__ == "__main__":
     import sys
     if len(sys.argv) == 3:
-        print distance(sys.argv[1], sys.argv[2])
+        print levenshtein(sys.argv[1], sys.argv[2])
     else:
         from timeit import Timer
         t = Timer("""
