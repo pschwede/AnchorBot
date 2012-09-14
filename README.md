@@ -42,7 +42,6 @@ Execute `web.sh` to run the server and open your webbrowser with it's url.
 
 Related Projects
 ----------------
-* [curn](software.clapper.org/curn/)
 * [rawdog](http://offog.org/code/rawdog.html)
 * [Prismatic](http://www.getprismatic.com/)
 * [Flipboard](http://flipboard.com/)
