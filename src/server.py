@@ -11,7 +11,8 @@ from flask import Flask, render_template, url_for, request, redirect, jsonify
 from flaskext.markdown import Markdown
 
 from config import DBPATH
-from datamodel import get_session_from_new_engine, Source, Article, Keyword
+from datamodel import (get_session_from_new_engine, Source, Article, Keyword,
+        Media)
 from crawler import get_keywords as crawl_keywords
 
 _host = "0.0.0.0"
@@ -47,7 +48,7 @@ def gallery(offset=0, number=17, since=259200):
     # how to make links out of headlines:
     id_per_key = dict()
     for art in articles:
-        logger.debug("Article.image.filename:", art.image.filename)
+        logger.debug("Article.image.filename: %s" % art.image.filename)
         art.skipped(time())
         s.merge(art)
         for word in set(crawl_keywords(art.title, forjinja2=True)):
@@ -86,48 +87,22 @@ def read_feed(fid=None, url=None, amount=3):
     articles = list()
     more_articles = list()
     if url:
-        articles = s.query(Article).join(Article.source)
-        articles = articles.\
+        articles = s.query(Article).join(Article.source).\
                 filter(Source.link.contains(url)).\
-                order_by(desc(Article.date))
-        more_articles = list(s.query(Article).\
-                # filter(Article.timesread == 0).\
-                join(Article.source).\
+                order_by(desc(Article.date)).limit(amount)
+        more_articles = s.query(Article).join(Article.source).\
                 filter(Source.link.contains(url)).\
-                filter(Article.date > articles[0].date).\
                 order_by(desc(Article.date)).\
-                group_by(Article.link).\
-                limit(5))
-        more_articles += list(s.query(Article).\
-                # filter(Article.timesread == 0).\
-                join(Article.source).\
-                filter(Source.link.contains(url)).\
-                filter(Article.date < articles[0].date).\
-                order_by(desc(Article.date)).\
-                group_by(Article.link).\
-                limit(5))
-        arts = articles.all()
-    elif len(articles):
-        articles = s.query(Article).join(Article.source)
-        articles = arts.\
+                offset(amount).limit(amount*3)
+    elif fid:
+        articles = s.query(Article).join(Article.source).\
                 filter(Source.ID == fid).\
-                order_by(desc(Article.date)).all()
-        more_articles = list(s.query(Article).\
-                # filter(Article.timesread == 0).\
-                join(Article.source).\
-                filter(Source.ID == fid).\
-                filter(Article.date > articles[0].date).\
                 order_by(desc(Article.date)).\
-                group_by(Article.link).\
-                limit(5))
-        more_articles += list(s.query(Article).\
-                # filter(Article.timesread == 0).\
-                join(Article.source).\
+                limit(amount)
+        more_articles = s.query(Article).join(Article.source).\
                 filter(Source.ID == fid).\
-                filter(Article.date < articles[0].date).\
                 order_by(desc(Article.date)).\
-                group_by(Article.link).\
-                limit(5))
+                offset(amount).limit(amount*3)
     content = render_template(
             "read.html",
             style=url_for("static", filename="default.css"),
@@ -166,8 +141,8 @@ def selectSQL(query):
 
 
 @flask_app.route("/keys")
-@flask_app.route("/list/keys")
 @flask_app.route("/keywords")
+@flask_app.route("/list/keys")
 @flask_app.route("/list/keywords")
 @flask_app.route("/list/keywords/<limit>")
 def get_keywords(limit=60):
@@ -348,8 +323,28 @@ def keyword(keyword, amount=3):
     content = render_template(
             "read.html",
             style=url_for("static", filename="default.css"),
-            articles=arts[:amount],
-            more_articles=arts[amount:],
+            articles=[a.dictionary() for a in arts[:amount]],
+            more_articles=[a.dictionary() for a in arts[amount:]],
+        )
+    s.close()
+    return content
+
+
+@flask_app.route("/media")
+@flask_app.route("/media/<amount>")
+def watch_media(amount=15):
+    amount = int(amount)
+    s = get_session_from_new_engine(DBPATH)
+    arts = s.query(Article).\
+            join(Article.media).\
+            filter(Media.filename.contains("youtube")).\
+            order_by(desc(Article.date)).\
+            limit(amount)
+    content = render_template(
+            "media.html",
+            style=url_for("static", filename="default.css"),
+            articles=[a.dictionary() for a in arts[:amount]],
+            more_articles=[a.dictionary() for a in arts[amount:]],
         )
     s.close()
     return content
@@ -388,6 +383,8 @@ def read_article(aid=None, kid=None):
                 order_by(desc(Article.date)).\
                 group_by(Article.link).\
                 limit(5))
+    for a in articles:
+        print a.image.filename
     content = render_template(
             "read.html",
             style=url_for("static", filename="default.css"),

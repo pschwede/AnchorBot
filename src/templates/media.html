@@ -1,0 +1,24 @@
+{% extends "layout.html" %}
+{% block title %}Read - {% endblock %}
+{% block header %}
+{% endblock %}
+{% block content %}
+{% for article in articles %}
+<div class="issue1" id="{{ article.ID }}">
+    <h1 class="issue_head" title="{{ article.ID }}" id="article{{article.ID}}">
+        {{ article.title }}
+    </h1>
+    {% if article.media %}
+    <div class="media">{{ article.media.html|safe }}</div>
+    {% endif %}
+    <div class="small">
+        <span>
+            On <a href="{{ article.source.link }}">{{ article.source.title }}</a> {{ article.datestr }}.
+        </span>
+        <span>
+            <a href="{{ article.link }}" class="button" target="_parent">Read more</a>
+        </span>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

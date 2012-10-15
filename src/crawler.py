@@ -4,7 +4,6 @@
 import urllib
 import re
 import Image as PIL
-import chardet
 import logging
 from urlparse import urljoin
 from lxml.cssselect import CSSSelector
@@ -20,7 +19,7 @@ import HTMLParser
 Generic crawler.
 Follows redirections and delivers some useful functions for remote images.
 """
-re_cln = re.compile(
+re_clean = re.compile(
         '(<img[^>]+>' +
         '|[\n\r]|<script[^>]*>\s*</script>' +
         '|<iframe.*</iframe>' +
@@ -33,20 +32,17 @@ re_cln = re.compile(
 re_media = re.compile(
         "(http://\S.mp3" +
         "|vimeo\.com/\d+" +
-        '|youtu\.be/[-\w]+[^"]' +
-        '|youtube\.com/watch?v=[-\w]+[^"]' +
-        '|youtube\.com/watch?[^&]+&[-\w]+[^"]' +
-        '|youtube\.com/v/[-\w]+[^"]' +
-        '|youtube\.com/embed/[-\w]+[^"]' +
+        '|youtu\.be/[-\w]+' +
+        '|youtube\.com/watch?v=[-\w]+' +
+        '|youtube\.com/v/[-\w]+' +
+        '|youtube\.com/embed/[-\w]+' +
         ")", re.I)
 re_splitter = re.compile("\W", re.UNICODE)
-re_mdimages = re.compile("!\[[^\]]*\]\([^\)]*\)")
+re_markdown_images = re.compile("!\[[^\]]*\]\([^\)]*\)")
 css_textsel = CSSSelector("div,span,p")
 css_imagesel = CSSSelector("img")
 css_linksel = CSSSelector("a")
 htmlunescape = HTMLParser.HTMLParser().unescape
-
-logger = logging.getLogger("root")
 
 def get_keywords(title, forjinja2=False):
     keywords = list()
@@ -65,16 +61,18 @@ class Crawler(object):
     def __init__(self, cacher, proxies=None):
         self.opener = urllib.FancyURLopener(proxies)
         self.cache = cacher  # for not retrieving things twice!
+        self.logger = logging.getLogger("root")
 
     def __textual_content(self, url=None, html=None, similarcontent=None):
         return self.clean(html)
 
     def crawlHTML(self, html, url, similarcontent=None, depth=0, baseurl=None):
-        logger.debug("Crawling url=%s" % url)
+        self.logger.debug("Crawling url=%s" % url)
         content = ""
         images = media = []
         try:
             if html:
+                html = self.check_codec(html)
                 content = self.__textual_content(
                         html=html,
                         similarcontent=similarcontent)
@@ -91,11 +89,11 @@ class Crawler(object):
                                 endings = (".png", ".jpg", ".gif", "jpeg")
                                 if href[:4] in endings:
                                     images.append(urljoin(baseurl, elem.get("href")))
-                except TypeError:
-                    pass
+                except Exception, e:
+                    self.logger.error("Error crawling HTML: %s", repr(e))
         except KeyboardInterrupt:
             pass
-        return (set(images), content, media[0] if media else None)
+        return (set(images), content, media[0] if media else None,)
 
     def biggest_image(self, imagelist):
         biggest = ""
@@ -137,7 +135,7 @@ class Crawler(object):
         tmp = u""
         while hash(tmp) != hash(htmltext):
             tmp = htmltext
-            htmltext = re_cln.sub("", htmltext)
+            htmltext = re_clean.sub("", htmltext)
         return htmltext
 
     def get_link(self, entry):
@@ -148,71 +146,95 @@ class Crawler(object):
             try:
                 link = entry["links"][0]["href"]
             except KeyError:
-                logger.warn( "%s has no link!" % entry["title"])
+                self.logger.warn( "%s has no link!" % entry["title"])
         return link.encode('utf-8')
+
+    def search_in_html_of_entry(self, cached_url, url, entry):
+        """Searches for content at three different places in entry."""
+        images, content, media = set([]), "", []
+
+        try:
+            html = entry["content"][0]["value"]
+            return self.crawlHTML(html=html, url=cached_url, baseurl=url)
+        except KeyError:
+            pass
+
+        try:
+            html = entry["summary_detail"]["value"]
+            return self.crawlHTML(html=html, url=cached_url, baseurl=url)
+        except KeyError:
+            pass
+
+        try:
+            html = entry["summary"]["value"]
+            return self.crawlHTML(
+                    html=html, url=cached_url, baseurl=url)
+        except KeyError:
+            content = entry["title"]
+        return images, content, media
+
+    def check_codec(self, text):
+        try:
+            return text.encode("utf-8")
+        except Exception, e:
+            self.logger.debug("Exception: %s" % e)
+        return text
+
+    def get_images_from_entry(self, entry):
+        """Searches for images in links and enclosures of entry"""
+        images = set([])
+        for key in ("links", "enclosures"):
+            try:
+                i = filter(lambda x: x["type"].startswith("image"),
+                        entry[key])
+                images |= set([item.href.encode("utf-8") for item in i])
+            except KeyError:
+                pass
+        return images
+
+    def get_content_from_url(self, cached_url, url):
+        try:
+            f = open(cached_url, 'r')
+            result = self.crawlHTML(
+                    html=f.read(), url=url, baseurl=url)
+            f.close()
+        except:
+            result = ""
+        finally:
+            return result
 
     def enrich(self, entry, source, recursion=1):
         """Filters out images, adds images from html, cleans up content."""
-        image = None
-        images = set()
-        content = ""
-        media = list()
+        image, images = None, set([])
+        content, media = "", list()
         url = self.get_link(entry)
-        logger.debug( "Enriching %s" % url)
+        self.logger.info("Enriching %s" % url)
         # get more text and images
         cached_url = self.cache[url]
         if cached_url:
-            try:
-                html = entry["content"][0]["value"]
-                images, content, media = self.crawlHTML(
-                        html=html, url=cached_url, baseurl=url)
-            except KeyError:
-                try:
-                    html = entry["summary_detail"]["value"]
-                    images, content, media = self.crawlHTML(
-                            html=html, url=cached_url, baseurl=url)
-                except KeyError:
-                    try:
-                        html = entry["summary"]["value"]
-                        images, content, media = self.crawlHTML(
-                                html=html, url=cached_url, baseurl=url)
-                    except KeyError:
-                        content = entry["title"]
+            # search in html content of the entry
+            images, content, media = self.search_in_html_of_entry(cached_url,
+                    url, entry)
 
             # get images from entry itself
-            for key in ("links", "enclosures"):
-                try:
-                    i = filter(lambda x: x["type"].startswith("image"),
-                            entry[key])
-                    images |= set([item.href.decode("utf-8") for item in i])
-                except KeyError:
-                    pass
+            images |= self.get_images_from_entry(entry)
 
-            # get even more images from links in entry
-            f = open(cached_url, 'r')
-            html = f.read()
-            codec = chardet.detect(html)["encoding"]
-            if codec:
-                try:
-                    html = html.decode(codec)
-                except:
-                    pass
-            new_images, more_content, media = self.crawlHTML(
-                    html=html, url=url, baseurl=url)
-            images |= new_images
+            # get even more images from the article, the entry links to
+            more_images, more_content, more_media = self.get_content_from_url(
+                    cached_url, url)            
+            images |= more_images
             if more_content is not None and\
                     len(more_content) > len(content) and\
                     len(more_content) < 5000:
                 content = more_content
+            media = more_media
 
         # filter out some images
-        # give the images to the entry finally
         images = self.filter_images(images, minimum=(40, 40,))
-        #print images
-        if image is None:
-            image = self.biggest_image(images)
-            self.logger.debug("image set: %s" % image)
-        #TODO resize image to a prefered size here!
+
+        # give the images to the entry finally
+        image = self.biggest_image(images)
+        self.logger.debug("image set: %s" % image)
 
         try:
             date = mktime(entry.updated_parsed)
@@ -220,7 +242,7 @@ class Crawler(object):
             date = time()
 
         if media is not None:
-            logger.debug(u"Found media: %s" % unicode(media))
+            self.logger.debug("Found media: %s" % media)
 
         title = entry["title"]
         art = Article(date, title, content, url, source)

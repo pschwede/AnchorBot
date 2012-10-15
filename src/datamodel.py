@@ -70,11 +70,11 @@ class Media( Base ):
         elif "youtube.com/watch?v=" in self.filename:
             vid = self.filename[20:]
             return '<iframe width="%i" height="%i" src="http://www.youtube.com/embed/%s" frameborder="0" allowfullscreen></iframe>' % (size[0], int(size[0]/ratio), vid)
-        elif "http://www.youtube.com/v/" in self.filename:
-            vid = self.filename[25:]
+        elif "youtube.com/v/" in self.filename:
+            vid = self.filename[14:]
             return '<iframe width="%i" height="%i" src="http://www.youtube.com/embed/%s" frameborder="0" allowfullscreen></iframe>' % (size[0], int(size[0]/ratio), vid)
-        elif "http://www.youtube.com/embed/" in self.filename:
-            vid = self.filename[29:]
+        elif "youtube.com/embed/" in self.filename:
+            vid = self.filename[18:]
             return '<iframe width="%i" height="%i" src="http://www.youtube.com/embed/%s" frameborder="0" allowfullscreen></iframe>' % (size[0], int(size[0]/ratio), vid)
         else:
             vid = re.findall("(?=v=)[\w-]+", self.filename)
@@ -201,7 +201,6 @@ class Article( Base ):
     def dictionary(self, max_content=None):
         content_begin = self.content.rfind(self.title)
         if content_begin > 0:
-            logger.debug(content_begin, self.title, self.content)
             content_begin += len(self.title) + 1
         return {"ID": self.ID,
                 "title": self.title, 

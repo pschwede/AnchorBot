@@ -9,10 +9,10 @@ For further reading, see README.md
 """
 
 import feedparser
+import logging
 import argparse
 import sys
 import os
-from logging import Logger, FileHandler, StreamHandler
 from sqlalchemy.exc import IntegrityError, DatabaseError
 
 import storage
@@ -23,7 +23,6 @@ from datamodel import (
 from time import sleep, time
 import atexit
 import md5
-import traceback
 
 class Anchorbot(object):
     """
@@ -38,51 +37,46 @@ class Anchorbot(object):
 
     def __init__(self, verbose=0, cache_only=False,
             update_call=lambda x: x):
-        self.logger = Logger("root", level=verbose)
-        self.logger.addHandler(FileHandler(filename=os.path.join(HOME,
+        self.logger = logging.Logger("root", level=verbose)
+        print self.logger.name
+        self.logger.addHandler(logging.FileHandler(filename=os.path.join(HOME,
             "anchorbot.log")))
-        self.logger.addHandler(StreamHandler())
-        self.log = self.logger.log
-        self.info = self.logger.info
-        self.error = self.logger.error
-        self.debug = self.logger.debug
-        self.fatal = self.logger.fatal
-        self.critical = self.logger.critical
+        self.logger.addHandler(logging.StreamHandler())
 
         try:
             # cache keeps files for 3 days
-            self.debug("Init FileCacher dir=%s, days=%i" % (TEMP, 3))
+            self.logger.debug("Init FileCacher dir=%s, days=%i" % (TEMP, 3))
             self.cache = storage.FileCacher(TEMP, 3)
 
             # prepare datamodel
-            self.debug("Preparing database at %s" % DBPATH)
+            self.logger.debug("Preparing database at %s" % DBPATH)
             self.db = get_engine(DBPATH)
 
             # prepare variables and lists,...
-            self.debug("Preparing variables and lists")
+            self.logger.debug("Preparing variables and lists")
             self.watched = None
 
-            self.debug("Init crawler with cache")
+            self.logger.debug("Init crawler with cache")
             self.crawler = Crawler(self.cache)
 
         except IOError, e:
-            self.error("IOError !", e.filename)
+            self.logger.error("IOError !", e.filename)
 
         # prepare lock, config, cache and variables
         # load config
         try:
             # Raises Exception if locked
-            self.debug("Loading config from %s" % HOME)
+            self.logger.debug("Loading config from %s" % HOME)
             self.config = Config(HOME)
         except LockedException, e:
-            self.error(e.msg)
+            self.logger.error(e.msg)
             sys.exit(1)
 
     def run(self):
         self.running = True
         self.firsttimeout = 16
         self.timeouts, self.update = dict(), dict()
-        self.debug("Running=%s, timeout=%s" % (self.running, self.timeouts))
+        self.logger.debug("Running=%s, timeout=%s" % (self.running, self.timeouts))
         try:
             while self.running:
                 t = time()
@@ -98,17 +92,17 @@ class Anchorbot(object):
                 news = self.update_all(check_these)
 
                 # update timeouts
-                self.debug("Have news:", news)
+                self.logger.debug("Have news: %s" % news)
                 for url in check_these:
                     self.timeouts[url] *= .5 if url in news else 2
                     self.update[url] = t + self.timeouts[url]
 
                 remaining = min(self.update.values()) - time()
                 if remaining > 0:
-                    self.debug("sleeping %i seconds" % (remaining))
+                    self.logger.debug("sleeping %i seconds" % (remaining))
                     sleep(remaining)
         except KeyboardInterrupt:
-            self.debug("Keyboard interrupt")
+            self.logger.debug("Keyboard interrupt")
 
     def __print_cache_and_exit(self):
         """ well, prints cache and exits """
@@ -118,13 +112,13 @@ class Anchorbot(object):
     def shutdown(self, stuff=None):
         """Does a save shutdown"""
         # shutdown
-        self.info("Shutting down...")
+        self.logger.info("Shutting down...")
         self.running = False
-        self.debug("Shutting down cache")
+        self.logger.debug("Shutting down cache")
         self.cache.shutdown()
-        self.debug("Shutting down config")
+        self.logger.debug("Shutting down config")
         self.config.shutdown()
-        self.info("KTHXBYE!")
+        self.logger.info("KTHXBYE!")
 
     def add_entry(self, entry, source):
         try:
@@ -138,7 +132,7 @@ class Anchorbot(object):
                 s.close()
                 return 0
         except DatabaseError:
-            self.error("Database error: %s" % url)
+            self.logger.error("Database error: %s" % url)
             s.close()
             return 0
 
@@ -159,7 +153,7 @@ class Anchorbot(object):
                 s.flush()
             except IntegrityError, e:
                 s.rollback()
-                self.error("Keyword '%s' ignored: %s" % (kw, e))
+                self.logger.error("Keyword '%s' ignored: %s" % (kw, e))
         try:
             article.image = Image(image_url, self.cache[image_url])
             s.merge(article)
@@ -201,16 +195,16 @@ class Anchorbot(object):
             old_quickhash = hashes[feedurl]
             new_quickhash = str(self.get_quickhash(feedurl))
             if old_quickhash == new_quickhash:
-                self.info("[%i of %i] old %s" % (i+1, len(urls), feedurl))
+                self.logger.info("[%2.i of %i] old %s" % (i+1, len(urls), feedurl))
             else:
-                self.info("[%i of %i] new %s" % (i+1, len(urls), feedurl))
+                self.logger.info("[%2.i of %i] new %s" % (i+1, len(urls), feedurl))
                 source = sources[feedurl]
                 hashes[feedurl] = source.quickhash = new_quickhash
                 feed = None
                 try:
                     feed = feedparser.parse(self.cache[feedurl])
                 except Exception, e:
-                    self.error("%s, %s" (e, feedurl,))
+                    self.logger.error("%s, %s" % (e, feedurl,))
                 if feed:
                     try:
                         title = source.title = feed["feed"]["title"]
@@ -256,14 +250,14 @@ class Anchorbot(object):
                 break
             source = s.query(Source).filter(Source.link == url).first()
             if not source:
-                self.info("New source: %s" % url)
+                self.logger.info("New source: %s" % url)
                 source = Source(url)
                 s.add(source)
                 try:
                     s.flush()
                 except IntegrityError:
                     s.rollback()
-                    self.error("Couldn't store source %s" % source)
+                    self.logger.error("Couldn't store source %s" % source)
                     continue
             s.commit()
         s.close()
@@ -272,16 +266,12 @@ class Anchorbot(object):
     def add_url(self, url):
         """Adds a feed url to the abos
         """
-        try:
-            self.config.add_abo(url)
-            s = get_session(self.db)
-            source = Source(url, None)
-            s.add(source)
-            s.commit()
-            s.close()
-        except Exception, e:
-            self.error(str(e))
-            traceback.print_exception(*e)
+        self.config.add_abo(url)
+        s = get_session(self.db)
+        source = Source(url, None)
+        s.add(source)
+        s.commit()
+        s.close()
 
     def remove_url(self, url):
         """Removes a feed url from the abos
@@ -292,12 +282,13 @@ class Anchorbot(object):
 
 if __name__ == "__main__":
     app = argparse.ArgumentParser(description="AnchorBot")
-    app.add_argument("-v", "--verbose", default=30, type=int)
+    app.add_argument("-v", "--verbose", default=False, action="store_true")
     app.add_argument("-c", "--cacheonly", default=False, action="store_true")
     app.add_argument("-a", "--add", help="add new urls", default=None, type=str)
     args = app.parse_args()
-    bot = Anchorbot(args.verbose, args.cacheonly)
+    bot = Anchorbot(logging.INFO if args.verbose else 0, args.cacheonly)
     atexit.register(bot.shutdown)
     if args.add is not None:
         bot.add_url(args.add)
-    bot.run()
+    else:
+        bot.run()

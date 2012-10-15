@@ -4,43 +4,43 @@
 {% endblock %}
 {% block content %}
 {% for article in articles %}
-  <div class="issue1" id="{{ article.ID }}">
-      <h1 class="issue_head" title="{{ article.ID }}" id="article{{article.ID}}">
-      {{ article.title }}
+<div class="issue1" id="{{ article.ID }}">
+    <h1 class="issue_head" title="{{ article.ID }}" id="article{{article.ID}}">
+        {{ article.title }}
     </h1>
-    {% if article.media and article.media.html %}
+    {% if article.media.html %}
     <div class="media">{{ article.media.html|safe }}</div>
     {% elif article.image and article.image.filename %} 
     <div class="image"><img src="{{ article.image.filename }}" alt="" /></div>
     {% endif %}
     <div class="issue_content">
-      <p>{{ article.content|markdown }}</p></div>
+        <p>{{ article.content|markdown }}</p></div>
     <div class="small">
-      <span>
-        On <a href="{{ article.source.link }}">{{ article.source.title }}</a> {{ article.datestr }}.
-      </span>
-      <span>
-        <a href="{{ article.link }}" class="button" target="_parent">Read more</a>
-      </span>
+        <span>
+            On <a href="{{ article.source.link }}">{{ article.source.title }}</a> {{ article.datestr }}.
+        </span>
+        <span>
+            <a href="{{ article.link }}" class="button" target="_parent">Read more</a>
+        </span>
     </div>
-  </div>
+</div>
 {% endfor %}
 <div class="issue1">
-  {% if more_articles %}
+    {% if more_articles %}
     <h1 class="issue_head" title="related" id="related">
-      More related articles
+        More related articles
     </h1>
     <div class="issue_content">
-      <ul>
-        {% for article in more_articles %}
-        <li><a href="/read/{{ article.ID }}" target="_parent">{{ article.title }}</a></li>
-        {% endfor %}
-      </ul>
+        <ul>
+            {% for article in more_articles %}
+            <li><a href="/read/{{ article.ID }}" target="_parent">{{ article.title }}</a></li>
+            {% endfor %}
+        </ul>
     </div>
-  {% else %}
+    {% else %}
     <div class="issue_content">
-      No related articles.
+        No related articles.
     </div>
-  {% endif %}
+    {% endif %}
 </div>
 {% endblock %}

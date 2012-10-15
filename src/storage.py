@@ -151,8 +151,6 @@ class FileCacher(dict):
     def __getitem__(self, url):
         if not url:
             return None
-        if url == u"None":
-            return None
         if isinstance(url, unicode):
             url = url.encode("utf-8")
         if url[-4:] in self.dont_dl:

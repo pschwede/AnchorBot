@@ -4,18 +4,6 @@
   <head>
     <title>Anchorbot {{ title }} {{mode}}</title>
     <link type="text/css" rel="stylesheet" href="{{ style }}">
-    <script type="text/javascript" src="{{ url_for('static', filename='jquery.js') }}"></script>
-    <script type="text/javascript" src="{{ url_for('static', filename='anim.js') }}"></script>
-    <script type="text/javascript" src="{{ url_for('static', filename='humanize.min.js') }}"></script>
-    {% if mode=="gallery" %}
-    <script type="text/javascript" src="{{ url_for('static', filename='gallery.js') }}"></script>
-    {% elif mode=="key" %}
-    <script type="text/javascript" src="{{ url_for('static', filename='key.js') }}"></script>
-    {% elif mode=="feed" %}
-    <script type="text/javascript" src="{{ url_for('static', filename='feed.js') }}"></script>
-    {% elif mode=="read" %}
-    <script type="text/javascript" src="{{ url_for('static', filename='read.js') }}"></script>
-    {% endif %}
   </head>
   <body>
     <div id="header">

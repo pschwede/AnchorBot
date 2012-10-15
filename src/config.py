@@ -111,7 +111,7 @@ class Config(object):
     def add_abo(self, url):
         if url[:4] not in ["http"]:
             url = "http://%s" % url
-        self.abos.add(url)
+        self.abos.append(url)
         self.write_abos()
 
     def get_abos(self):
