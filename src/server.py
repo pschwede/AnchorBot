@@ -23,6 +23,7 @@ Markdown(flask_app)
 logger = logging.Logger("server")
 logger.addHandler(logging.StreamHandler())
 
+
 @flask_app.route("/")
 @flask_app.route("/gallery")
 @flask_app.route("/gallery/offset/<offset>")
@@ -36,6 +37,7 @@ def gallery(offset=0, number=17, since=259200):
             join(Article.keywords).\
             filter(Article.timesread == 0).\
             filter(Article.skipcount <= 2).\
+            filter(Article.date >= time() - 14*24*60*60).\
             order_by(desc(Article.date)).\
             group_by(Article.title).\
             offset(offset * (number + radius)).\
@@ -93,7 +95,7 @@ def read_feed(fid=None, url=None, amount=3):
         more_articles = s.query(Article).join(Article.source).\
                 filter(Source.link.contains(url)).\
                 order_by(desc(Article.date)).\
-                offset(amount).limit(amount*3)
+                offset(amount).limit(amount * 3)
     elif fid:
         articles = s.query(Article).join(Article.source).\
                 filter(Source.ID == fid).\
@@ -102,7 +104,7 @@ def read_feed(fid=None, url=None, amount=3):
         more_articles = s.query(Article).join(Article.source).\
                 filter(Source.ID == fid).\
                 order_by(desc(Article.date)).\
-                offset(amount).limit(amount*3)
+                offset(amount).limit(amount * 3)
     content = render_template(
             "read.html",
             style=url_for("static", filename="default.css"),
@@ -130,14 +132,6 @@ def get_feeds():
             )
     s.close()
     return content
-
-
-@flask_app.route("/json/select/<query>")
-def selectSQL(query):
-    s = get_session_from_new_engine(DBPATH)
-    items = s.execute("SELECT %s" % query)
-    s.close()
-    return jsonify(items)
 
 
 @flask_app.route("/keys")
@@ -172,93 +166,9 @@ def skip(article_id):
     return "1"
 
 
-@flask_app.route("/json/all/articles/by/keyword/<key>")
-@flask_app.route("/json/all/articles/by/keyword/<key>/<top>")
-@flask_app.route("/json/all/articles/by/keyword/<key>/<top>/<number>")
-@flask_app.route("/json/all/articles/by/keyword/<key>/<top>/<number>/<since>")
-def all_articles(key, top=0, number=5, since=259200):
-    kid, top, number, since = map(int, [key, top, number, since])
-    s = get_session_from_new_engine(DBPATH)
-    articles = list(s.query(Article).\
-            join(Article.keywords).\
-            filter(Keyword.ID == kid).\
-            order_by(desc(Article.date)).\
-            group_by(Article.link).\
-            offset(top * number).limit(number))
-    content = jsonify(articles=[art.dictionary() for art in articles])
-    s.close()
-    return content
-
-
-@flask_app.route("/json/latest/articles/by/keyword/<key>")
-@flask_app.route("/json/latest/articles/by/keyword/<key>/<top>")
-@flask_app.route("/json/latest/articles/by/keyword/<key>/<top>/<number>")
-@flask_app.route("/json/latest/articles/by/keyword/<key>/<top>/" +
-                                                        "<number>/<since>")
-def articles(key, top=0, number=5, since=259200):
-    kid, top, number, since = map(int, [key, top, number, since])
-    s = get_session_from_new_engine(DBPATH)
-    articles = list(s.query(Article).\
-            filter(Article.timesread == 0).\
-            join(Article.keywords).\
-            filter(Keyword.ID == kid).\
-            order_by(desc(Article.date)).\
-            group_by(Article.link).\
-            offset(top * number).\
-            limit(number)
-            )
-    for art in articles:
-        art.finished(time())
-        s.merge(art)
-    s.commit()
-    content = jsonify(articles=[art.dictionary() for art in articles])
-    s.close()
-    return content
-
-
-@flask_app.route("/json/top/keywords/<top>")
-@flask_app.route("/json/top/keywords/<top>/<number>")
-@flask_app.route("/json/top/keywords/<top>/<number>/<since>")
-def top_keywords(top, number=5, since=259200):
-    top, number, since = map(int, [top, number, since])
-    s = get_session_from_new_engine(DBPATH)
-    keywords = list(
-            s.query(Keyword).\
-            join(Article.keywords).\
-            filter(Article.timesread == 0).\
-            # filter(Article.date > time() - since).\
-            group_by(Keyword.ID).\
-            order_by(desc(Keyword.clickcount)).\
-            offset(top * number).\
-            limit(number)
-            )
-    content = jsonify(keywords=[kw.dictionary() for kw in keywords])
-    s.close()
-    return content
-
-
-@flask_app.route("/json/top/articles/<top>")
-@flask_app.route("/json/top/articles/<top>/<number>")
-@flask_app.route("/json/top/articles/<top>/<number>/<since>")
-def top_articles(top=0, number=5, since=259200):
-    top, number, since = map(int, [top, number, since])
-    radius = 2 * number
-    s = get_session_from_new_engine(DBPATH)
-    articles = list(s.query(Article).\
-            join(Article.keywords).\
-            # filter(Article.timesread == 0).\
-            # order_by(desc(Keyword.clickcount)).\
-            order_by(desc(Article.date)).\
-            group_by(Article.title).\
-            offset(top * (number + radius)).\
-            limit(number * radius))
-    content = jsonify(
-            articles=[
-                art.dictionary() for art in sort_articles(articles, number)])
-    s.close()
-    return content
-
 def total_points(art):
+    if art.skipcount:
+        return 0
     points = 0
     days = (time() - art.date) / 24 / 60 / 60
     if days < 3:
@@ -274,7 +184,6 @@ def total_points(art):
     if art.media is not None:
         points += 2
     points -= art.timesread * 2
-    points -= art.skipcount
     c = 0
     for keyword in art.keywords:
         points += keyword.clickcount
@@ -282,30 +191,12 @@ def total_points(art):
     points -= abs(5 - c)
     return points
 
+
 def sort_articles(articles, number=5):
     if len(articles) == 0:
         logger.debug("empty list")
-    return sorted(list(set(articles)),
-            key=total_points, reverse=True)[:number]
-
-
-@flask_app.route("/json/top/articles/by/keyword/<key>")
-@flask_app.route("/json/top/articles/by/keyword/<key>/<top>")
-@flask_app.route("/json/top/articles/by/keyword/<key>/<top>/<number>")
-@flask_app.route("/json/top/articles/by/keyword/<key>/<top>/<number>/<since>")
-def top_articles_by_keyword(key, top=0, number=5, since=259200):
-    kid, top, number, since = map(int, [key, top, number, since])
-    s = get_session_from_new_engine(DBPATH)
-    articles = list(s.query(Article).\
-            filter(Article.timesread == 0).\
-            join(Article.keywords).\
-            filter(Keyword.ID == kid).\
-            order_by(desc(Article.date)).\
-            group_by(Article.link).\
-            offset(top * number).limit(number))
-    content = jsonify(articles=[art.dictionary() for art in articles])
-    s.close()
-    return content
+    return sorted(list(set(articles))[:number],
+            key=total_points, reverse=True)
 
 
 @flask_app.route("/key/<keyword>")
