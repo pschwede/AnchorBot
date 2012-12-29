@@ -37,11 +37,15 @@ class Anchorbot(object):
 
     def __init__(self, verbose=0, cache_only=False,
             update_call=lambda x: x):
-        self.logger = logging.Logger("root", level=verbose)
-        print self.logger.name
+        self.logger = logging.getLogger("root")
+        self.logger.setLevel(logging.DEBUG)
         self.logger.addHandler(logging.FileHandler(filename=os.path.join(HOME,
             "anchorbot.log")))
-        self.logger.addHandler(logging.StreamHandler())
+
+        sh = logging.StreamHandler()
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        sh.setFormatter(formatter)
+        self.logger.addHandler(sh)
 
         try:
             # cache keeps files for 3 days
