@@ -31,11 +31,17 @@ re_clean = re.compile(
         ')', re.I)
 re_media = re.compile(
         "(http://\S.mp3" +
-        "|vimeo\.com/\d+" +
-        '|youtu\.be/[-\w]+' +
-        '|youtube\.com/watch?v=[-\w]+' +
-        '|youtube\.com/v/[-\w]+' +
-        '|youtube\.com/embed/[-\w]+' +
+        "|ftp://\S.mp3" +
+        "|(?=http://)vimeo\.com/\d+" +
+        "|(?=http://www.)vimeo\.com/\d+" +
+        '|(?=http://)youtu\.be/[-\w]+' +
+        '|(?=http://www.)youtu\.be/[-\w]+' +
+        '|(?=http://)youtube\.com/watch?v=[-\w]+' +
+        '|(?=http://www.)youtube\.com/watch?v=[-\w]+' +
+        '|(?=http://)youtube\.com/v/[-\w]+' +
+        '|(?=http://www.)youtube\.com/v/[-\w]+' +
+        '|(?=http://)youtube\.com/embed/[-\w]+' +
+        '|(?=http://www.)youtube\.com/embed/[-\w]+' +
         ")", re.I)
 re_splitter = re.compile("\W", re.UNICODE)
 re_markdown_images = re.compile("!\[[^\]]*\]\([^\)]*\)")
@@ -199,7 +205,7 @@ class Crawler(object):
                     html=f.read(), url=url, baseurl=url)
             f.close()
         except:
-            result = ""
+            result = (None, None, None,)
         finally:
             return result
 
