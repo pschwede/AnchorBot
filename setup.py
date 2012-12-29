@@ -1,5 +1,5 @@
 #!/usr/bin/python
-import os, platform
+import os
 from setuptools import setup
 
 def read(fname):
@@ -15,8 +15,6 @@ install_requires = [
     "html2text",
     "chardet",
     "HTMLParser",
-    "markdown",
-    "flask-markdown"
 ]
 
 setup(
