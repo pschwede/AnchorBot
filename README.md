@@ -49,9 +49,6 @@ Related Projects
 * [Google Reader](http://reader.google.com/)
 * [Scrolldit](http://scrolldit.com/)
 * [TweetMag](http://www.tweetmagapp.com/)
-* [Starberryj.am](http://strawberryj.am/)
-* [Vienna RSS](http://www.vienna-rss.org/)
-* [Refynr](http://refynr.com/)
 * [Summify](http://summify.com/)
 * [News.me](http://news.me/)
 
