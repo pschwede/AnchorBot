@@ -43,7 +43,7 @@ Start crawling:
 
     bot.sh
 
-Start interface 
+Start interface:
 
     web.sh
 
