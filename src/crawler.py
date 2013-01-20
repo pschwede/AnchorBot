@@ -99,7 +99,7 @@ class Crawler(object):
                     self.logger.error("Error crawling HTML: %s", repr(e))
         except KeyboardInterrupt:
             pass
-        return (set(images), content, media[0] if media else None,)
+        return (set(images), content, set(media),)
 
     def biggest_image(self, imagelist):
         biggest = ""
@@ -205,7 +205,7 @@ class Crawler(object):
                     html=f.read(), url=url, baseurl=url)
             f.close()
         except:
-            result = (None, None, None,)
+            result = (set([]), "", set([]),)
         finally:
             return result
 
@@ -229,11 +229,10 @@ class Crawler(object):
             more_images, more_content, more_media = self.get_content_from_url(
                     cached_url, url)            
             images |= more_images
-            if more_content is not None and\
-                    len(more_content) > len(content) and\
+            if len(more_content) > len(content) and\
                     len(more_content) < 5000:
                 content = more_content
-            media = more_media
+            media = None if len(more_media) == 0 else list(more_media)[0]
 
         # filter out some images
         images = self.filter_images(images, minimum=(40, 40,))

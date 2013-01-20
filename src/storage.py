@@ -45,7 +45,7 @@ class LimitedDict(dict):
         super(LimitedDict, self).__setitem__(key, (0, obj))
 
     def __getitem__(self, key):
-        if key in self.keys():
+        try:
             # inc item access count
             item = super(LimitedDict, self).__getitem__(key)  # should not raise KeyError
             item = (item[0]+1, item[1])
@@ -54,13 +54,15 @@ class LimitedDict(dict):
             # inc global access count
             self.accesses += 1
             return item[1]
+        except KeyError:
+            pass
 
 class FileCacher(dict):
     def __init__(self,
             localdir="/tmp/lyrebird/",
             max_age_in_days=-1,
             dont_dl=[],
-            dlnum=8,
+            dlnum=16,
             memory=30):
         if not dont_dl:
             dont_dl = ["r.xz", ".jar", ".gif", ".swf", ".iso", ".zip", ".avi", ".mp3", ".ogg"]
@@ -106,12 +108,15 @@ class FileCacher(dict):
     def __newurl(self, url):
         return os.path.join(self.localdir, str(hex(hash(url))).replace("-","0"))
 
+    def __hook(self, url, tries, percent):
+        self.logger.debug("DL %s\ttries %i\tunknown %.2f" % (url, tries, percent))
+
     def __retrieve(self, url, newurl, tries=4):
         self.logger.debug("[  DL  ] %s" % url)
         if tries > 0:
             try:
-                self.dloader.retrieve(url, newurl)
-            except Exception, e:
+                self.dloader.retrieve(url, newurl, reporthook=lambda a, b, c: self.__hook(url, tries, a))
+            except Exception:
                 self.__retrieve(url, newurl, tries-1)
 
     def __queued_retrieve(self):
@@ -129,6 +134,7 @@ class FileCacher(dict):
             raise Exception("Not downloading %s" % url)
         f = urllib.urlopen(url)
         s = StringIO(f.read(512))
+        f.close()
         return s
 
     def get_all(self, urls, delete=False):
