@@ -47,7 +47,7 @@ Start interface:
 
     web.sh
 
-Try not to run both, `bot.sh` and `web.sh`! (I will fix concurrency later.)
+Try not to run both, `bot.sh` and `web.sh` concurrently! (I will fix concurrency later.)
 
 Please report bugs at [Github](https://github.com/spazzpp2/AnchorBot/issues)!
 
