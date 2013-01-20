@@ -3,6 +3,7 @@ AnchorBot
 
 It's a learning news feed aggregator.
 
+
 Features
 --------
 * Supported feeds: RSS, ATOM (you can also observe HTML with additional software)
@@ -27,6 +28,7 @@ Other:
 
 Please report missing libraries to me.
 
+
 Usage
 -----
 Add new feed urls:
@@ -47,7 +49,8 @@ Start interface
 
 Try not to run both, `bot.sh` and `web.sh`! (I will fix concurrency later.)
 
-Please report bugs at [Github](https://github.com/spazzpp2/AnchorBot/issues)
+Please report bugs at [Github](https://github.com/spazzpp2/AnchorBot/issues)!
+
 
 Related Projects
 ----------------
@@ -56,10 +59,10 @@ Related Projects
 * [Flipboard](http://flipboard.com/) – Magazine-like news aggregator and curator
 * [Google Reader](http://reader.google.com/) – Google's news aggregator
 * [Scrolldit](http://scrolldit.com/) – Pinwall interface for reddit (OS)
-* [newssitter](http://www.newssitter.com) – Display news feeds in Firefox' sidebar
+* [newssitter](http://www.newssitter.com) – Display news feeds in Firefox' sidebar (OS)
 
+(OS = Open Source)
 
-*Version 1.0 beta*
 
 *© spazzpp2 – Licensed under MIT License*
 
