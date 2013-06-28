@@ -10,6 +10,7 @@ except ImportError:
 from threading import Thread
 from Queue import Queue
 from StringIO import StringIO
+from collections import defaultdict
 
 
 class LimitedDict(dict):
@@ -81,6 +82,7 @@ class FileCacher(dict):
         self.dloader = urllib.FancyURLopener()
         self.dlqueue = Queue()
         self.dlthreads = list()
+        self.dltries = defaultdict(int)
 
         self.running = True
 
@@ -109,15 +111,19 @@ class FileCacher(dict):
         return os.path.join(self.localdir, str(hex(hash(url))).replace("-","0"))
 
     def __hook(self, url, tries, percent):
+        return
         self.logger.debug("DL %s\ttries %i\tunknown %.2f" % (url, tries, percent))
 
     def __retrieve(self, url, newurl, tries=4):
-        self.logger.debug("[  DL  ] %s" % url)
+        if self.dltries[url] > tries:
+            return
+        self.dltries[url] += 1
+        self.logger.debug("[  DL  ] %s (try %i)" % (url, self.dltries[url]))
         if tries > 0:
             try:
                 self.dloader.retrieve(url, newurl, reporthook=lambda a, b, c: self.__hook(url, tries, a))
             except Exception:
-                self.__retrieve(url, newurl, tries-1)
+                self.__retrieve(url, newurl, tries)
 
     def __queued_retrieve(self):
         while not self.dlqueue.empty():
