@@ -166,7 +166,10 @@ class Article( Base ):
     
     def __unicodify(self, s):
         if not isinstance(s, unicode):
-            return s.decode("utf-8")
+            try:
+                return s.decode("utf-8")
+            except UnicodeDecodeError:
+                return ""
         return unicode(s)
 
     def set_keywords(self, keywords):
