@@ -11,6 +11,7 @@ HOME = os.path.join(os.path.expanduser("~"), ".anchorbot")
 DBPATH = os.path.join(HOME, "database.sqlite")
 HERE = os.path.realpath(os.path.dirname(__file__))
 TEMP = os.path.join(os.path.expanduser("~"), ".cache/anchorbot/")
+#TEMP = os.path.join(os.path.expanduser("~"), "/tmp/anchorbot/")
 HTML = os.path.join(HOME, "index.html")
 __appname__ = "AnchorBot"
 __version__ = "1.1"
