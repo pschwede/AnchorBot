@@ -14,15 +14,17 @@ import argparse
 import sys
 import os
 from sqlalchemy.exc import IntegrityError, DatabaseError
+from itertools import izip, count
+from time import sleep, time
+import atexit
+import md5
 
 import storage
 from config import Config, HOME, TEMP, DBPATH, LockedException
 from crawler import Crawler
-from datamodel import (
-        get_session, get_engine, Source, Article, Image, Keyword, Media)
-from time import sleep, time
-import atexit
-import md5
+from datamodel import (get_session, get_engine, Source, Article, Image,
+                       Keyword, Media)
+
 
 class Anchorbot(object):
     """
@@ -36,14 +38,15 @@ class Anchorbot(object):
     """
 
     def __init__(self, verbose=0, cache_only=False,
-            update_call=lambda x: x):
+                 update_call=lambda x: x):
         self.logger = logging.getLogger("root")
         self.logger.setLevel(logging.DEBUG)
-        self.logger.addHandler(logging.FileHandler(filename=os.path.join(HOME,
-            "anchorbot.log")))
+        fname = os.path.join(HOME, "anchorbot.log")
+        self.logger.addHandler(logging.FileHandler(filename=fname))
 
         sh = logging.StreamHandler()
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        formatter = logging.Formatter(fmt)
         sh.setFormatter(formatter)
         self.logger.addHandler(sh)
 
@@ -80,7 +83,7 @@ class Anchorbot(object):
         self.running = True
         self.firsttimeout = 16
         self.timeouts, self.update = dict(), dict()
-        self.logger.debug("Running=%s, timeout=%s" % (self.running, self.timeouts))
+        self.logger.debug("run=%s, timeout=%s" % (self.running, self.timeouts))
         try:
             while self.running:
                 t = time()
@@ -101,7 +104,7 @@ class Anchorbot(object):
                     self.timeouts[url] *= .5 if url in news else 2
                     self.update[url] = t + self.timeouts[url]
 
-                remaining = min(self.update.values()) - time()
+                remaining = min(self.update.values()) - t
                 if remaining > 0:
                     self.logger.debug("sleeping %i seconds" % (remaining))
                     sleep(remaining)
@@ -140,17 +143,16 @@ class Anchorbot(object):
             s.close()
             return 0
 
-        article, keywords, image_url, media = self.crawler.enrich(
-                entry, source)
+        article, keywords, image_url, media = self.crawler.enrich(entry,
+                                                                  source)
         s.add(article)
         s.commit()
         for kw in set(keywords):
             try:
                 if s.query(Keyword).filter(Keyword.word == kw).count():
-                    article.keywords.append(
-                            s.query(Keyword).\
-                                    filter(Keyword.word == kw).\
-                                    first())
+                    article.keywords.append(s.query(Keyword).
+                                            filter(Keyword.word == kw).
+                                            first())
                 else:
                     article.keywords.append(Keyword(kw))
                 s.merge(article)
@@ -164,15 +166,13 @@ class Anchorbot(object):
             s.flush
         except IntegrityError, e:
             s.rollback()
-            article.image = s.query(Image).\
-                    filter(Image.filename == image_url).\
-                    first()
+            article.image = s.query(Image).filter(Image.filename ==
+                                                  image_url).first()
             s.merge(article)
         if (media is not None and len(media)) and\
                 s.query(Media).filter(Media.filename == media).count():
-            article.media = s.query(Media).\
-                    filter(Media.filename == media).\
-                    first()
+            article.media = s.query(Media).filter(Media.filename ==
+                                                  media).first()
         else:
             article.media = Media(media)
         s.merge(article)
@@ -195,13 +195,14 @@ class Anchorbot(object):
                 sources[source.link] = source
                 hashes[source.link] = source.quickhash
         s.close()
-        for feedurl,i in zip(urls, range(len(urls))):
+        for feedurl, i in izip(urls, count()):
+            if not self.running:
+                break
             old_quickhash = hashes[feedurl]
             new_quickhash = str(self.get_quickhash(feedurl))
-            if old_quickhash == new_quickhash:
-                self.logger.info("[%2.i of %i] old %s" % (i+1, len(urls), feedurl))
-            else:
-                self.logger.info("[%2.i of %i] new %s" % (i+1, len(urls), feedurl))
+            info = "[%2.i of %i] old %s" % (i+1, len(urls), feedurl)
+            self.logger.info(info)
+            if old_quickhash != new_quickhash:
                 source = sources[feedurl]
                 hashes[feedurl] = source.quickhash = new_quickhash
                 feed = None
