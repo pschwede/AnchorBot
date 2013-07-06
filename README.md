@@ -14,6 +14,7 @@ Features
 * Embedded Media: Images, Vimeo, YouTube
 
 For more information on planned features, please read the [Wiki](http://github.com/spazzpp2/AnchorBot/wiki).
+For feature requests and other discussion, please visit the [Subreddit](http://www.reddit.com/r/anchorbot)
 
 
 Installation
