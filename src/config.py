@@ -7,7 +7,7 @@ import time
 import pickle
 import logging
 
-HOME = os.path.join(os.path.expanduser("~"), ".anchorbot")
+HOME = os.path.join(os.path.expanduser("~"), ".config/anchorbot")
 DBPATH = os.path.join(HOME, "database.sqlite")
 HERE = os.path.realpath(os.path.dirname(__file__))
 TEMP = os.path.join(os.path.expanduser("~"), ".cache/anchorbot/")
