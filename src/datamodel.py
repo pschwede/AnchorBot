@@ -96,7 +96,7 @@ class Source( Base ):
     link = Column( String, unique=True )
     title = Column( Unicode, default=u"" )
     image_id = Column( Integer, ForeignKey( "images.ID" ) )
-    image = relationship( "Image", backref="source_br" )
+    image = relationship( "Image", backref="source" )
     quickhash = Column( Integer, default=0 )
 
     def __init__( self, link, title=u"", image=None ):
@@ -141,14 +141,14 @@ class Article( Base ):
     lastskip = Column( Float, default= -1)
     timestarred = Column( Float, default = -1 )
     source_id = Column( Integer, ForeignKey( "sources.ID" ), nullable=False)
-    source = relationship( "Source", backref="article_br")
+    source = relationship( "Source", backref="articles_br")
     image_id = Column( Integer, ForeignKey( "images.ID" ), nullable=True )
-    image = relationship( "Image", backref="article_br" )
+    image = relationship( "Image", backref="articles_br" )
     media_id = Column( Integer, ForeignKey( "media.ID" ), nullable=True )
-    media = relationship( "Media", backref="article_br" )
+    media = relationship( "Media", backref="articles_br" )
     page_id = Column( Integer, ForeignKey( "pages.ID" ) )
-    page = relationship( "Page", backref="article_br", lazy="dynamic" )
-    keywords = relationship( "Keyword", backref="article_br", lazy="dynamic", secondary="kw2arts")
+    page = relationship( "Page", backref="articles_br")
+    keywords = relationship( "Keyword", secondary="kw2arts")
     entryhash = Column( Integer, default=None )
 
     def __init__( self, date, title, content, link, source, image=None, keywords=None, ehash=None, media=None):
@@ -246,9 +246,9 @@ class Kw2art( Base ):
     __tablename__ = "kw2arts"
 
     kw_id = Column( Integer, ForeignKey( "keywords.ID" ), primary_key=True )
-    kw = relationship( "Keyword", backref="kw2art_br")
+    kw = relationship( "Keyword", backref="kw2art")
     art_id = Column( Integer, ForeignKey( "articles.ID" ), primary_key=True )
-    art = relationship( "Article", backref="kw2art_br")
+    art = relationship( "Article", backref="kw2art")
 
     def __init__( self, kw, art ):
         self.kw = kw
