@@ -41,6 +41,8 @@ class Anchorbot(object):
                  update_call=lambda x: x):
         self.logger = logging.getLogger("root")
         self.logger.setLevel(logging.DEBUG)
+        if not os.path.exists(HOME):
+            os.makedirs(HOME)
         fname = os.path.join(HOME, "anchorbot.log")
         self.logger.addHandler(logging.FileHandler(filename=fname))
 
@@ -104,10 +106,13 @@ class Anchorbot(object):
                     self.timeouts[url] *= .5 if url in news else 2
                     self.update[url] = t + self.timeouts[url]
 
-                remaining = min(self.update.values()) - t
-                if remaining > 0:
-                    self.logger.debug("sleeping %i seconds" % (remaining))
-                    sleep(remaining)
+                if self.update.values():
+                    remaining = min(self.update.values()) - t
+                    if remaining > 0:
+                        self.logger.debug("sleeping %i seconds" % (remaining))
+                        sleep(remaining)
+                else:
+                    self.running = False
         except KeyboardInterrupt:
             self.logger.debug("Keyboard interrupt")
 
