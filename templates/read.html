@@ -6,21 +6,21 @@
 {% for article in articles %}
 <div class="issue1" id="{{ article.ID }}">
     <h1 class="issue_head" title="{{ article.ID }}" id="article{{article.ID}}">
-        {{ article.title }}
+        {{ article["title"] }}
     </h1>
-    {% if article.media.html %}
-    <div class="media">{{ article.media.html|safe }}</div>
-    {% elif article.image and article.image.filename %} 
-    <div class="image"><img src="{{ article.image.filename }}" alt="" /></div>
+    {% if article["media"] %}
+    <div class="media">{{ article["media"]|safe }}</div>
+    {% elif article["image"] and article["image"] %} 
+    <div class="image"><img src="{{ article["image"] }}" alt="" /></div>
     {% endif %}
     <div class="issue_content">
-        <p>{{ article.content|markdown }}</p></div>
+        <p>{{ article["content"]|markdown }}</p></div>
     <div class="small">
         <span>
-            On <a href="{{ article.source.link }}">{{ article.source.title }}</a> {{ article.datestr }}.
+            <a href="{{ article["link"] }}">Source</a> {{ article["released"] }}.
         </span>
         <span>
-            <a href="{{ article.link }}" class="button" target="_parent">Read more</a>
+            <a href="{{ article["link"] }}" class="button" target="_parent">Read more</a>
         </span>
     </div>
 </div>
@@ -33,7 +33,7 @@
     <div class="issue_content">
         <ul>
             {% for article in more_articles %}
-            <li><a href="/read/{{ article.ID }}" target="_parent">{{ article.title }}</a></li>
+            <li><a href="/read/{{ hashed[article["link"]] }}" target="_parent">{{ article["title"] }}</a></li>
             {% endfor %}
         </ul>
     </div>
