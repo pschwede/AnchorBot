@@ -25,6 +25,7 @@ re_splitter = re.compile("\s", re.UNICODE)
 HOME = os.path.join(os.path.expanduser("~"), ".config/anchorbot")
 HERE = os.path.realpath(os.path.dirname(__file__))
 CONFIGFILE = os.path.join(HOME, "config")
+print HOME, HERE, CONFIGFILE
 
 
 class Config(dict):
@@ -73,22 +74,21 @@ def abo_urls(subscriptions):
 def get_html(href):
     if href[:-4] in [".pdf"]:
         return ""
-    print "loading %s" % href
+    #print "loading %s" % href
 
     tries = 5
     while tries:
         try:
-            try:
-                response = requests.get(href, timeout=1.0, verify=False)
-            except requests.ConnectionError:
-                return ""
-            not_loaded = 0
-        except timeout:
+            response = requests.get(href, timeout=1.0, verify=False)
+            if response:
+                print "loaded %s" % href
+                return response.content
+        except (timeout, requests.Timeout, requests.ConnectionError):
             pass
         finally:
             tries -= 1
 
-    return response.content
+    return ""
 
 
 def guess_language(html):
@@ -152,10 +152,7 @@ def get_article(entry):
     picture = ""
     media = ""
 
-    try:
-        page = get_html(entry.link)
-    except requests.exceptions.Timeout:
-        return
+    page = get_html(entry.link)
     language = guess_language(page)
     try:
         content = remove_boilerplate(page, language=language)
@@ -165,6 +162,7 @@ def get_article(entry):
         picture = find_picture(page)
     except requests.exceptions.Timeout:
         pass
+
     media = find_media(page)
 
     keywords = find_keywords(entry.title, language=language)
@@ -177,6 +175,7 @@ def get_article(entry):
                "keywords": keywords,
                "read": False,
                }
+    print "got article %s" % article["link"]
     return article
 
 
@@ -186,8 +185,14 @@ def curate(db):
     def worker():
         while True:
             entry = queue.get()
-            get_article(entry)
+            article = get_article(entry)
+            db["articles"][article["link"]] = article
             queue.task_done()
+
+    for i in range(15):
+        t = Thread(target=worker)
+        t.daemon = True
+        t.start()
 
     for feedurl in abo_urls(db["subscriptions"]):
         feed = feedparser.parse(feedurl)
@@ -195,11 +200,6 @@ def curate(db):
         for entry in feed.entries:
             if entry.link not in db["articles"]:
                 queue.put(entry)
-
-    for i in range(15):
-        t = Thread(target=worker)
-        t.daemon = True
-        t.start()
 
     queue.join()
 
@@ -215,11 +215,10 @@ if __name__ == "__main__":
 
     config["abos"] += ["http://usesthis.com/feed/",
                        "http://feeds.theguardian.com/theguardian/uk/rss",
-                       "https://github.com/pschwede/AnchorBot/commits/master.a\
-                               tom",
+                       "https://github.com/pschwede/AnchorBot/commits/master.atom",
                        "https://www.youtube.com/user/TheSustainableMan",
                        ]
     for abo in config["abos"]:
         subscribe_feed(db["subscriptions"], abo)
     curate(db)
-    #display(db["articles"])
+    display(db["articles"])

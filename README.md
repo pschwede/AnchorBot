@@ -20,7 +20,7 @@ Anchorbot presents the news page-wise. That way you can get a quick overview.
 Reloading the page, you will get a next interest-adopted collection.
 Note that, to harness the daily flush of news, each article is displayed only once!
 
-TLDR: It's a simple learning news feed aggregator and surprisingly works well.
+*TLDR*: It's a simple learning news feed aggregator and surprisingly works well.
 
 
 Features
@@ -31,10 +31,6 @@ Features
   course.
     * Adds missing media in news feeds to the article (like text, video or bigger images)
     * Embedded Media: Images, Vimeo, YouTube
-
-For more information on planned features, please read the [Wiki](http://github.com/spazzpp2/AnchorBot/wiki).
-
-For feature requests and other discussions, please visit the [Subreddit](http://www.reddit.com/r/anchorbot).
 
 
 Start crawling:
@@ -47,7 +43,19 @@ Start interface:
 
 ```bash
 python web.py
+firefox localhost:8000
 ```
 
 Thanks to redis, you can run both in the same time. But remember, that you get
 the best effect after having collected ALL TEH NEWS!
+
+
+What I need help with
+---------------------
+* Get a nice adaptive CSS for the news feed.
+* Let the user adjust the amount of articles per page.
+
+* For more information on planned features, please read the [Wiki](http://github.com/spazzpp2/AnchorBot/wiki).
+* For feature requests and other discussions, please visit the [Subreddit](http://www.reddit.com/r/anchorbot).
+
+
