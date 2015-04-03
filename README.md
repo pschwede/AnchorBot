@@ -1,7 +1,26 @@
 AnchorBot
 =========
 
-It's a learning news feed aggregator.
+The idea is simple. Usually when reading the news, it takes most of the time to
+fish for interesting news in the ocean of news. Now, AnchorBot tries to
+automate it by fishing out news that share a headline word you were interested
+in before. You start with a bunch of totally random news articles displayed
+with an headline and a picture. If you want to read an article, you have to
+click a word in the headline that is most interesting to you. For example:
+
+In "Google buildt UFO" you can decide whether you are more interested in UFO or
+in Google. Each word got it's own link.
+
+By repeatingly making rather quick choices like this. Anchorbot will show
+articles of your choice first. If you clicked Google, it'll be news about
+google. If you clicked UFO, it'll be news about UFO not Google.
+Articles are weighted by the weight of the words they have in the headline.
+
+Anchorbot presents the news page-wise. That way you can get a quick overview.
+Reloading the page, you will get a next interest-adopted collection.
+Note that, to harness the daily flush of news, each article is displayed only once!
+
+*TLDR*: It's a simple learning news feed aggregator and surprisingly works well.
 
 
 Features
@@ -10,64 +29,31 @@ Features
 * Completely runs on your machine. You store your data on your own. No obscure
   cloud. New articles and non-text media still require internet connection, of
   course.
-* Adds missing media in news feeds to the article (like text, video or bigger images)
-* Embedded Media: Images, Vimeo, YouTube
 
-For more information on planned features, please read the [Wiki](http://github.com/spazzpp2/AnchorBot/wiki).
-
-For feature requests and other discussions, please visit the [Subreddit](http://www.reddit.com/r/anchorbot).
-
-
-Installation
-------------
-Ubuntu:
-
-    sudo setup.ubuntu.sh
-
-Other:
-
-    setup.py install
-
-Please report missing libraries to me.
-
-
-Usage
------
-Add new feed urls:
-
-    echo "yourfeedurl" >> ~/.anchorbot/abos
-
-Alternatively:
-
-    bot.sh --add yourfeedurl
 
 Start crawling:
 
-    bot.sh
+```bash
+python bot.py
+```
 
 Start interface:
 
-    web.sh
+```bash
+python web.py
+firefox localhost:8000
+```
 
-Try not to run both, `bot.sh` and `web.sh` concurrently! (I will fix concurrency later.)
-
-Please report bugs at [Github](https://github.com/spazzpp2/AnchorBot/issues)!
-
-
-Related Projects
-----------------
-* [rawdog](http://offog.org/code/rawdog.html) – Frequently download and render news feeds to HTML (OS)
-* [Prismatic](http://www.getprismatic.com/) – Filtering, personal social news aggregator
-* [Flipboard](http://flipboard.com/) – Magazine-like news aggregator and curator
-* [Google Reader](http://reader.google.com/) – Google's news aggregator
-* [Scrolldit](http://scrolldit.com/) – Pinwall interface for reddit (OS)
-* [newssitter](http://www.newssitter.com) – Display news feeds in Firefox' sidebar (OS)
-
-(OS = Open Source)
+Thanks to redis, you can run both in the same time. But remember, that you get
+the best effect after having collected ALL TEH NEWS!
 
 
-*© spazzpp2 – Licensed under MIT License*
+What I need help with
+---------------------
+* Get a nice adaptive CSS for the news feed.
+* Let the user adjust the amount of articles per page.
 
-This project was once known as "Lyrebird" and is - as before - still a tribute
-to the [bird that retweets](http://youtu.be/7XiQDgNUEMw) the terrifying
-chainsaws that sew down it's rain forest.
+* For more information on planned features, please read the [Wiki](http://github.com/spazzpp2/AnchorBot/wiki).
+* For feature requests and other discussions, please visit the [Subreddit](http://www.reddit.com/r/anchorbot).
+
+

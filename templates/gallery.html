@@ -1,13 +1,14 @@
 {% extends "layout.html" %}
-{% block title %}Gallery - {% endblock %}
+{% block title %}({{ relevance }}) Gallery - {% endblock %}
 {% block content %}
 <ul id="gallery">
+{% if articles %}
   {% for article in articles %}
-    <li id="{{ article.ID }}" class="issue2" style="background-image:url('{{ article.image.filename }}');">
+    <li id="{{ article["link"] }}" class="issue2" style="background-image:url('{{ article["image"] }}');">
       <h2 class="issue_head">
       {% for word in article.title.split(" ") %}
-          {% if id_per_key[word] %}
-            <a href="/read/{{ article.ID }}/because/of/{{ id_per_key[word] }}" target="_blank">
+          {% if word.lower() in article["keywords"] %}
+            <a href="/read/{{ hashed[article["link"]] }}/because/of/{{ word.lower() }}" target="_blank">
               {{ word }}
             </a>
           {% else %}
@@ -17,9 +18,10 @@
       </h2>
       <div class="small">
         <div>&#11016; Choose: Why do you want to read this? &#11017;</div>
-        <div>Released {{ article.datestr }}</div>
       </div>
     </li>
   {% endfor %}
+{% else %}
+{% endif %}
 </ul>
 {% endblock %}

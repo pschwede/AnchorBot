@@ -1,0 +1,9 @@
+{% extends "layout.html" %}
+{% block title %}Keywords - {% endblock %}
+{% block content %}
+<div id="content" style="padding: 50pt;">
+	{% for kw in keywords %}
+		<div class="list" style="width:33%;display:inline-block"><a class="button" href="/key/{{ kw[0].decode("utf-8") }}">{{ kw[1] }}: {{ kw[0].decode("utf-8") }}</a></div>
+	{% endfor %}
+</div>
+{% endblock %}
