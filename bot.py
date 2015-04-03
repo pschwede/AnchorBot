@@ -221,4 +221,4 @@ if __name__ == "__main__":
     for abo in config["abos"]:
         subscribe_feed(db["subscriptions"], abo)
     curate(db)
-    display(db["articles"])
+    #display(db["articles"])
