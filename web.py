@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 # -*- encoding utf-8 -*-
 
-import atexit
 import argparse
 
-from flask import Flask, render_template, url_for, request
+from flask import Flask, render_template, url_for
 from flaskext.markdown import Markdown
 
 import bot
@@ -23,7 +22,8 @@ def __relevance_of_keyword(database, keyword):
 
 
 def __relevance_of_article(database, article):
-    return sum([database["keyword_clicks"][k] for k in article["keywords"]])
+    return sum([(database["keyword_clicks"][k] or 0)
+                for k in article["keywords"]])
 
 
 @FLASK_APP.route("/")
@@ -33,33 +33,40 @@ def __relevance_of_article(database, article):
 def gallery(offset=0, number=32, since=259200, keyword=None):
     offset, number, since = [int(x) for x in [offset, number, since]]
 
+    unread_young = lambda x: not x["read"] and x["release"] >= back_then
+    relevance_of_article = lambda x: __relevance_of_article(database, x)
+    articles = list()
+
     config = bot.Config(bot.CONFIGFILE)
     database = bot.initialize_database(config)
+
     back_then = since
     articles = database["articles"].values()
-    unread_young = lambda x: not x["read"] and x["release"] >= back_then
     articles = [x for x in articles if unread_young(x)]
-    relevance_of_article = lambda x: __relevance_of_article(database, x)
-    articles = sorted(articles,
-                      key=relevance_of_article,
-                      reverse=True)[offset*number:(offset + 1)*number]
 
-    for article in articles:
+    for article in database["articles"].values():
+        if not unread_young(article):
+            continue
+        articles.append(article)
         link = article["link"]
         HASHED[link] = hash(link)
         DEHASHED[HASHED[link]] = link
-        print "marking as read: %s %s" % (article["read"], article["title"])
         article.update(read=True)
         database["articles"][link] = article
 
-    relevance = sum([relevance_of_article(x) for x in articles])
+    articles = sorted(articles,
+                      key=relevance_of_article,
+                      reverse=True)[offset*number:(offset*number+number)]
+
+    scores = {a["link"]: relevance_of_article(a) for a in articles}
+    scores["all"] = sum([relevance_of_article(x) for x in articles])
 
     content = render_template("gallery.html",
                               style=url_for("static", filename="default.css"),
                               articles=articles,
                               new_offset=offset + 1,
                               hashed=HASHED,
-                              relevance=relevance)
+                              scores=scores)
     return content
 
 
@@ -95,14 +102,18 @@ def get_feeds():
 @FLASK_APP.route("/list/keys")
 @FLASK_APP.route("/list/keywords")
 @FLASK_APP.route("/list/keywords/offset/<offset>")
-def get_keywords(number=60, offset=0):
+def get_keywords(number=100, offset=0):
     config = bot.Config(bot.CONFIGFILE)
     database = bot.initialize_database(config)
     keywords = database["keyword_clicks"].items()
     relevance_of_keyword = lambda x: __relevance_of_keyword(database, x)
-    keywords = sorted(keywords, key=relevance_of_keyword, reverse=True)[offset*number:(offset+1)*number]
+    keywords = sorted(keywords,
+                      key=relevance_of_keyword,
+                      reverse=True)[offset*number:(offset+1)*number]
     content = render_template("keywords.html",
                               style=url_for("static", filename="default.css"),
+                              number=number,
+                              offset=offset,
                               keywords=keywords)
     return content
 
@@ -131,30 +142,42 @@ def watch_media(amount=15):
 @FLASK_APP.route("/read/<hashed>")
 @FLASK_APP.route("/read/<hashed>/because/of/<keyword>")
 def read_article(hashed=None, keyword=None):
+    hashed = int(hashed)
     if keyword:
         like_keyword(keyword)
+
     articles = list()
     more_articles = list()
 
     config = bot.Config(bot.CONFIGFILE)
     database = bot.initialize_database(config)
     if hashed:
-        link = DEHASHED[int(hashed)]
-        database["articles"][link]["read"] = True
-        articles.append(database["articles"][link])
+        link = None
+        try:
+            link = DEHASHED[hashed]
+        except KeyError:
+            for article in database["articles"]:
+                if hashed == hash(article):
+                    link = article
+                    break
+        if link:
+            database["articles"][link]["read"] = True
+            articles.append(database["articles"][link])
 
-    more_articles = database["articles"].values()
-    unread_with_keyword = lambda x: keyword in x["keywords"] and not x["read"]
-    more_articles = [x for x in more_articles if unread_with_keyword(x)]
+    unread_with_keyword = lambda x: not x["read"] and keyword in x["keywords"]
     relevance_of_article = lambda x: __relevance_of_article(database, x)
-    more_articles = sorted(more_articles, key=relevance_of_article)
+    more_articles = sorted([x for x in database["articles"].values()
+                            if unread_with_keyword(x)],
+                           key=relevance_of_article)
+    HASHED.update({x["link"]: hash(x["link"]) for x in more_articles})
 
-    content = render_template("read.html",
-                              style=url_for("static", filename="default.css"),
-                              articles=articles,
-                              more_articles=more_articles,
-                              hashed=HASHED)
-    return content
+    return render_template("read.html",
+                           style=url_for("static", filename="default.css"),
+                           articles=articles,
+                           more_articles=more_articles,
+                           hashed=HASHED,
+                           keyword=keyword
+                           )
 
 
 if __name__ == "__main__":

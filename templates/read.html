@@ -32,9 +32,13 @@
     </h1>
     <div class="issue_content">
         <ul>
-            {% for article in more_articles %}
+        {% for article in more_articles %}
+            {% if keyword %}
+            <li><a href="/read/{{ hashed[article["link"]] }}/because/of/{{ keyword }}" target="_parent">{{ article["title"] }}</a></li>
+            {% else %}
             <li><a href="/read/{{ hashed[article["link"]] }}" target="_parent">{{ article["title"] }}</a></li>
-            {% endfor %}
+            {% endif %}
+        {% endfor %}
         </ul>
     </div>
     {% else %}
