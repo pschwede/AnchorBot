@@ -20,7 +20,7 @@ re_youtube = re.compile('((?<=watch\?v=)[-\w]+\
         |(?<=youtube.com/embed/)[-\w]+)', re.I)
 
 re_images = re.compile('(?<=")[^"]+jpg(?=")', re.I)
-re_splitter = re.compile("\s", re.UNICODE)
+re_splitter = re.compile("[\s-_]+", re.UNICODE)
 
 HOME = os.path.join(os.path.expanduser("~"), ".config/anchorbot")
 HERE = os.path.realpath(os.path.dirname(__file__))
