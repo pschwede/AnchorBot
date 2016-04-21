@@ -10,22 +10,27 @@ import requests
 import feedparser
 from PIL import Image
 from time import time
-from Queue import Queue
+#from Queue import Queue
 from socket import timeout
 from StringIO import StringIO
-from threading import Thread
+#from threading import Thread
 from redis_collections import Dict, Set, Counter
+
+from multiprocessing import Pool, JoinableQueue, Process, cpu_count
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+requests.packages.urllib3.disable_warnings()
 
 re_youtube = re.compile('((?<=watch\?v=)[-\w]+\
         |(?<=youtube.com/embed/)[-\w]+)', re.I)
 
 re_images = re.compile('(?<=")[^"]+jpg(?=")', re.I)
-re_splitter = re.compile("[\s-_]+", re.UNICODE)
+re_splitter = re.compile("[\s_-]+", re.UNICODE)
 
 HOME = os.path.join(os.path.expanduser("~"), ".config/anchorbot")
 HERE = os.path.realpath(os.path.dirname(__file__))
 CONFIGFILE = os.path.join(HOME, "config")
-print HOME, HERE, CONFIGFILE
+NUM_THREADS = max(1, cpu_count() - 1)
+print HOME, HERE, CONFIGFILE, NUM_THREADS
 
 
 class Config(dict):
@@ -180,28 +185,37 @@ def get_article(entry):
 
 
 def curate(db):
-    queue = Queue()
+    art_queue = JoinableQueue()
+    feed_queue = JoinableQueue()
 
-    def worker():
+    def art_worker():
         while True:
-            entry = queue.get()
+            entry = art_queue.get()
             article = get_article(entry)
             db["articles"][article["link"]] = article
-            queue.task_done()
+            art_queue.task_done()
 
-    for i in range(15):
-        t = Thread(target=worker)
-        t.daemon = True
-        t.start()
+    def feed_worker():
+        while True:
+            feedurl = feed_queue.get()
+            print "Queueing %s" % feedurl
+            feed = feedparser.parse(feedurl)
+            for entry in feed.entries:
+                if entry.link not in db["articles"]:
+                    art_queue.put(entry)
+                art_queue.put(entry)
+
+    for i in range(NUM_THREADS):
+        for target in [art_worker, feed_worker]:
+            t = Process(target=target)
+            t.daemon = True
+            t.start()
 
     for feedurl in abo_urls(db["subscriptions"]):
-        feed = feedparser.parse(feedurl)
-        print "Queueing %s" % feedurl
-        for entry in feed.entries:
-            if entry.link not in db["articles"]:
-                queue.put(entry)
+        feed_queue.put(feedurl)
 
-    queue.join()
+    feed_queue.join()
+    art_queue.join()
 
 
 def display(articles):
@@ -215,8 +229,8 @@ if __name__ == "__main__":
 
     config["abos"] += ["http://usesthis.com/feed/",
                        "http://feeds.theguardian.com/theguardian/uk/rss",
-                       "https://github.com/pschwede/AnchorBot/commits/master.atom",
-                       "https://www.youtube.com/user/TheSustainableMan",
+                       "http://github.com/pschwede/AnchorBot/commits/master.atom",
+                       "http://www.youtube.com/user/TheSustainableMan",
                        ]
     for abo in config["abos"]:
         subscribe_feed(db["subscriptions"], abo)
