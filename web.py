@@ -3,8 +3,10 @@
 
 """News display server."""
 
+from re import compile as re_compile
 import sys
 import argparse
+import markdown
 
 from flask import Flask, render_template, url_for
 from flaskext.markdown import Markdown
@@ -18,6 +20,13 @@ Markdown(FLASK_APP)
 
 HASHED = dict()
 DEHASHED = dict()
+
+
+def __get_source_domain(uri):
+    if uri.startswith('http'):
+        print uri.split('/')
+        return uri.split('/')[2]
+    return uri
 
 
 def __relevance_of_keyword(database, keyword):
@@ -55,7 +64,7 @@ def gallery(offset=0, number=32, since=259200, keyword=None):
             continue
         articles.append(article)
 
-    # sort by relevance
+    # sort by relevance and cut off slice
     articles = sorted(articles,
                       key=relevance_of_article,
                       reverse=True)[offset*number:(offset*number+number)]
@@ -68,6 +77,7 @@ def gallery(offset=0, number=32, since=259200, keyword=None):
         DEHASHED[HASHED[link]] = link
 
         article.update(read=True)
+        print article
 
         database["articles"][link] = article
 
@@ -175,7 +185,10 @@ def read_article(hashed=None, keyword=None):
                     break
         if link:
             database["articles"][link]["read"] = True
-            articles.append(database["articles"][link])
+            article = dict(database["articles"][link])
+            article['source'] = __get_source_domain(link)
+            article['date'] = time.ctime(article['release'])
+            articles.append(article)
 
     unread_with_keyword = lambda x: not x["read"] and keyword in x["keywords"]
     relevance_of_article = lambda x: __relevance_of_article(database, x)
@@ -189,8 +202,7 @@ def read_article(hashed=None, keyword=None):
                            articles=articles,
                            more_articles=more_articles,
                            hashed=HASHED,
-                           keyword=keyword
-                           )
+                           keyword=keyword)
 
 
 def __main():
