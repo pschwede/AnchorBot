@@ -136,7 +136,7 @@ body {
     padding-right: 2em;
     padding-bottom: 20pt;
     background-color: #fff;
-    text-align: justify;
+    /*text-align: justify;*/
     margin: 0 auto;
   }
   .issue1 .media {
