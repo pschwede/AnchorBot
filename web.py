@@ -5,6 +5,7 @@
 
 from re import compile as re_compile
 import sys
+import time
 import argparse
 import markdown
 
@@ -24,7 +25,6 @@ DEHASHED = dict()
 
 def __get_source_domain(uri):
     if uri.startswith('http'):
-        print uri.split('/')
         return uri.split('/')[2]
     return uri
 
@@ -77,7 +77,6 @@ def gallery(offset=0, number=32, since=259200, keyword=None):
         DEHASHED[HASHED[link]] = link
 
         article.update(read=True)
-        print article
 
         database["articles"][link] = article
 

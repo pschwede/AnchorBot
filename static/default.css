@@ -1,47 +1,5 @@
-* {
-  border:0 hidden;
-  margin: 0 auto;
-  padding: 0;
-  text-decoration: none;
-}
-
-html, body {
-  font-family: Georgia,"Times New Roman",Times,serif;
-  line-height: 133%;
-  font-size: 12pt;
-  background: #fff;
-  color: #333;
-}
-
-table {
-  font-size: 66%;
-}
-
-#header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  background-color: #ddd;
-  display: block;
-  width: 100%;
-  font-family: "Droid Sans", sans-serif;
-  z-index: 99;
-  border-bottom: 1pt solid #666;
-  height: 20pt;
-}
-#header a.title,
-#header a.menu {
-  padding: 3pt 5pt 0pt;
-  text-shadow: 0pt 1pt 0pt rgba(255,255,255,0.8);
-  color: rgba(20,20,20,0.9);
-  display: inline-block;
-}
-#header a.title:hover,
-#header a.menu:hover {
-  border-bottom:2px solid #000;
-}
-#header a.menu {
-  margin: 0;
+body {
+	margin-top: 20pt;
 }
 
 #popup {
@@ -86,15 +44,18 @@ table {
 .issue1 .issue_content h1,
 .issue1 .issue_content h2,
 .issue1 .issue_content h3,
-.issue1 .issue_content h4 {
+.issue1 .issue_content h4,
+.issue1 .issue_content h5,
+.issue1 .issue_content h6 {
+	text-align: center;
+  font-family: Georgia,"Times New Roman",Times,serif;
+  line-height: 133%;
   padding-top: 20pt;
   padding-bottom: 5pt;
 }
 .issue1 .issue_content p {
   padding-top: 3pt;
   padding-bottom: 3pt;
-  -moz-hyphens: auto;
-  -webkit-hyphens: auto;
 }
 .issue1 .issue_content ul {
   width: 300pt;
@@ -297,11 +258,12 @@ table {
   .issue2:first-child .issue_content {
     display: block;
   }
+  .issue2:first-child .issue_content,
   .issue2 .issue_head {
     z-index: 5;
     color: #fff;
     text-shadow: 0pt 1pt 0 #000;
-    font-size: 10pt;
+    font-size: 15pt;
     font-variant: small-caps;
     font-family: "Dejavu Sans", "Droid Sans", Arial, sans-serif;
     text-align: center;
@@ -312,6 +274,8 @@ table {
     border-bottom-width: 1pt;
     max-height: 108pt;
     overflow: auto;
+		margin-bottom: 0;
+		margin-top: 15px;
   }
   .issue2 .small,
   .issue2 .issue_head {
