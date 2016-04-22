@@ -1,7 +1,9 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 import os
 import re
+import sys
 import json
 import atexit
 import pprint
@@ -9,14 +11,15 @@ import justext
 import requests
 import feedparser
 from PIL import Image
-from time import time
+from time import time, sleep
 #from Queue import Queue
 from socket import timeout
 from StringIO import StringIO
 #from threading import Thread
 from redis_collections import Dict, Set, Counter
 
-from multiprocessing import Pool, JoinableQueue, Process, cpu_count
+from Queue import Empty
+from multiprocessing import JoinableQueue, Process, cpu_count, Queue, Pool
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings()
 
@@ -24,7 +27,7 @@ re_youtube = re.compile('((?<=watch\?v=)[-\w]+\
         |(?<=youtube.com/embed/)[-\w]+)', re.I)
 
 re_images = re.compile('(?<=")[^"]+jpg(?=")', re.I)
-re_splitter = re.compile("[\s_-]+", re.UNICODE)
+re_splitter = re.compile("[^\w@#]+", re.UNICODE)
 
 HOME = os.path.join(os.path.expanduser("~"), ".config/anchorbot")
 HERE = os.path.realpath(os.path.dirname(__file__))
@@ -86,7 +89,7 @@ def get_html(href):
         try:
             response = requests.get(href, timeout=1.0, verify=False)
             if response:
-                print "loaded %s" % href
+                #print "loaded %s" % href
                 return response.content
         except (timeout, requests.Timeout, requests.ConnectionError):
             pass
@@ -114,10 +117,8 @@ def remove_boilerplate(html, language="English"):
     return content
 
 
-def find_keywords(title, language="English"):
-    stoplist = justext.get_stoplist(language)
-    return set([x.lower() for x in re_splitter.split(title)
-                if x.lower() not in stoplist])
+def find_keywords(title):
+    return set([x.lower() for x in re_splitter.split(title) if x])
 
 
 def find_media(html):
@@ -170,7 +171,7 @@ def get_article(entry):
 
     media = find_media(page)
 
-    keywords = find_keywords(entry.title, language=language)
+    keywords = find_keywords(entry.title)
     article = {"link": entry.link,
                "title": entry.title,
                "release": time(),
@@ -180,7 +181,7 @@ def get_article(entry):
                "keywords": keywords,
                "read": False,
                }
-    print "got article %s" % article["link"]
+    #print "got article %s" % article["link"]
     return article
 
 
@@ -188,34 +189,81 @@ def curate(db):
     art_queue = JoinableQueue()
     feed_queue = JoinableQueue()
 
-    def art_worker():
-        while True:
-            entry = art_queue.get()
-            article = get_article(entry)
-            db["articles"][article["link"]] = article
-            art_queue.task_done()
-
-    def feed_worker():
-        while True:
-            feedurl = feed_queue.get()
-            print "Queueing %s" % feedurl
-            feed = feedparser.parse(feedurl)
-            for entry in feed.entries:
-                if entry.link not in db["articles"]:
-                    art_queue.put(entry)
-                art_queue.put(entry)
-
-    for i in range(NUM_THREADS):
-        for target in [art_worker, feed_worker]:
-            t = Process(target=target)
-            t.daemon = True
-            t.start()
-
     for feedurl in abo_urls(db["subscriptions"]):
         feed_queue.put(feedurl)
 
+    def art_worker(pid):
+        while True:
+            entry = art_queue.get(timeout=1)
+            art_queue.task_done()
+            #print "Getting %s" % entry
+            article = get_article(entry)
+            db["articles"][article["link"]] = article
+
+    def feed_worker(pid):
+        while True:
+            feedurl = feed_queue.get(timeout=1)
+            feed_queue.task_done()
+            #print "%i Queueing %s" % (pid, feedurl)
+            try:
+                response = requests.get(feedurl, timeout=1.0, verify=False)
+            except requests.exceptions.Timeout:
+                #print "\n%i Timeout %s" % (pid, feedurl)
+                continue
+            except requests.exceptions.MissingSchema:
+                #print "\n%i Cannot handle %s" % (pid, feedurl)
+                feedurl = "http://%s" % feedurl
+                try:
+                    response = requests.get(feedurl, timeout=1.0, verify=False)
+                except:
+                    continue
+            feed = feedparser.parse(response)
+            for entry in feed.entries:
+                if entry.link not in db["articles"]:
+                    art_queue.put(entry)
+
+    def process(pid):
+        proc_maximum = 1
+        proc_tick = 0
+        tstart = time()
+        while True:
+            proc_curr = art_queue.qsize() + feed_queue.qsize()
+            proc_maximum = max(proc_curr, proc_maximum)
+            percent = 1. - float(proc_curr) / proc_maximum
+            testimated = (1. - percent) * (time() - tstart) / max(0.01, percent)
+            size = int(50 * percent)
+            bar = "=" * size + " " * (50 - size)
+            throbber = "-\\|/"[proc_tick % 4]
+            sys.stdout.write("%c %3i%% [ %s ] (%i of %i, %i sec)\r" % \
+                    (throbber, 100 * percent, bar, proc_maximum-proc_curr, proc_maximum, testimated/100))
+            proc_tick += 1
+            if percent >= 1:
+                return
+            sleep(0.001)
+    
+    def run_processes(numbers, target):
+        for n in range(num):
+            p = Process(target=target, args=(n,))
+            p.daemon = True
+            p.start()
+
+    threads = max(1, (NUM_THREADS - 1))
+    print "Downloading feeds.."
+    for num, target in [(threads, feed_worker),
+            (1, process)]:
+        run_processes(num, target)
+    feed_queue.close()
     feed_queue.join()
-    art_queue.join()
+    if not art_queue.empty():
+        print "\nDownloading articles.." % art_queue.qsize()
+        for num, target in [(threads, art_worker),
+                (1, process)]:
+            run_processes(num, target)
+        art_queue.close()
+        art_queue.join()
+    else:
+        print "\nNo articles to download."
+    print "\nDone."
 
 
 def display(articles):
