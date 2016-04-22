@@ -258,12 +258,12 @@ body {
   .issue2:first-child .issue_content {
     display: block;
   }
-  .issue2:first-child .issue_content,
   .issue2 .issue_head {
     z-index: 5;
     color: #fff;
     text-shadow: 0pt 1pt 0 #000;
-    font-size: 15pt;
+    font-size: 10pt;
+		font-weight: bold;
     font-variant: small-caps;
     font-family: "Dejavu Sans", "Droid Sans", Arial, sans-serif;
     text-align: center;
@@ -274,8 +274,7 @@ body {
     border-bottom-width: 1pt;
     max-height: 108pt;
     overflow: auto;
-		margin-bottom: 0;
-		margin-top: 15px;
+		margin: 0;
   }
   .issue2 .small,
   .issue2 .issue_head {
