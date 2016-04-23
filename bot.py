@@ -8,6 +8,7 @@ import json
 import atexit
 import pprint
 import justext
+import logging
 import requests
 import feedparser
 from PIL import Image
@@ -33,8 +34,6 @@ HOME = os.path.join(os.path.expanduser("~"), ".config/anchorbot")
 HERE = os.path.realpath(os.path.dirname(__file__))
 CONFIGFILE = os.path.join(HOME, "config")
 NUM_THREADS = max(1, cpu_count() - 1)
-print HOME, HERE, CONFIGFILE, NUM_THREADS
-
 
 class Config(dict):
     def __init__(self, configfile):
@@ -47,8 +46,13 @@ class Config(dict):
         if not os.path.exists(HOME):
             os.mkdir(HOME)
         if os.path.exists(configfile):
-            with open(configfile, "r") as f:
-                self.update(json.load(f))
+            if os.path.getsize(configfile) > 0:
+                with open(configfile, "r") as f:
+                    content = json.load(f)
+                self.update(content)
+            else:
+                logging.warn("Empty config found. Creating new one.")
+                os.remove(configfile)
 
     def save(self, db):
         for name, piece in db.items():
@@ -192,35 +196,49 @@ def curate(db):
     for feedurl in abo_urls(db["subscriptions"]):
         feed_queue.put(feedurl)
 
-    def art_worker(pid):
-        while True:
-            entry = art_queue.get(timeout=1)
-            art_queue.task_done()
-            #print "Getting %s" % entry
-            article = get_article(entry)
-            db["articles"][article["link"]] = article
-
     def feed_worker(pid):
-        while True:
-            feedurl = feed_queue.get(timeout=1)
-            feed_queue.task_done()
-            #print "%i Queueing %s" % (pid, feedurl)
-            try:
-                response = requests.get(feedurl, timeout=1.0, verify=False)
-            except requests.exceptions.Timeout:
-                #print "\n%i Timeout %s" % (pid, feedurl)
-                continue
-            except requests.exceptions.MissingSchema:
-                #print "\n%i Cannot handle %s" % (pid, feedurl)
-                feedurl = "http://%s" % feedurl
+        try:
+            while True:
+                feedurl = feed_queue.get(timeout=1)
+                logging.debug("%i Queueing %s", pid, feedurl)
                 try:
                     response = requests.get(feedurl, timeout=1.0, verify=False)
-                except:
+                except requests.exceptions.Timeout:
+                    logging.debug("%i Timeout %s", pid, feedurl)
+                    feed_queue.task_done()
                     continue
-            feed = feedparser.parse(response)
-            for entry in feed.entries:
-                if entry.link not in db["articles"]:
-                    art_queue.put(entry)
+                except requests.exceptions.MissingSchema:
+                    feedurl = "http://%s" % feedurl
+                    try:
+                        response = requests.get(feedurl, timeout=1.0, verify=False)
+                    except:
+                        logging.debug("%i Cannot handle %s", pid, feedurl)
+                        feed_queue.task_done()
+                        continue
+                if response.status_code != 200:
+                    logging.warn("%i Non-200 status code %i: %s", pid, response.status_code, feedurl)
+                feed = feedparser.parse(response.text)
+                logging.debug("%i There are %i entries in %s", pid, len(feed.entries), feedurl)
+                for entry in feed.entries:
+                    if entry.link not in db["articles"]:
+                        logging.debug("%i put %s" , pid, entry.link)
+                        art_queue.put(entry)
+                    else:
+                        logging.debug("%i ign %s" , pid, entry.link)
+                feed_queue.task_done()
+        except Empty:
+            pass
+
+    def art_worker(pid):
+        try:
+            while True:
+                entry = art_queue.get(timeout=1)
+                logging.debug("%i Getting %s", pid, entry.link)
+                article = get_article(entry)
+                db["articles"][article["link"]] = article
+                art_queue.task_done()
+        except Empty:
+            pass
 
     def process(pid):
         proc_maximum = 1
@@ -230,7 +248,7 @@ def curate(db):
             proc_curr = art_queue.qsize() + feed_queue.qsize()
             proc_maximum = max(proc_curr, proc_maximum)
             percent = 1. - float(proc_curr) / proc_maximum
-            testimated = (1. - percent) * (time() - tstart) / max(0.01, percent)
+            testimated = max(0.01, percent) * (time() - tstart) / (1.001 - percent) 
             size = int(50 * percent)
             bar = "=" * size + " " * (50 - size)
             throbber = "-\\|/"[proc_tick % 4]
@@ -239,9 +257,9 @@ def curate(db):
             proc_tick += 1
             if percent >= 1:
                 return
-            sleep(0.001)
+            sleep(0.01)
     
-    def run_processes(numbers, target):
+    def run_processes(num, target):
         for n in range(num):
             p = Process(target=target, args=(n,))
             p.daemon = True
@@ -254,16 +272,16 @@ def curate(db):
         run_processes(num, target)
     feed_queue.close()
     feed_queue.join()
-    if not art_queue.empty():
-        print "\nDownloading articles.." % art_queue.qsize()
-        for num, target in [(threads, art_worker),
-                (1, process)]:
-            run_processes(num, target)
-        art_queue.close()
-        art_queue.join()
-    else:
-        print "\nNo articles to download."
-    print "\nDone."
+    print
+
+    print "Downloading %i articles.." % art_queue.qsize()
+    for num, target in [(threads, art_worker),
+            (1, process)]:
+        run_processes(num, target)
+    art_queue.close()
+    art_queue.join()
+    print
+    print "Done."
 
 
 def display(articles):
@@ -271,6 +289,10 @@ def display(articles):
 
 
 if __name__ == "__main__":
+    logging.basicConfig()
+    #logging.basicConfig(level=logging.DEBUG)
+    logging.debug(HOME, HERE, CONFIGFILE, NUM_THREADS)
+
     config = Config(CONFIGFILE)
     db = initialize_database(config)
     atexit.register(config.save, db)
