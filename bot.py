@@ -189,98 +189,102 @@ def get_article(entry):
     return article
 
 
+def __feed_worker(pid, inqueue, outqueue):
+    try:
+        while True:
+            feedurl = inqueue.get(timeout=1)
+            logging.debug("%i Queueing %s", pid, feedurl)
+            try:
+                response = requests.get(feedurl, timeout=1.0, verify=False)
+            except (requests.Timeout, requests.ConnectionError):
+                logging.debug("%i Timeout %s", pid, feedurl)
+                inqueue.task_done()
+                continue
+            except requests.exceptions.MissingSchema:
+                feedurl = "http://%s" % feedurl
+                try:
+                    response = requests.get(feedurl, timeout=1.0, verify=False)
+                except:
+                    logging.debug("%i Cannot handle %s", pid, feedurl)
+                    inqueue.task_done()
+                    continue
+            if response.status_code != 200:
+                logging.warn("%i Non-200 status code %i: %s", pid, response.status_code, feedurl)
+            feed = feedparser.parse(response.text)
+            logging.debug("%i There are %i entries in %s", pid, len(feed.entries), feedurl)
+            for entry in feed.entries:
+                if entry.link not in db["articles"]:
+                    logging.debug("%i put %s" , pid, entry.link)
+                    outqueue.put(entry)
+                else:
+                    logging.debug("%i ign %s" , pid, entry.link)
+            inqueue.task_done()
+    except Empty:
+        pass
+
+
+def __art_worker(pid, queue):
+    try:
+        while True:
+            entry = queue.get(timeout=1)
+            logging.debug("%i Getting %s", pid, entry.link)
+            article = get_article(entry)
+            db["articles"][article["link"]] = article
+            queue.task_done()
+    except Empty:
+        pass
+
+
+def __progress(pid, queue):
+    maximum = 1
+    tick = 0
+    tstart = time()
+    while True:
+        remaining = queue.qsize()
+        maximum = max(remaining, maximum)
+        percent = 1. - float(remaining) / maximum
+        testimated = max(0.01, percent) * (time() - tstart) / (1.001 - percent) 
+        size = int(50 * percent)
+        bar = "=" * size + " " * (50 - size)
+        throbber = "-\\|/"[tick % 4] if percent < 1 else "X"
+        sys.stdout.write("%c %3i%% [ %s ] (%i of %i, %i sec)\r" % \
+                (throbber, 100 * percent, bar, maximum - remaining, maximum, testimated/100))
+        tick += 1
+        if percent >= 1:
+            print
+            return
+        sleep(0.10)
+
+
+def run_processes(target, inqueue, outqueue=None):
+    threads = max(1, (NUM_THREADS - 1))
+    for n in range(threads):
+        if outqueue:
+            p = Process(target=target, args=(n, inqueue, outqueue))
+        else:
+            p = Process(target=target, args=(n, inqueue))
+        p.daemon = True
+        p.start()
+    pp = Process(target=__progress, args=(-1, inqueue))
+    pp.daemon = True
+    pp.start()
+    inqueue.close()
+    inqueue.join()
+
+
 def curate(db):
     art_queue = JoinableQueue()
     feed_queue = JoinableQueue()
 
     for feedurl in abo_urls(db["subscriptions"]):
         feed_queue.put(feedurl)
-
-    def feed_worker(pid):
-        try:
-            while True:
-                feedurl = feed_queue.get(timeout=1)
-                logging.debug("%i Queueing %s", pid, feedurl)
-                try:
-                    response = requests.get(feedurl, timeout=1.0, verify=False)
-                except requests.exceptions.Timeout:
-                    logging.debug("%i Timeout %s", pid, feedurl)
-                    feed_queue.task_done()
-                    continue
-                except requests.exceptions.MissingSchema:
-                    feedurl = "http://%s" % feedurl
-                    try:
-                        response = requests.get(feedurl, timeout=1.0, verify=False)
-                    except:
-                        logging.debug("%i Cannot handle %s", pid, feedurl)
-                        feed_queue.task_done()
-                        continue
-                if response.status_code != 200:
-                    logging.warn("%i Non-200 status code %i: %s", pid, response.status_code, feedurl)
-                feed = feedparser.parse(response.text)
-                logging.debug("%i There are %i entries in %s", pid, len(feed.entries), feedurl)
-                for entry in feed.entries:
-                    if entry.link not in db["articles"]:
-                        logging.debug("%i put %s" , pid, entry.link)
-                        art_queue.put(entry)
-                    else:
-                        logging.debug("%i ign %s" , pid, entry.link)
-                feed_queue.task_done()
-        except Empty:
-            pass
-
-    def art_worker(pid):
-        try:
-            while True:
-                entry = art_queue.get(timeout=1)
-                logging.debug("%i Getting %s", pid, entry.link)
-                article = get_article(entry)
-                db["articles"][article["link"]] = article
-                art_queue.task_done()
-        except Empty:
-            pass
-
-    def process(pid):
-        proc_maximum = 1
-        proc_tick = 0
-        tstart = time()
-        while True:
-            proc_curr = art_queue.qsize() + feed_queue.qsize()
-            proc_maximum = max(proc_curr, proc_maximum)
-            percent = 1. - float(proc_curr) / proc_maximum
-            testimated = max(0.01, percent) * (time() - tstart) / (1.001 - percent) 
-            size = int(50 * percent)
-            bar = "=" * size + " " * (50 - size)
-            throbber = "-\\|/"[proc_tick % 4]
-            sys.stdout.write("%c %3i%% [ %s ] (%i of %i, %i sec)\r" % \
-                    (throbber, 100 * percent, bar, proc_maximum-proc_curr, proc_maximum, testimated/100))
-            proc_tick += 1
-            if percent >= 1:
-                return
-            sleep(0.01)
     
-    def run_processes(num, target):
-        for n in range(num):
-            p = Process(target=target, args=(n,))
-            p.daemon = True
-            p.start()
-
-    threads = max(1, (NUM_THREADS - 1))
-    print "Downloading feeds.."
-    for num, target in [(threads, feed_worker),
-            (1, process)]:
-        run_processes(num, target)
-    feed_queue.close()
-    feed_queue.join()
-    print
+    print "Downloading %i feeds.." % feed_queue.qsize()
+    run_processes(__feed_worker, feed_queue, art_queue)
 
     print "Downloading %i articles.." % art_queue.qsize()
-    for num, target in [(threads, art_worker),
-            (1, process)]:
-        run_processes(num, target)
-    art_queue.close()
-    art_queue.join()
-    print
+    run_processes(__art_worker, art_queue)
+
     print "Done."
 
 
