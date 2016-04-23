@@ -3,7 +3,7 @@
 
 """News display server."""
 
-from re import compile as re_compile
+from re import compile as re_compile, sub as re_sub, IGNORECASE
 import sys
 import time
 import argparse
@@ -21,6 +21,9 @@ Markdown(FLASK_APP)
 
 HASHED = dict()
 DEHASHED = dict()
+
+RE_SENTENCES = re_compile(r"[\(]?.+?[\.!\?][\)]?(?!\S)")
+RE_PARAGRAPHS = re_compile(r"(?<=<p>)[^<]+(?=</p>)")
 
 
 def __get_source_domain(uri):
@@ -44,7 +47,7 @@ def __relevance_of_article(database, article):
 @FLASK_APP.route("/gallery")
 @FLASK_APP.route("/gallery/keyword/<keyword>")
 @FLASK_APP.route("/gallery/offset/<offset>")
-def gallery(offset=0, number=32, since=259200, keyword=None):
+def gallery(offset=0, number=12, since=259200, keyword=None):
     """Arrangement of unread articles."""
     offset = int(offset)
     number = int(number)
@@ -73,21 +76,34 @@ def gallery(offset=0, number=32, since=259200, keyword=None):
     for article in articles:
         link = article["link"]
 
+        # generate and remember hash values
         HASHED[link] = hash(link)
         DEHASHED[HASHED[link]] = link
 
-        article.update(read=True)
+        # mark articles as read
+        #article.update(read=True)
 
+        # update article in the database
+        database["articles"][link] = article
+
+        # split headline into links
         split_headline = unicode(escape(article["title"].lower())).split(" ")
         sorted_kwords = sorted(article["keywords"], key=len, reverse=True)
+        if not sorted_kwords:
+            continue
         linked_headline = []
         for word in split_headline:
-            kword = [kw for kw in sorted_kwords if kw in word][0]
-            replacement = """<a href="/read/%s/because/of/%s" target="_blank">%s</a>""" % (HASHED[link], kword, kword)
-            linked_headline.append(word.replace(kword, replacement))
+            kwords = [kw for kw in sorted_kwords if kw.lower() in word.lower()]
+            if not kwords:
+                continue
+            linked_headline.append(
+                    re_sub(r"(%s)" % kwords[0],
+                        r"""<a href="/read/%s/because/of/\1" target="_blank">\1</a>""" % HASHED[link],
+                        word,
+                        flags=IGNORECASE))
+        if not linked_headline:
+            continue
         article["linked_headline"] = " ".join(linked_headline)
-
-        database["articles"][link] = article
 
     # prepare data sets for gallery
     scores = {a["link"]: relevance_of_article(a) for a in articles}
@@ -192,10 +208,33 @@ def read_article(hashed=None, keyword=None):
                     link = article
                     break
         if link:
-            database["articles"][link]["read"] = True
-            article = dict(database["articles"][link])
+            article = database["articles"][link]
+            article.update(read=True)
+            database["articles"][link] = article
+
+            article = dict(article)
             article['source'] = __get_source_domain(link)
             article['date'] = time.ctime(article['release'])
+
+            original_content = markdown.markdown(escape(article['content']))
+            spaned_content = []
+            for paragraph in [p for p in RE_PARAGRAPHS.findall(original_content) if p]:
+                sentences = [s for s in RE_SENTENCES.findall(paragraph) if s]
+                if not sentences:
+                    continue
+                elif len(sentences) == 1:
+                    spaned_content.append("<p><span>%s</span></p>" % sentences[0])
+                else:
+                    spaned_content.append(
+                            "<p>%s</p>" % \
+                            ("<span>%s</span>"*3 % \
+                            (sentences[0], "".join(sentences[1:-2]), sentences[-1]))
+                            )
+            article['spaned_content'] = " ".join(spaned_content)
+            if keyword:
+                article['spaned_content'] = re_sub(r"(%s)" % keyword,
+                        r"<strong>\1</strong>", article['spaned_content'],
+                        flags=IGNORECASE)
             articles.append(article)
 
     unread_with_keyword = lambda x: not x["read"] and keyword in x["keywords"]
