@@ -101,7 +101,7 @@ body {
 .issue1 .image img {
   border: 3pt solid #000;
   max-width: 100%;
-  margin: 30pt auto 0;
+  margin: 30pt auto;
 }
   .issue1:nth-child(even) .image,
   .issue1:nth-child(odd) .image {
@@ -117,9 +117,16 @@ body {
     font-variant: small-caps;
     text-shadow: 0pt 1pt 0 rgba(255,255,255,0.7);
   }
-  .issue1 .issue_content p,
   .issue1 .issue_content {
     font-family: serif;
+  }
+  .issue1 .issue_content p span:last-child {
+    background: #fec;
+    color: #000;
+  }
+  .issue1 .issue_content p span:first-child {
+    background: #ff9;
+    color: #000;
   }
   .issue1 .issue_content pre {
     font-family: "Anonymous Pro", Monaco, Monospace;
