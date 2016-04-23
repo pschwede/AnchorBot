@@ -9,7 +9,7 @@ import time
 import argparse
 import markdown
 
-from flask import Flask, render_template, url_for
+from flask import Flask, render_template, url_for, escape
 from flaskext.markdown import Markdown
 
 import bot
@@ -69,7 +69,7 @@ def gallery(offset=0, number=32, since=259200, keyword=None):
                       key=relevance_of_article,
                       reverse=True)[offset*number:(offset*number+number)]
 
-    # mark article as read and update database
+    # mark filtered articles as read and update database
     for article in articles:
         link = article["link"]
 
@@ -77,6 +77,15 @@ def gallery(offset=0, number=32, since=259200, keyword=None):
         DEHASHED[HASHED[link]] = link
 
         article.update(read=True)
+
+        split_headline = unicode(escape(article["title"].lower())).split(" ")
+        sorted_kwords = sorted(article["keywords"], key=len, reverse=True)
+        linked_headline = []
+        for word in split_headline:
+            kword = [kw for kw in sorted_kwords if kw in word][0]
+            replacement = """<a href="/read/%s/because/of/%s" target="_blank">%s</a>""" % (HASHED[link], kword, kword)
+            linked_headline.append(word.replace(kword, replacement))
+        article["linked_headline"] = " ".join(linked_headline)
 
         database["articles"][link] = article
 

@@ -6,15 +6,7 @@
   {% for article in articles %}
     <li id="{{ article["link"] }}" class="issue2" style="background-image:url('{{ article["image"] }}');">
       <h2 class="issue_head">
-      {% for word in article["title"].split(" ") %}
-          {% if word.lower() in article["keywords"] %}
-            <a href="/read/{{ hashed[article["link"]] }}/because/of/{{ word.lower() }}" target="_blank">
-              {{ word }}
-            </a>
-          {% else %}
-          {{ word }}
-          {% endif %}
-      {% endfor %}
+	{{ article["linked_headline"]|safe }}
       </h2>
       <div class="small">
           <div>&#11016; Score: {{ scores[article["link"]] or 0 }} &#11017;</div>
