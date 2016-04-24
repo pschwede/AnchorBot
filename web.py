@@ -72,7 +72,6 @@ def gallery(offset=0, number=12, since=259200, keyword=None):
                       key=relevance_of_article,
                       reverse=True)[offset*number:(offset*number+number)]
 
-    # mark filtered articles as read and update database
     for article in articles:
         link = article["link"]
 
@@ -115,6 +114,29 @@ def gallery(offset=0, number=12, since=259200, keyword=None):
                               hashed=HASHED,
                               scores=scores)
     return content
+
+
+@FLASK_APP.route("/mark/as/read/<hashed>")
+def mark_as_read(hashed):
+    config = bot.Config(bot.CONFIGFILE)
+    database = bot.initialize_database(config)
+
+    hashed = int(hashed)
+    try:
+        link = DEHASHED[hashed]
+        if link:
+            article = database["articles"][link]
+            article.update(read=True)
+            database["articles"][link] = article
+    except KeyError:
+        pass
+    return "OK"
+
+
+@FLASK_APP.route("/dismiss/<hashed>")
+def dismiss(hashed):
+    mark_as_read(hashed)
+    return gallery()
 
 
 @FLASK_APP.route("/feed/<url>")

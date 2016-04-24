@@ -10,6 +10,7 @@
       </h2>
       <div class="small">
           <div>&#11016; Score: {{ scores[article["link"]] or 0 }} &#11017;</div>
+					<div><a href="/dismiss/{{ hashed[article["link"]] }}">Dismiss</a></div>
       </div>
     </li>
   {% endfor %}
