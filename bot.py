@@ -244,7 +244,7 @@ def __progress(pid, queue):
         maximum = max(remaining, maximum)
         percent = 1. - float(remaining) / maximum
         testimated = max(0.01, percent) * (time() - tstart) / (1.001 - percent) 
-        size = int(50 * percent)
+        size = int(40 * percent)
         bar = "=" * size + " " * (50 - size)
         throbber = "-\\|/"[tick % 4] if percent < 1 else "X"
         sys.stdout.write("%c %3i%% [ %s ] (%i of %i, %i sec)\r" % \
