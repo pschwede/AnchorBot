@@ -42,7 +42,19 @@ upon the relevance of headlines.
 
 ### Requirements
 
+* an installed Python 2
 * a running [Redis](https://redis.io) service
+
+### Install
+
+Run the following as root:
+
+```bash
+pip2 install justext Pillow redis_collections flask flask-markdown
+```
+
+This command assumes that `pip2` is pip for Python 2.
+
 
 ## Usage
 
