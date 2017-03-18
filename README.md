@@ -1,7 +1,5 @@
 # AnchorBot
 
-## TL;DR
-
 A (prototype of a) simple learning news feed aggregator working surprisingly well.
 
 **Note:** I plan to redo this piece of software very soon.
