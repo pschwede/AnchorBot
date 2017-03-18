@@ -3,20 +3,21 @@
 {% block header %}
 {% endblock %}
 {% block content %}
+Found: {{ articles|length }} articles.
 {% for article in articles %}
-<div class="issue1" id="{{ article.ID }}">
-    <h1 class="issue_head" title="{{ article.ID }}" id="article{{article.ID}}">
-        {{ article.title }}
+<div class="issue1">
+    <h1 class="issue_head">
+        {{ article["title"] }}
     </h1>
     {% if article.media %}
-    <div class="media">{{ article.media.html|safe }}</div>
+    <div class="media">{{ article["media"]|safe }}</div>
     {% endif %}
     <div class="small">
         <span>
-            On <a href="{{ article.source.link }}">{{ article.source.title }}</a> {{ article.datestr }}.
+            On <a href="{{ article["source"] }}">{{ article["source"] }}</a> {{ article["release"] }}.
         </span>
         <span>
-            <a href="{{ article.link }}" class="button" target="_parent">Read more</a>
+            <a href="{{ article["link"] }}" class="button" target="_parent">Read more</a>
         </span>
     </div>
 </div>

@@ -1,61 +1,64 @@
-AnchorBot
-=========
+# AnchorBot
 
-*TL;DR*: A simple learning news feed aggregator working surprisingly well.
+## TL;DR
 
+A (prototype of a) simple learning news feed aggregator working surprisingly well.
+
+**Note:** I plan to redo this piece of software very soon.
+
+
+## Introduction
 
 The idea is simple. Usually when reading the news, it takes most of the time to
-fish for interesting news in the ocean of news. Now, AnchorBot tries to
-automate it by fishing out news that share a headline word you were interested
-in before. You start with a bunch of totally random news articles displayed
-with an headline and a picture. If you want to read an article, you have to
-click a word in the headline that is most interesting to you. For example:
+search for news you are interested in. AnchorBot tries to automate this by
+looking through your RSS/Atom feeds: Which articles share a keyword you
+had been interested in before?
 
-In "Google buildt UFO" you can decide whether you are more interested in UFO or
-in Google. Each word got it's own link.
+Anchorbot weights articles by the count of how many times your clicked a word
+in the headline. It then presents the news in a grid page by page. That way you
+can get a quick overview.
 
-By repeatingly making rather quick choices like this. Anchorbot will show
-articles of your choice first. If you clicked Google, it'll be news about
-google. If you clicked UFO, it'll be news about UFO not Google.
-Articles are weighted by the weight of the words they have in the headline.
-
-Anchorbot presents the news page-wise. That way you can get a quick overview.
-Reloading the page, you will get a next interest-adopted collection.
-Note that, to harness the daily flush of news, each article is displayed only once!
+Currently, each article is displayed only once. So read carefully!
 
 
-Features
---------
-* supports RSS and ATOM feeds
-* fetches additional content from linked websites
-* Completely runs on your machine. You store your data on your own. No obscure
-  cloud. New articles and non-text media still require internet connection, of
-  course.
+## Features
+
+* support RSS and ATOM feeds
+* scrape full text and embedded media from articles (as do [Instapaper](https://instapaper.com), [Readability](https://readability.com))
+* highlight the keyword, the first and last sentence in paragraphs (anatomy of an article)
+* server runs on local machine.
+
+## Missing
+
+* user friendly UI for managing feeds and keywords and stopping the program
+* display article author
+* Android app / reactive web interface
+
+## Setup
+
+### Requirements
+
+* a running [Redis](https://redis.io) service
 
 
-Usage
------
+## Usage
 
-Start crawling:
+### Adding
 
-```bash
-python bot.py
-```
-
-Start interface:
+### Start reading
 
 ```bash
-python web.py
-firefox localhost:8000
+./start.sh & firefox 0.0.0.0:8000
 ```
 
-Thanks to redis, you can run both in the same time. But remember, that you get
-the best effect after having finished the fetching.
+### Stop
 
+Currently not implemented! Try killing all the anchorbot jobs:
 
-More info
----------
-* For more information on planned features, please read the [Wiki](http://github.com/spazzpp2/AnchorBot/issues).
-* For feature requests and other discussions, please visit the [Subreddit](http://www.reddit.com/r/anchorbot).
+```bash
+pkill -f 'anchorobt.*py'
+```
 
+## More info
 
+* For more information on planned features, please read the [Issues](http://github.com/pschwede/AnchorBot/issues).
