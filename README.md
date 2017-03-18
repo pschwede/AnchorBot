@@ -44,6 +44,7 @@ upon the relevance of headlines.
 
 * an installed Python 2
 * a running [Redis](https://redis.io) service
+* probably Linux (nothing else tested)
 
 ### Install
 
