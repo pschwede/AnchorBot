@@ -52,10 +52,12 @@ Run the following as root:
 
 ```bash
 pip2 install justext Pillow redis_collections flask flask-markdown
+git clone https://github.com/pschwede/AnchorBot.git
+cd AnchorBot
 ```
 
 This command assumes that `pip2` is pip for Python 2.
-
+From here continue with [Usage](#Usage).
 
 ## Usage
 
