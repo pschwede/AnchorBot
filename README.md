@@ -1,36 +1,42 @@
 # AnchorBot
 
-A (prototype of a) simple learning news feed aggregator working surprisingly well.
+A (prototype of a) simple learning news feed aggregator that works surprisingly well.
 
 **Note:** I plan to redo this piece of software very soon.
 
 
-## Introduction
+## Why?
 
-The idea is simple. Usually when reading the news, it takes most of the time to
-search for news you are interested in. AnchorBot tries to automate this by
-looking through your RSS/Atom feeds: Which articles share a keyword you
-had been interested in before?
+While journalism is regarded as the fourth column the western society is
+standing on, the introduction of web 2.0 caused a disruption in the
+journalistic ecosystem.  News are all over the place.  Blogs, newspapers and
+broadcasting services mangle together in one web of relevant and irrelevant
+articles with a wide range of quality.
 
-Anchorbot weights articles by the count of how many times your clicked a word
-in the headline. It then presents the news in a grid page by page. That way you
-can get a quick overview.
+Reading news can be very frustrating today:
 
-Currently, each article is displayed only once. So read carefully!
+* Centristic shareholders influence framing and relevance decisions
+* Social networks resonate echo chambers
+* Style variety, ads and click-bait poison your attention
 
+Anchorbot delivers.  It additively merges several newsrooms into an automated
+personal one.  It presents the news in a way that is easy to the senses and
+helps you to concentrate on the important things, not the loudest.  You decide
+upon the relevance of headlines.
 
 ## Features
 
-* support RSS and ATOM feeds
-* scrape full text and embedded media from articles (as do [Instapaper](https://instapaper.com), [Readability](https://readability.com))
-* highlight the keyword, the first and last sentence in paragraphs (anatomy of an article)
-* server runs on local machine.
+* Subscribe to RSS and ATOM feeds
+* Scrape full text and embedded media from articles (similar to [Instapaper](https://instapaper.com) and [Readability](https://readability.com))
+* Highlight selected keyword, the first and last sentence in [paragraphs](https://de.slideshare.net/amandacpoiesis/anatomy-of-a-paragraph)
+* Bot and interface run on local machine. No trust on cloud services required.
 
-## Missing
+## Missing features
 
-* user friendly UI for managing feeds and keywords and stopping the program
-* display article author
-* Android app / reactive web interface
+* User friendly UI for managing feeds and keywords and stopping the program
+* Display article author
+* Android app
+* reactive web interface
 
 ## Setup
 
@@ -38,25 +44,30 @@ Currently, each article is displayed only once. So read carefully!
 
 * a running [Redis](https://redis.io) service
 
-
 ## Usage
 
-### Adding
+### 1. Run the bot
 
-### Start reading
+```bash
+./bot.py
+```
+
+### 2. Add subscriptions
+
+Add urls to `~/.config/anchorbot/config`.
+
+### 3. Start reading
 
 ```bash
 ./start.sh & firefox 0.0.0.0:8000
 ```
 
-### Stop
+### 4. Stop
 
-Currently not implemented! Try killing all the anchorbot jobs:
+Currently not implemented! Try to kill all the anchorbot jobs:
 
 ```bash
-pkill -f 'anchorobt.*py'
+pkill -f bot.py
+pkill -f web.py
+pkill -f start.sh
 ```
-
-## More info
-
-* For more information on planned features, please read the [Issues](http://github.com/pschwede/AnchorBot/issues).
