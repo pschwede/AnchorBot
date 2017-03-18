@@ -57,7 +57,7 @@ cd AnchorBot
 ```
 
 This command assumes that `pip2` is pip for Python 2.
-From here continue with [Usage](#Usage).
+From here continue with [Usage](#usage).
 
 ## Usage
 
