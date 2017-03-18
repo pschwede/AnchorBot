@@ -10,7 +10,7 @@ A (prototype of a) simple learning news feed aggregator that works surprisingly 
 While journalism is regarded as the fourth column the western society is
 standing on, the introduction of web 2.0 caused a disruption in the
 journalistic ecosystem.  News are all over the place.  Blogs, newspapers and
-broadcasting services mangle together in one web of relevant and irrelevant
+broadcasting services mingle together in one web of relevant and irrelevant
 articles with a wide range of quality.
 
 Reading news can be very frustrating today:
