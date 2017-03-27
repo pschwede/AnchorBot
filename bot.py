@@ -20,7 +20,7 @@ from StringIO import StringIO
 from redis_collections import Dict, Set, Counter
 
 from Queue import Empty
-from multiprocessing import JoinableQueue, Process, cpu_count, Queue, Pool
+from multiprocess import JoinableQueue, Process, cpu_count, Queue, Pool
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings()
 
@@ -225,7 +225,16 @@ def get_html(href):
     tries = 5
     while tries:
         try:
-            response = requests.get(href, timeout=1.0, verify=False)
+            try:
+                response = requests.get(href, timeout=1.0, verify=False)
+            except requests.exceptions.MissingSchema:
+                try:
+                    response = requests.get("http://"+href, timeout=1.0, verify=False)
+                except Exception, e:
+                    print e
+                    break
+            except requests.exceptions.InvalidSchema:
+                break
             if response:
                 #print "loaded %s" % href
                 return response.content

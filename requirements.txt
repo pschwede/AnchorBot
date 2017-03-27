@@ -1,0 +1,8 @@
+justext>=2.2.0
+requests>=2.13.0
+feedparser>=5.2.1
+Pillow>=4.0.0
+redis_collections>=0.4.2
+markdown>=2.6.8
+Flask>=0.12
+flask-markdown>=0.3
